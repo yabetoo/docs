@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Yabetoo Docs",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
@@ -13,6 +13,13 @@
       {
         "tab": "Guides",
         "groups": [
+          {
+            "group": "Setup account",
+            "pages": [
+              "account/overview",
+              "account/activate"
+            ]
+          },
           {
             "group": "Get Started",
             "pages": [
@@ -53,6 +60,19 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Developer tools",
+        "groups": [
+          {
+            "group": "SDKs",
+            "pages": [
+              "developer-tools/sdk/introduction",
+              "developer-tools/sdk/php",
+              "developer-tools/sdk/java"
+            ]
+          }
+        ]
       }
     ],
     "global": {
@@ -65,7 +85,7 @@
         {
           "anchor": "Community",
           "href": "https://mintlify.com/community",
-          "icon": "slack"
+          "icon": "discord"
         },
         {
           "anchor": "Blog",
@@ -77,19 +97,19 @@
   },
   "logo": {
     "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "dark": "/logo/yabetoo_dark.png"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:support@yabetoopay.com"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "href": "https://app.yabetoo.com"
     }
   },
   "footer": {
