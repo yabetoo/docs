@@ -3,31 +3,25 @@
   "theme": "mint",
   "name": "Yabetoo Docs",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#001C6B",
+    "light": "#FF5224",
+    "dark": "#001C6B"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/logo/favicon.ico",
   "navigation": {
     "tabs": [
       {
         "tab": "Guides",
         "groups": [
           {
-            "group": "Setup account",
-            "pages": [
-              "account/overview",
-              "account/activate"
-            ]
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart", "development"]
           },
           {
-            "group": "Get Started",
-            "pages": [
-              "introduction",
-              "quickstart",
-              "development"
-            ]
+            "group": "Setup account",
+            "pages": ["account/overview", "account/activate"]
           },
+
           {
             "group": "Essentials",
             "pages": [
@@ -42,21 +36,57 @@
         ]
       },
       {
+        "tab": "Payments",
+        "groups": [
+          {
+            "group": "Build a checkout page",
+            "pages": [
+              "payments/checkout-page/intro",
+              "payments/checkout-page/create"
+            ]
+          },
+          {
+            "group": "Use Payment Links",
+            "pages": [
+              "payments/payment-link/intro",
+              "payments/payment-link/create",
+              "payments/payment-link/share"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "API Reference",
         "groups": [
           {
             "group": "API Documentation",
+            "pages": ["api-reference/introduction"]
+          },
+          {
+            "group": "Checkout Session",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/checkout-session/create",
+              "api-reference/checkout-session/get"
             ]
           },
           {
-            "group": "Endpoint Examples",
+            "group": "Payment Intent",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/payment-intent/create",
+              "api-reference/payment-intent/confirm",
+              "api-reference/payment-intent/get"
+            ]
+          },
+          {
+            "group": "Disbursement",
+            "pages": ["api-reference/disbursement/create"]
+          },
+          {
+            "group": "Webhook",
+            "pages": [
+              "api-reference/webhook/create",
+              "api-reference/webhook/get",
+              "api-reference/webhook/all"
             ]
           }
         ]
@@ -65,12 +95,12 @@
         "tab": "Developer tools",
         "groups": [
           {
-            "group": "SDKs",
-            "pages": [
-              "developer-tools/sdk/introduction",
-              "developer-tools/sdk/php",
-              "developer-tools/sdk/java"
-            ]
+            "group": "Libraries",
+            "pages": ["developer-tools/sdk/php", "developer-tools/sdk/java"]
+          },
+          {
+            "group": "Plugins",
+            "pages": ["developer-tools/plugins/wordpress"]
           }
         ]
       }
@@ -96,8 +126,8 @@
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/yabetoo_dark.png"
+    "light": "/logo/yb_light.svg",
+    "dark": "/logo/yb_dark.svg"
   },
   "navbar": {
     "links": [

@@ -95,10 +95,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "meta",
-                    "data"
-                  ]
+                  "required": ["meta", "data"]
                 },
                 "examples": {
                   "1": {
@@ -230,10 +227,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "meta",
-                    "data"
-                  ]
+                  "required": ["meta", "data"]
                 },
                 "examples": {
                   "1": {
@@ -459,10 +453,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "name",
-                        "price"
-                      ]
+                      "required": ["name", "price"]
                     }
                   },
                   "category": {
@@ -483,10 +474,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "path",
-                        "preview"
-                      ]
+                      "required": ["path", "preview"]
                     }
                   },
                   "documents": {
@@ -507,12 +495,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "key",
-                        "name",
-                        "type",
-                        "url"
-                      ]
+                      "required": ["key", "name", "type", "url"]
                     }
                   },
                   "accountId": {
@@ -541,10 +524,7 @@
                     "options": [
                       {
                         "name": "Poids",
-                        "values": [
-                          "500g",
-                          "250g"
-                        ]
+                        "values": ["500g", "250g"]
                       }
                     ],
                     "variants": [
@@ -659,9 +639,7 @@
                     "format": "binary"
                   }
                 },
-                "required": [
-                  "files"
-                ]
+                "required": ["files"]
               }
             }
           }
@@ -838,12 +816,7 @@
                     }
                   }
                 },
-                "required": [
-                  "total",
-                  "currency",
-                  "accountId",
-                  "items"
-                ]
+                "required": ["total", "currency", "accountId", "items"]
               },
               "examples": {
                 "1": {
@@ -925,19 +898,9 @@
         "summary": "session",
         "deprecated": false,
         "description": "",
+
         "tags": [],
-        "parameters": [
-          {
-            "name": "Authorization-Token",
-            "in": "header",
-            "description": "",
-            "required": true,
-            "example": "Bearer Mjg4.aLohqR0CpmvOmqr62e3tA3R4Y6Zty70738NB_dZDrT5qk3EJBV94fV-YbsjJ",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+
         "requestBody": {
           "content": {
             "application/json": {
@@ -966,9 +929,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "test"
-                    ]
+                    "required": ["test"]
                   },
                   "items": {
                     "type": "array",
@@ -1048,98 +1009,12 @@
         ]
       }
     },
-    "/v1/sessions/session_pxIDYLdHRTGr7MGaW8yztzn4pIBBqh3AOsfr": {
+    "/v1/sessions/{id}": {
       "get": {
         "summary": "get session",
         "deprecated": false,
         "description": "",
         "tags": [],
-        "parameters": [
-          {
-            "name": "Authorization-Token",
-            "in": "header",
-            "description": "",
-            "required": false,
-            "example": "Bearer Mjg4.aLohqR0CpmvOmqr62e3tA3R4Y6Zty70738NB_dZDrT5qk3EJBV94fV-YbsjJ",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "total": {
-                    "type": "integer"
-                  },
-                  "currency": {
-                    "type": "string"
-                  },
-                  "accountId": {
-                    "type": "string"
-                  },
-                  "successUrl": {
-                    "type": "string"
-                  },
-                  "cancelUrl": {
-                    "type": "string"
-                  },
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "productId": {
-                          "type": "string"
-                        },
-                        "quantity": {
-                          "type": "integer"
-                        },
-                        "price": {
-                          "type": "integer"
-                        },
-                        "productName": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  }
-                },
-                "required": [
-                  "total",
-                  "currency",
-                  "accountId",
-                  "successUrl",
-                  "cancelUrl",
-                  "items"
-                ]
-              },
-              "examples": {
-                "1": {
-                  "value": {
-                    "total": 250000,
-                    "currency": "xaf",
-                    "accountId": "acct_xSnDzArijvLk3Gn18A0Pje9uHl5sKYB9nJGe",
-                    "successUrl": "https://monsite.com/checkout-success",
-                    "cancelUrl": "https://monsite.com/checkout-cancel",
-                    "items": [
-                      {
-                        "productId": "prt_LJSWdTzcn6sIFEOgC55TmFI29j5CIkHzXNmc",
-                        "quantity": 1,
-                        "price": 250000,
-                        "productName": "Écran LG"
-                      }
-                    ]
-                  },
-                  "description": ""
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "",
@@ -1215,12 +1090,7 @@
                     }
                   }
                 },
-                "required": [
-                  "total",
-                  "currency",
-                  "accountId",
-                  "items"
-                ]
+                "required": ["total", "currency", "accountId", "items"]
               },
               "examples": {
                 "1": {
@@ -1406,12 +1276,7 @@
                     }
                   }
                 },
-                "required": [
-                  "accountId",
-                  "dueDate",
-                  "customer",
-                  "cartProducts"
-                ]
+                "required": ["accountId", "dueDate", "customer", "cartProducts"]
               },
               "examples": {
                 "1": {
@@ -1500,12 +1365,7 @@
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "name",
-                            "price",
-                            "reference",
-                            "image"
-                          ]
+                          "required": ["name", "price", "reference", "image"]
                         },
                         "quantity": {
                           "type": "integer"
@@ -1514,12 +1374,7 @@
                     }
                   }
                 },
-                "required": [
-                  "accountId",
-                  "dueDate",
-                  "customer",
-                  "cartProducts"
-                ]
+                "required": ["accountId", "dueDate", "customer", "cartProducts"]
               },
               "examples": {
                 "1": {
@@ -1799,12 +1654,7 @@
                               "type": "null"
                             }
                           },
-                          "required": [
-                            "name",
-                            "price",
-                            "reference",
-                            "image"
-                          ]
+                          "required": ["name", "price", "reference", "image"]
                         },
                         "quantity": {
                           "type": "integer"
@@ -1816,11 +1666,7 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "commandId",
-                  "cartProducts",
-                  "accountId"
-                ]
+                "required": ["commandId", "cartProducts", "accountId"]
               },
               "examples": {
                 "1": {
@@ -1928,11 +1774,7 @@
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "name",
-                            "price",
-                            "reference"
-                          ]
+                          "required": ["name", "price", "reference"]
                         },
                         "quantity": {
                           "type": "integer"
@@ -1941,9 +1783,7 @@
                     }
                   }
                 },
-                "required": [
-                  "cartProducts"
-                ]
+                "required": ["cartProducts"]
               },
               "examples": {
                 "1": {
@@ -2039,12 +1879,7 @@
                               }
                             }
                           },
-                          "required": [
-                            "name",
-                            "price",
-                            "productId",
-                            "images"
-                          ]
+                          "required": ["name", "price", "productId", "images"]
                         },
                         "quantity": {
                           "type": "integer"
@@ -2062,9 +1897,7 @@
                         "type": "integer"
                       }
                     },
-                    "required": [
-                      "orderId"
-                    ]
+                    "required": ["orderId"]
                   }
                 },
                 "required": [
@@ -2183,12 +2016,7 @@
                               }
                             }
                           },
-                          "required": [
-                            "name",
-                            "price",
-                            "productId",
-                            "images"
-                          ]
+                          "required": ["name", "price", "productId", "images"]
                         },
                         "quantity": {
                           "type": "integer"
@@ -2197,10 +2025,7 @@
                     }
                   }
                 },
-                "required": [
-                  "state",
-                  "items"
-                ]
+                "required": ["state", "items"]
               },
               "examples": {
                 "1": {
@@ -2522,10 +2347,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "username",
-                  "password"
-                ]
+                "required": ["username", "password"]
               },
               "examples": {
                 "1": {
@@ -2577,9 +2399,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "email"
-                ]
+                "required": ["email"]
               },
               "examples": {
                 "1": {
@@ -2633,10 +2453,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "resetCode",
-                  "newPassword"
-                ]
+                "required": ["resetCode", "newPassword"]
               },
               "examples": {
                 "1": {
@@ -2691,10 +2508,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "newPassword",
-                  "password"
-                ]
+                "required": ["newPassword", "password"]
               },
               "examples": {
                 "1": {
@@ -3193,9 +3007,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "secretKey"
-                ]
+                "required": ["secretKey"]
               },
               "examples": {
                 "1": {
@@ -3229,7 +3041,7 @@
         ]
       }
     },
-    "/v1/account/acct_iNXIGeot1lqyhGI5eP7KL0LcWTCTgFLytfRa/webhooks": {
+    "/v1/account/{accountId}/webhooks": {
       "post": {
         "summary": "create",
         "deprecated": false,
@@ -3248,27 +3060,21 @@
                   "events": {
                     "type": "array",
                     "items": {
-                      "type": "string"
+                      "type": "string",
+                      "enum": ["disbursement.completed", "intent.complete"]
                     }
                   },
                   "description": {
                     "type": "string"
                   }
                 },
-                "required": [
-                  "url",
-                  "events",
-                  "description"
-                ]
+                "required": ["url", "events", "description"]
               },
               "examples": {
                 "1": {
                   "value": {
                     "url": "http://localhost:3381/test",
-                    "events": [
-                      "disbursement.completed",
-                      "intent.complete"
-                    ],
+                    "events": ["disbursement.completed", "intent.complete"],
                     "description": ""
                   },
                   "description": ""
@@ -3303,47 +3109,7 @@
         "description": "",
         "tags": [],
         "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "url": {
-                    "type": "string"
-                  },
-                  "events": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "description": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "url",
-                  "events",
-                  "description"
-                ]
-              },
-              "examples": {
-                "1": {
-                  "value": {
-                    "url": "http://localhost:3381/test",
-                    "events": [
-                      "disbursement.completed",
-                      "payment.received"
-                    ],
-                    "description": ""
-                  },
-                  "description": ""
-                }
-              }
-            }
-          }
-        },
+
         "responses": {
           "200": {
             "description": "",
@@ -3461,10 +3227,7 @@
                     ]
                   }
                 },
-                "required": [
-                  "eventType",
-                  "metadata"
-                ]
+                "required": ["eventType", "metadata"]
               },
               "examples": {
                 "1": {
@@ -3518,7 +3281,7 @@
         ]
       }
     },
-    "/v1/account/acct_iNXIGeot1lqyhGI5eP7KL0LcWTCTgFLytfRa/webhooks/whk_T4FitYJe0dJYEqMVtizuAYnFnL8Z1ZL36tdQ": {
+    "/v1/account/{accountId}/webhooks/{id}": {
       "get": {
         "summary": "show",
         "deprecated": false,
@@ -3544,20 +3307,13 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "url",
-                  "events",
-                  "description"
-                ]
+                "required": ["url", "events", "description"]
               },
               "examples": {
                 "1": {
                   "value": {
                     "url": "http://localhost:3381/test",
-                    "events": [
-                      "disbursement.completed",
-                      "payment.received"
-                    ],
+                    "events": ["disbursement.completed", "payment.received"],
                     "description": ""
                   },
                   "description": ""
@@ -3610,11 +3366,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name",
-                  "countryId",
-                  "organizationId"
-                ]
+                "required": ["name", "countryId", "organizationId"]
               },
               "examples": {
                 "1": {
@@ -3698,10 +3450,7 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "name",
-                  "country_id"
-                ]
+                "required": ["name", "country_id"]
               },
               "examples": {
                 "1": {
@@ -3823,9 +3572,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "url"
-                ]
+                "required": ["url"]
               },
               "examples": {
                 "1": {
@@ -3876,9 +3623,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               },
               "examples": {
                 "1": {
@@ -3929,9 +3674,7 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "rate"
-                ]
+                "required": ["rate"]
               },
               "examples": {
                 "1": {
@@ -3982,9 +3725,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "email"
-                ]
+                "required": ["email"]
               },
               "examples": {
                 "1": {
@@ -4035,9 +3776,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "email"
-                ]
+                "required": ["email"]
               },
               "examples": {
                 "1": {
@@ -4150,11 +3889,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name",
-                  "countryId",
-                  "description"
-                ]
+                "required": ["name", "countryId", "description"]
               },
               "examples": {
                 "1": {
@@ -4233,9 +3968,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               },
               "examples": {
                 "1": {
@@ -4287,12 +4020,15 @@
                   },
                   "currency": {
                     "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object"
+                  },
+                  "description": {
+                    "type": "string"
                   }
                 },
-                "required": [
-                  "amount",
-                  "currency"
-                ]
+                "required": ["amount", "currency"]
               },
               "examples": {
                 "1": {
@@ -4313,7 +4049,36 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {}
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "ID of the payment intent"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "Amount of the payment intent"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "description": "Currency of the payment intent"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Label of the payment intent"
+                    },
+                    "clientSecret": {
+                      "type": "string",
+                      "description": "Secret of the payment intent, used to confirm the payment intent"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Created at of the payment intent"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Updated at of the payment intent"
+                    }
+                  }
                 }
               }
             },
@@ -4396,10 +4161,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "amount",
-                  "currency"
-                ]
+                "required": ["amount", "currency"]
               },
               "examples": {
                 "1": {
@@ -4430,7 +4192,7 @@
         "security": []
       }
     },
-    "/v1/payment-intents/pi_VFFuWIc5EIQ6Tu0AvOGcL4Lc7gdSVjNtF280/confirm": {
+    "/v1/payment-intents/{id}/confirm": {
       "post": {
         "summary": "confirm intent",
         "deprecated": false,
@@ -4474,17 +4236,10 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "country",
-                          "msisdn",
-                          "operator_name"
-                        ]
+                        "required": ["country", "msisdn", "operator_name"]
                       }
                     },
-                    "required": [
-                      "type",
-                      "momo"
-                    ]
+                    "required": ["type", "momo"]
                   }
                 },
                 "required": [
@@ -4524,96 +4279,66 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+
                   "properties": {
-                    "charge": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string"
-                        },
-                        "event_id": {
-                          "type": "integer"
-                        },
-                        "charge_id": {
-                          "type": "string"
-                        },
-                        "financial_transaction_id": {
-                          "type": "string"
-                        },
-                        "transaction_id": {
-                          "type": "string"
-                        },
-                        "amount": {
-                          "type": "integer"
-                        },
-                        "currency": {
-                          "type": "string"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "captured": {
-                          "type": "boolean"
-                        },
-                        "external_id": {
-                          "type": "string"
-                        },
-                        "created_at": {
-                          "type": "string"
-                        },
-                        "updated_at": {
-                          "type": "string"
-                        },
-                        "id": {
-                          "type": "integer"
-                        },
-                        "payment_method_id": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "type",
-                        "event_id",
-                        "charge_id",
-                        "financial_transaction_id",
-                        "transaction_id",
-                        "amount",
-                        "currency",
-                        "status",
-                        "captured",
-                        "external_id",
-                        "created_at",
-                        "updated_at",
-                        "id",
-                        "payment_method_id"
-                      ]
+                    "intentId": {
+                      "type": "string"
+                    },
+                    "financialTransactionId": {
+                      "type": "string"
+                    },
+                    "transactionId": {
+                      "type": "string"
+                    },
+                    "amount": {
+                      "type": "integer"
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["succeeded", "pending", "failed"]
+                    },
+                    "captured": {
+                      "type": "boolean"
+                    },
+                    "externalId": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "paymentMethodId": {
+                      "type": "string"
                     }
-                  },
-                  "required": [
-                    "charge"
-                  ]
+                  }
                 },
                 "examples": {
                   "1": {
                     "summary": "confirm intent",
                     "description": "",
                     "value": {
-                      "charge": {
-                        "type": "charge.success",
-                        "event_id": 3,
-                        "charge_id": "ch_Rycp8j35N6mGxy8OncuFrikMrZzQ1KhzTSZr",
-                        "financial_transaction_id": "296720678",
-                        "transaction_id": "9b4a8bf2-6fae-42d8-89f2-03eb8516a1b5",
-                        "amount": 200,
-                        "currency": "eur",
-                        "status": "succeeded",
-                        "captured": true,
-                        "external_id": "ch_Rycp8j35N6mGxy8OncuFrikMrZzQ1KhzTSZr",
-                        "created_at": "2022-08-11T19:56:20.152+00:00",
-                        "updated_at": "2022-08-11T19:56:20.191+00:00",
-                        "id": 2,
-                        "payment_method_id": 1
-                      }
+                      "intentId": "pi_4U4MgmjwnadbF1RsXt8Pym7sGudQbmdZCWS2",
+                      "financialTransactionId": "w4KTsmkN30hElmvgMnIhOLNFSiMbV6TQqrCS",
+                      "transactionId": "ext_soJlTzFMTjIzSM0FR8vyicCqi",
+                      "amount": 1000,
+                      "currency": "xaf",
+                      "status": "succeeded",
+                      "captured": true,
+                      "externalId": "ext_soJlTzFMTjIzSM0FR8vyicCqi",
+                      "id": "ch_4IEREk2TyGvPoiof6sQsQ3dURQezCjFHwxhV",
+                      "createdAt": "2025-04-11T16:40:38.332+02:00",
+                      "updatedAt": "2025-04-11T16:40:38.467+02:00",
+                      "paymentMethodId": "pm_QSh9BMlrbtdvIyf6shpOjjyRPcB5IsRQhNs7"
                     }
                   }
                 }
@@ -4645,10 +4370,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "amount",
-                  "phone"
-                ]
+                "required": ["amount", "phone"]
               },
               "examples": {
                 "1": {
@@ -4734,9 +4456,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "charge"
-                  ]
+                  "required": ["charge"]
                 },
                 "examples": {
                   "1": {
@@ -4770,7 +4490,7 @@
         "security": []
       }
     },
-    "/v1/payment-intents/pi_kxYu7ovdShkxcow4HBVgfB16KunIZMKxCfvM": {
+    "/v1/payment-intents/{id}": {
       "get": {
         "summary": "get intent",
         "deprecated": false,
@@ -5774,12 +5494,7 @@
                           "type": "integer"
                         }
                       },
-                      "required": [
-                        "name",
-                        "price",
-                        "reference",
-                        "quantity"
-                      ]
+                      "required": ["name", "price", "reference", "quantity"]
                     }
                   },
                   "collectAddress": {
@@ -5813,10 +5528,7 @@
                         "type": "integer"
                       }
                     },
-                    "required": [
-                      "min",
-                      "max"
-                    ]
+                    "required": ["min", "max"]
                   },
                   "callToAction": {
                     "type": "integer"
@@ -6174,11 +5886,7 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "sorting",
-                  "perPage",
-                  "page"
-                ]
+                "required": ["sorting", "perPage", "page"]
               },
               "examples": {
                 "1": {
@@ -6270,11 +5978,7 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "sorting",
-                  "perPage",
-                  "page"
-                ]
+                "required": ["sorting", "perPage", "page"]
               },
               "examples": {
                 "1": {
@@ -6355,17 +6059,10 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "country",
-                          "msisdn",
-                          "operator_name"
-                        ]
+                        "required": ["country", "msisdn", "operator_name"]
                       }
                     },
-                    "required": [
-                      "type",
-                      "momo"
-                    ]
+                    "required": ["type", "momo"]
                   }
                 },
                 "required": [
@@ -6436,9 +6133,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               },
               "examples": {
                 "1": {
@@ -6507,9 +6202,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "name"
-                ]
+                "required": ["name"]
               },
               "examples": {
                 "1": {
@@ -6575,14 +6268,7 @@
   "components": {
     "schemas": {
       "Pet": {
-        "required": [
-          "name",
-          "photoUrls",
-          "id",
-          "category",
-          "tags",
-          "status"
-        ],
+        "required": ["name", "photoUrls", "id", "category", "tags", "status"],
         "type": "object",
         "properties": {
           "id": {
@@ -6598,9 +6284,7 @@
           "name": {
             "type": "string",
             "description": "name",
-            "examples": [
-              "doggie"
-            ]
+            "examples": ["doggie"]
           },
           "photoUrls": {
             "type": "array",
@@ -6619,11 +6303,7 @@
           "status": {
             "type": "string",
             "description": "Pet Sales Status",
-            "enum": [
-              "available",
-              "pending",
-              "sold"
-            ]
+            "enum": ["available", "pending", "sold"]
           }
         }
       },
@@ -6667,8 +6347,12 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3333",
-      "description": "Yabetoo Payments Technologies"
+      "url": "https://pay.sandbox.yabetoopay.com",
+      "description": "Sandbox url for payments"
+    },
+    {
+      "url": "https://pay.api.yabetoopay.com",
+      "description": "Production url for payments"
     }
   ],
   "security": []

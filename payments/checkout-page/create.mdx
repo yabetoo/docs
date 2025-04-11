@@ -1,0 +1,78 @@
+---
+title: "Create a Yabetoo-hosted checkout page"
+---
+
+## Installer la bibliothèque
+
+Installez la bibliothèque avec composer et initialisez-la avec votre clé API secrète. Si vous partez de zéro et que vous avez besoin d'un fichier composer.json, vous pouvez également télécharger les fichiers à l'aide du lien de téléchargement dans l'éditeur de code.
+
+```bash
+composer require yabetoo/yabetoo-sdk
+```
+
+## Créer une session Checkout
+
+Ajoutez sur votre serveur un endpoint qui crée une session Checkout. Une session Checkout contrôle les informations que votre client peut consulter sur la page de paiement, par exemple les postes de facture, le montant et la devise de la commande, ainsi que les moyens de paiement acceptés. Par défaut, nous activons les cartes bancaires et d'autres moyens de paiement que vous utilisez fréquemment, mais vous pouvez activer et désactiver des moyens de paiement directement depuis le Dashboard Stripe.
+
+```javascript
+
+```
+
+## Définir un produit à vendre
+
+Conservez toujours les informations sensibles concernant votre inventaire de produits (tarif, disponibilité, etc.) sur votre serveur afin qu'aucun client ne puisse les modifier. Définissez les informations de vos produits lorsque vous créez la session Checkout à l’aide d’ID de tarifs prédéfinis, ou à la volée avec le paramètre price_data.
+
+```javascript
+items: [
+  {
+    productId: "prt_XoPjNH2l5Q1g19mIZPxqYWEXwRJzOmlNXhcb",
+    quantity: 1,
+    price: 200000,
+    productName: "Écran LG",
+  },
+];
+```
+
+## Définir les métadonnées (optionnel)
+
+Vous pouvez ajouter des métadonnées à votre session Checkout pour stocker des informations supplémentaires, comme l'ID de la commande, l'ID du client, etc.
+
+```javascript
+metadata: {
+  orderId: "1234",
+  customerId: "5678",
+},
+```
+
+## Fournir les URL de réussite et d’annulation
+
+Fournissez des URLs de succès et d’annulation pour rediriger votre client vers la page de votre site web après le paiement. Ces URLs sont utilisées pour indiquer au client le statut de la transaction, ainsi que pour effectuer des actions supplémentaires sur votre serveur, comme la mise à jour de l'état de la commande.
+
+## Rediriger vers Checkout
+
+Une fois la session Checkout créée, redirigez votre client vers l'URL de la page de paiement hébergée. Cette URL est disponible dans la réponse de la session Checkout.
+
+<RequestExample>
+
+```php Créer une session Checkout
+use Yabetoo\Yabetoo;
+$yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+$response = $yabetoo->sessions->create([
+    "total" => 200000,
+    "currency" => "xaf",
+    "accountId" => "acct_xxxxxxxx", // ID du compte de l'utilisateur
+    "successUrl" => "https://votre-site.com/checkout-success", // URL en cas de succès
+    "cancelUrl" => "https://votre-site.com/checkout-cancel",   // URL en cas d'annulation
+    "metadata" => ["orderID" => "1234"], // Métadonnées associées à la session
+    "items" => [
+        [
+            "productId" => "prod_12345",
+            "quantity" => 1,
+            "price" => 200000,
+            "productName" => "Écran HD"
+        ]
+    ]
+]);
+```
+
+</RequestExample>

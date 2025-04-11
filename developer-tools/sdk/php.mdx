@@ -1,6 +1,7 @@
 ---
-title: Php SDK
+title: PHP
 description: Bibliothèque pour interagir avec votre intégration Yabetoo en PHP.
+icon: "php"
 ---
 
 Ce SDK vous permet d’intégrer facilement le système de paiement sécurisé de Yabetoo dans vos applications PHP. Que vous souhaitiez accepter des paiements en ligne, gérer des sessions de paiement ou consulter les transactions effectuées, ce SDK vous fournit une interface simple et intuitive pour interagir avec l’API de Yabetoo.
@@ -10,17 +11,20 @@ Yabetoo simplifie l’intégration des paiements en ligne pour les développeurs
 ## Installation
 
 ### Prérequis
+
 - PHP 7.2 ou supérieur
 - Composer
 - Accès à l’API Yabetoo (clés API)
 - Un compte Yabetoo actif
 
 ### Installation via Composer
-Pour installer le SDK, utilisez Composer. Exécutez la commande suivante dans votre projet 
+
+Pour installer le SDK, utilisez Composer. Exécutez la commande suivante dans votre projet
 
 ```bash
 composer require yabetoo/yabetoo-sdk
 ```
+
 Si vous rencontrez une erreur liée à la stabilité des versions, vous pouvez ajouter cette option dans votre fichier composer.json
 
 ```json
@@ -29,8 +33,11 @@ Si vous rencontrez une erreur liée à la stabilité des versions, vous pouvez a
 ```
 
 ## Configuration
+
 ### Initialisation du SDK
+
 Avant d’utiliser le SDK, vous devez initialiser une instance de la classe Yabetoo. Fournissez simplement votre clé API lors de l’initialisation. Le SDK détecte automatiquement si vous êtes en mode test ou en production.
+
 ```php
 require 'vendor/autoload.php';
 
@@ -55,7 +62,6 @@ Cette approche offre une flexibilité accrue, permettant par exemple de vérifie
 
 Une intention de paiement est une ressource qui représente votre souhait de recevoir un paiement pour un montant spécifique. Lorsque vous créez une intention de paiement, vous ne capturez pas immédiatement le montant ; c’est une étape préparatoire.
 
-
 ```php
 use Yabetoo\Yabetoo;
 
@@ -71,6 +77,7 @@ $payment = $yabetoo->payments->create([
 
 print_r($payment);
 ```
+
 Ce code crée une intention de paiement pour un montant de 5000 XAF. La réponse de l’API contient un identifiant unique (id) de l’intention de paiement que vous utiliserez lors de la confirmation.
 
 ### Confirmer une intention de paiement
@@ -97,6 +104,7 @@ $paymentConfirmation = $yabetoo->payments->confirm($payment['id'], [
 
 print_r($paymentConfirmation);
 ```
+
 En appelant cette méthode, le montant associé à l’intention de paiement sera capturé, et le paiement sera considéré comme réussi si tout se passe bien.
 
 Avec ce modèle en deux étapes, les développeurs peuvent avoir une meilleure maîtrise du processus de paiement tout en offrant une expérience utilisateur fluide. Vous pouvez adapter ces deux étapes à vos besoins spécifiques (par exemple, pré-autorisation ou paiement différé).
@@ -104,10 +112,12 @@ Avec ce modèle en deux étapes, les développeurs peuvent avoir une meilleure m
 ### Gestion des erreurs lors de la confirmation
 
 <Note>
- Il est important de gérer les erreurs, car la confirmation d’une intention de paiement peut échouer pour diverses raisons (insuffisance de fonds, informations de paiement incorrectes, etc.).
+  Il est important de gérer les erreurs, car la confirmation d’une intention de
+  paiement peut échouer pour diverses raisons (insuffisance de fonds,
+  informations de paiement incorrectes, etc.).
 </Note>
 
-Voici un exemple d’utilisation de la gestion des erreurs lors de la confirmation 
+Voici un exemple d’utilisation de la gestion des erreurs lors de la confirmation
 
 ```php
 try {
@@ -117,9 +127,11 @@ try {
     echo 'Erreur lors de la confirmation du paiement : ' . $e->getMessage();
 }
 ```
+
 Dans cet exemple, si la confirmation échoue, un message d’erreur sera affiché au lieu de faire planter l’application. Vous pouvez également enregistrer ces erreurs pour une analyse ultérieure ou afficher un message convivial à l’utilisateur.
 
 ### Récupérer les détails d’un paiement
+
 Pour récupérer les informations sur un paiement existant, utilisez l’ID du paiement comme paramètre
 
 ```php
@@ -127,6 +139,7 @@ use Yabetoo\Yabetoo;
 $paymentDetails = $yabetoo->payments->retrieve('pi_XXXXXXXXXXXX');
 print_r($paymentDetails);
 ```
+
 Ce code vous permet d’obtenir des informations détaillées sur un paiement spécifique, y compris son statut, son montant et d’autres métadonnées associées.
 
 ### Récupérer la liste de tous vos paiements
@@ -141,6 +154,7 @@ $payments = $yabetoo->payments->all([
 ]);
 print_r($payments);
 ```
+
 Ce code récupère les 10 derniers paiements réussis. Vous pouvez ajuster les paramètres selon vos besoins.
 
 ## Utilisation d’une session de paiement avec Yabetoo
@@ -170,7 +184,7 @@ Pour créer une session de paiement, utilisez la méthode `create` de la classe 
 use Yabetoo\Session;
 
 $response = $yabetoo->sessions->create([
-    "total" => 200000, 
+    "total" => 200000,
     "currency" => "xaf",
     "accountId" => "acct_xxxxxxxx", // ID du compte de l'utilisateur
     "successUrl" => "https://votre-site.com/checkout-success", // URL en cas de succès
@@ -188,17 +202,24 @@ $response = $yabetoo->sessions->create([
 
 print_r($response);
 ```
+
 ### Fonctionnement de la session de paiement
 
 <Steps>
   <Step title="Création de la session">
-    Lorsque vous créez une session, vous envoyez les informations sur les articles, le montant total, la devise, et les URLs de redirection (pour succès ou annulation).
+    Lorsque vous créez une session, vous envoyez les informations sur les
+    articles, le montant total, la devise, et les URLs de redirection (pour
+    succès ou annulation).
   </Step>
   <Step title="Page de paiement hébergée">
-    Yabetoo vous renvoie une URL unique que vous pouvez utiliser pour rediriger vos utilisateurs vers la page de paiement hébergée.
+    Yabetoo vous renvoie une URL unique que vous pouvez utiliser pour rediriger
+    vos utilisateurs vers la page de paiement hébergée.
   </Step>
   <Step title="Confirmation du paiement">
-    Une fois le paiement effectué avec succès, l’utilisateur est redirigé vers l’URL que vous avez définie dans successUrl, avec les détails de la transaction. Si l’utilisateur annule, il sera redirigé vers l’URL définie dans cancelUrl.
+    Une fois le paiement effectué avec succès, l’utilisateur est redirigé vers
+    l’URL que vous avez définie dans successUrl, avec les détails de la
+    transaction. Si l’utilisateur annule, il sera redirigé vers l’URL définie
+    dans cancelUrl.
   </Step>
 </Steps>
 
@@ -213,10 +234,10 @@ Lorsque l’utilisateur est redirigé vers votre `successUrl`, l’ID du paiemen
 ```
 https://votre-site.com/checkout-success?payment_id=pi_XXXXXXXXXXXX
 ```
+
 #### Récupérer les détails du paiement à partir de l’ID
 
 Après avoir récupéré l’ID de paiement, vous devez interroger l’API de Yabetoo pour obtenir les détails complets du paiement. Cela vous permettra de vérifier le statut du paiement et d’obtenir des informations précises sur la transaction.
-
 
 ```php
 // Récupérer l'ID du paiement depuis l'URL
@@ -257,14 +278,16 @@ if (isset($_GET['paymentId'])) {
     }
 }
 ```
+
 <Note>
-  Il est important de toujours effectuer cette double vérification pour garantir la sécurité et l’intégrité de votre processus de paiement.
+  Il est important de toujours effectuer cette double vérification pour garantir
+  la sécurité et l’intégrité de votre processus de paiement.
 </Note>
 
 ### Pourquoi effectuer une double vérification ?
 
 1. **Sécurité** : Cela garantit que le paiement a été réellement effectué et que vous ne traitez pas de fausses transactions.
-2. **Confiance** :  En ayant une vérification formelle du statut du paiement via l’API, vous conservez une trace fiable des transactions réussies et échouées.
+2. **Confiance** : En ayant une vérification formelle du statut du paiement via l’API, vous conservez une trace fiable des transactions réussies et échouées.
 3. **Prévention des fraudes** : En vérifiant le statut du paiement, vous réduisez le risque de fraudes potentielles.
 
 L’étape de redirection après le paiement est cruciale pour la finalisation d’une transaction. En récupérant l’ID de paiement fourni dans l’URL et en effectuant une double vérification avec l’API de Yabetoo, vous renforcez la sécurité de votre processus de commande et vous assurez que seuls les paiements confirmés sont traités.
@@ -283,7 +306,10 @@ $yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX', [
 ```
 
 ## Conclusion
+
 Le SDK PHP de Yabetoo vous permet d’intégrer facilement le système de paiement sécurisé de Yabetoo dans vos applications. Grâce à sa simplicité d’utilisation et à ses fonctionnalités avancées, vous pouvez gérer les paiements en ligne de manière efficace et sécurisée.
 Que vous soyez un développeur débutant ou expérimenté, ce SDK vous offre tous les outils nécessaires pour créer une expérience de paiement fluide et sécurisée pour vos utilisateurs.
+
 ## Ressources supplémentaires
-- [Documentation de l’API Yabetoo](https://docs.yabetoo.com) 
+
+- [Documentation de l’API Yabetoo](https://docs.yabetoo.com)
