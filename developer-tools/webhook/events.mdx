@@ -1,0 +1,28 @@
+---
+title: "Supported events"
+description: "List of events that can be triggered by the API"
+---
+
+## Event Types
+
+Yabetoo currently supports the following webhook event types. Each event corresponds to a specific action that occurs on your account and can be used to trigger logic in your backend (e.g. updating order statuses, sending notifications, etc.).
+
+### `intent.completed`
+
+Triggered when a payment has been successfully received on your account.
+
+- **Use Case:** Confirm that a customer has completed their payment.
+- **Typical Actions:**
+  - Mark an order as paid
+  - Send a confirmation email or SMS
+  - Update the payment status in your database
+
+### `disbursement.completed`
+
+Triggered when a disbursement (cash-out) has been successfully processed from your account to a recipient.
+
+- **Use Case:** Track outbound payments or automate accounting tasks.
+- **Typical Actions:**
+  - Notify the recipient
+  - Log the transaction in your financial system
+  - Update payout status in your admin dashboard

@@ -1,0 +1,23 @@
+---
+title: "Overview"
+description: "Disbursements are payments from your account to a customer's account"
+---
+
+Disbursements are payments from your account to a customer's account. This is a one-time payment that is used to transfer funds from your account to a customer's account.
+
+<Note>
+  Please note that the disbursement API is available exclusively to partner
+  accounts. To obtain access to this functionality, please send us a request.
+</Note>
+
+## Disbursement: Asynchronous processing
+
+A disbursement is processed asynchronously, meaning that the API will return a response immediately, but the actual payment may take some time to complete generally D+1 after the request has been created. This is due to the need to verify the customer's account and process the payment.
+
+## Notification via Webhook
+
+A webhook is a callback URL that is called when a disbursement is created or updated. This allows you to receive notifications about the status of the disbursement and take appropriate action.
+
+To be informed in real time of a disbursement's execution, you need to create a webhook of type `disbursement.complete`.
+
+This webhook is triggered automatically as soon as the disbursement is actually executed.

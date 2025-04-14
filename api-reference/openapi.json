@@ -5501,7 +5501,7 @@
         ]
       }
     },
-    "/v1/links/{id}": {
+    "/v1/links/{id1}": {
       "put": {
         "summary": "edit",
         "deprecated": false,
@@ -6348,15 +6348,6 @@
       }
     }
   },
-  "servers": [
-    {
-      "url": "https://pay.sandbox.yabetoopay.com",
-      "description": "Sandbox url for payments"
-    },
-    {
-      "url": "https://pay.api.yabetoopay.com",
-      "description": "Production url for payments"
-    }
-  ],
+
   "security": []
 }

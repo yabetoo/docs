@@ -1,0 +1,90 @@
+---
+title: "Test your integration"
+description: "Simulate payments to test your integration"
+---
+
+To streamline and simplify the testing process, Yabetoo provides a set of predefined test users and test accounts. These users and accounts are pre-configured with realistic data and are associated with predefined test scenarios that simulate various use cases. This allows developers to quickly test key functionalities of the platform—such as creating payment sessions, confirming payment intents, or handling callbacks—without needing to manually configure data each time.
+
+Each test user is linked to a specific account and has preset attributes (e.g., balance, account status, transaction history) designed to cover a wide range of typical business flows. By using these predefined entities, you can ensure consistency in your test cases and accelerate the integration process.
+
+## How to use numbers
+
+All tests are conducted within the sandbox environment, which is specifically designed to simulate real-world payment flows without processing actual transactions. This environment allows you to safely integrate and validate your implementation of the Yabetoo API without any financial impact.
+
+To interact with the sandbox environment, you must use test API keys. These keys are distinct from your live API keys and are intended solely for development and testing purposes. When a test API key is provided during SDK or API initialization, all requests are automatically routed to the sandbox endpoint, ensuring complete isolation from the live production system.
+
+Test API keys behave similarly to live keys, allowing you to perform all core operations such as creating payment sessions, generating payment intents, confirming transactions, and receiving webhooks—within the boundaries of the sandbox.
+
+<Warning>
+  **Important:** Never use test API keys in your production application, and
+  vice versa. Test keys are prefixed with `sk_test_` for secret keys and
+  `pk_test_` for public keys.
+</Warning>
+
+## Test numbers
+
+The following test numbers are provided for the sandbox environment. Each number simulates a mobile money user with a predefined transaction outcome.
+
+<Note>
+  These numbers are only valid in the sandbox environment and cannot be used for
+  real transactions.
+</Note>
+
+### Successful Transactions
+
+These numbers simulate a successful payment flow where the transaction is completed and confirmed.
+
+| Number         | Operator     | Country           | Status      | Reason          |
+| -------------- | ------------ | ----------------- | ----------- | --------------- |
+| `242066000001` | Airtel Money | Congo-Brazzaville | `succeeded` | `NO_REASON`     |
+| `Any other`    | MTN MoMo     | Congo-Brazzaville | `succeeded` | `NO_REASON`     |
+| `46733123454`  | MTN MoMo     | Congo-Brazzaville | `succeeded` | `PAYER_DELAYED` |
+
+---
+
+### Failed Transactions
+
+These numbers simulate different types of transaction failures. Use them to verify how your system responds to specific failure reasons.
+
+| Number         | Operator     | Country           | Status   | Reason                         |
+| -------------- | ------------ | ----------------- | -------- | ------------------------------ |
+| `242050017890` | Airtel Money | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`    |
+| `46733123450`  | MTN MoMo     | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`    |
+| `46733123451`  | MTN MoMo     | Congo-Brazzaville | `failed` | `APPROVAL_REJECTED`            |
+| `46733123455`  | MTN MoMo     | Congo-Brazzaville | `failed` | `PAYER_NOT_FOUND`              |
+| `46733123456`  | MTN MoMo     | Congo-Brazzaville | `failed` | `PAYEE_NOT_ALLOWED_TO_RECEIVE` |
+| `46733123457`  | MTN MoMo     | Congo-Brazzaville | `failed` | `NOT_ALLOWED`                  |
+
+---
+
+### Expired / Timeout Scenarios
+
+These numbers simulate delayed or unresponsive transactions. They are ideal for testing time-based logic like retries or expired payment sessions.
+
+| Number        | Operator | Country           | Status    | Reason    |
+| ------------- | -------- | ----------------- | --------- | --------- |
+| `46733123452` | MTN MoMo | Congo-Brazzaville | `failed`  | `EXPIRED` |
+| `46733123453` | MTN MoMo | Congo-Brazzaville | `expired` | `TIMEOUT` |
+
+## Explanation of Reason Values
+
+The `reason` field provides additional context about the transaction outcome. Here's a breakdown of the possible values
+
+Each test number is associated with a predefined status (succeeded, failed, or expired) and a corresponding reason. This helps simulate various real-world failure scenarios when testing payment flows in the sandbox environment.
+
+<Tip>
+  These reasons are especially useful when testing your application's error
+  handling, retry logic, and user feedback.
+</Tip>
+
+| Reason                         | Description                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------------- |
+| `NO_REASON`                    | The transaction was successful. No error or exceptional condition occurred.   |
+| `INTERNAL_PROCESSING_ERROR`    | A generic error occurred within the payment processing system.                |
+| `APPROVAL_REJECTED`            | The transaction was manually rejected by the payer or the system.             |
+| `EXPIRED`                      | The payment request expired before the user took action.                      |
+| `TIMEOUT`                      | The payment session remained inactive for too long and timed out.             |
+| `PAYER_DELAYED`                | The payer took too long to confirm, but the transaction eventually succeeded. |
+| `PAYER_NOT_FOUND`              | The payer's number does not exist or is not registered with the operator.     |
+| `PAYEE_NOT_ALLOWED_TO_RECEIVE` | The recipient account is not authorized to receive funds.                     |
+| `NOT_ALLOWED`                  | The transaction is not permitted due to configuration or policy restrictions. |

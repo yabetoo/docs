@@ -7,7 +7,7 @@
     "light": "#FF5224",
     "dark": "#001C6B"
   },
-  "favicon": "/logo/favicon.ico",
+  "favicon": "/fav.svg",
   "navigation": {
     "tabs": [
       {
@@ -46,11 +46,19 @@
             ]
           },
           {
-            "group": "Accept payments with API",
+            "group": "Build an advanced payments integration",
             "pages": [
               "payments/api/overview",
               "payments/api/create",
               "payments/api/confirm"
+            ]
+          },
+          {
+            "group": "Disbursements",
+            "pages": [
+              "payments/disbursement/overview",
+              "payments/disbursement/create",
+              "payments/disbursement/get"
             ]
           },
           {
@@ -60,6 +68,31 @@
               "payments/payment-link/create",
               "payments/payment-link/share"
             ]
+          }
+        ]
+      },
+
+      {
+        "tab": "Developer tools",
+        "groups": [
+          {
+            "group": "Testing",
+            "pages": ["developer-tools/test/overview"]
+          },
+          {
+            "group": "Webhook",
+            "pages": [
+              "developer-tools/webhook/overview",
+              "developer-tools/webhook/events"
+            ]
+          },
+          {
+            "group": "Libraries",
+            "pages": ["developer-tools/sdk/php", "developer-tools/sdk/java"]
+          },
+          {
+            "group": "Plugins",
+            "pages": ["developer-tools/plugins/wordpress"]
           }
         ]
       },
@@ -99,19 +132,6 @@
               "api-reference/webhook/get",
               "api-reference/webhook/all"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "Developer tools",
-        "groups": [
-          {
-            "group": "Libraries",
-            "pages": ["developer-tools/sdk/php", "developer-tools/sdk/java"]
-          },
-          {
-            "group": "Plugins",
-            "pages": ["developer-tools/plugins/wordpress"]
           }
         ]
       }
