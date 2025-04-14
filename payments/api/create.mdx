@@ -1,0 +1,110 @@
+---
+title: "Create a Payment Intent"
+description: "Create a payment intent to process a payment"
+---
+
+## What is a Payment Intent?
+
+A payment intent is a resource that represents your wish to receive payment for a specific amount. When you create a payment intent, you don't immediately capture the amount; it's a preparatory step.
+
+A payment intent tracks a customer's payment process. It records details such as amount, currency and payment method.
+
+## Prepare your request
+
+The endpoint to use is `POST https://pay.sandbox.yabetoopay.com/v1/payment-intents` for sandbox environment and `POST https://pay.api.yabetoopay.com/v1/payment-intents` for production environment.
+
+<Note>
+  Secret key security: The secret key (secret_key) must be kept confidential and
+  must never be exposed in the frontend or client code. It must only be used on
+  the server side.
+</Note>
+
+1. Use the secret key provided `secret_key` to authenticate yourself to the API. For security reasons, this key must only be used on the server side.
+2. The request body should contain the following parameters:
+
+```javascript
+{
+  amount: 2000,
+  currency: "xaf",
+  description: "Payment for product",
+  metadata: { orderId: "1234" },
+}
+```
+
+### Parameters
+
+- `amount`: The amount to be paid
+- `currency`: The currency of the payment
+- `description`: A description of the payment (optional)
+- `metadata`: Additional metadata (optional)
+
+## Create a Payment Intent
+
+You can create a payment intent by using the following code, this example is in JavaScript (Node.js) but you can use any language you want just by following the same logic.
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+    body: JSON.stringify({
+      amount: 2000,
+      currency: "xaf",
+    }),
+  }
+);
+
+const data = await response.json();
+```
+
+## Response
+
+### 200 OK
+
+The response body will contain the following parameters:
+
+- `amount`: The amount to be paid
+- `currency`: The currency of the payment
+- `label`: The label of the payment intent
+- `id`: The ID of the payment intent
+- `client_secret`: The client secret of the payment intent
+
+```javascript
+{
+    "amount": 2000,
+    "currency": "xaf",
+    "label": "payment_intent",
+    "id": "pi_XdLeavDjiiaEx2y5nRz0",
+    "client_secret": ""
+}
+```
+
+### 422 Bad Request
+
+If the request is invalid, the server will return a 422 status code with an error message.
+
+```javascript
+{
+    "errors": [
+        {
+            "rule": "required",
+            "field": "currency",
+            "message": "required validation failed"
+        }
+    ]
+}
+```
+
+### 401 Unauthorized
+
+If the secret key is invalid, the server will return a 401 status code with an error message.
+
+```javascript
+{
+    "error": "Unauthorized"
+}
+```

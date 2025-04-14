@@ -46,6 +46,14 @@
             ]
           },
           {
+            "group": "Accept payments with API",
+            "pages": [
+              "payments/api/overview",
+              "payments/api/create",
+              "payments/api/confirm"
+            ]
+          },
+          {
             "group": "Use Payment Links",
             "pages": [
               "payments/payment-link/intro",
@@ -79,7 +87,10 @@
           },
           {
             "group": "Disbursement",
-            "pages": ["api-reference/disbursement/create"]
+            "pages": [
+              "api-reference/disbursement/create",
+              "api-reference/disbursement/get"
+            ]
           },
           {
             "group": "Webhook",

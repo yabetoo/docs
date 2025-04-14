@@ -4350,146 +4350,7 @@
         "security": []
       }
     },
-    "/congo/airtel/transfer": {
-      "post": {
-        "summary": "congo airtel transfert",
-        "deprecated": false,
-        "description": "",
-        "tags": [],
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "amount": {
-                    "type": "integer"
-                  },
-                  "phone": {
-                    "type": "string"
-                  }
-                },
-                "required": ["amount", "phone"]
-              },
-              "examples": {
-                "1": {
-                  "value": {
-                    "amount": 19900,
-                    "phone": "242044454776"
-                  },
-                  "description": ""
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "charge": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string"
-                        },
-                        "event_id": {
-                          "type": "integer"
-                        },
-                        "charge_id": {
-                          "type": "string"
-                        },
-                        "financial_transaction_id": {
-                          "type": "string"
-                        },
-                        "transaction_id": {
-                          "type": "string"
-                        },
-                        "amount": {
-                          "type": "integer"
-                        },
-                        "currency": {
-                          "type": "string"
-                        },
-                        "status": {
-                          "type": "string"
-                        },
-                        "captured": {
-                          "type": "boolean"
-                        },
-                        "external_id": {
-                          "type": "string"
-                        },
-                        "created_at": {
-                          "type": "string"
-                        },
-                        "updated_at": {
-                          "type": "string"
-                        },
-                        "id": {
-                          "type": "integer"
-                        },
-                        "payment_method_id": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "type",
-                        "event_id",
-                        "charge_id",
-                        "financial_transaction_id",
-                        "transaction_id",
-                        "amount",
-                        "currency",
-                        "status",
-                        "captured",
-                        "external_id",
-                        "created_at",
-                        "updated_at",
-                        "id",
-                        "payment_method_id"
-                      ]
-                    }
-                  },
-                  "required": ["charge"]
-                },
-                "examples": {
-                  "1": {
-                    "summary": "confirm intent",
-                    "description": "",
-                    "value": {
-                      "charge": {
-                        "type": "charge.success",
-                        "event_id": 3,
-                        "charge_id": "ch_Rycp8j35N6mGxy8OncuFrikMrZzQ1KhzTSZr",
-                        "financial_transaction_id": "296720678",
-                        "transaction_id": "9b4a8bf2-6fae-42d8-89f2-03eb8516a1b5",
-                        "amount": 200,
-                        "currency": "eur",
-                        "status": "succeeded",
-                        "captured": true,
-                        "external_id": "ch_Rycp8j35N6mGxy8OncuFrikMrZzQ1KhzTSZr",
-                        "created_at": "2022-08-11T19:56:20.152+00:00",
-                        "updated_at": "2022-08-11T19:56:20.191+00:00",
-                        "id": 2,
-                        "payment_method_id": 1
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {}
-          }
-        },
-        "security": []
-      }
-    },
+
     "/v1/payment-intents/{id}": {
       "get": {
         "summary": "get intent",
@@ -5439,30 +5300,7 @@
         "security": []
       }
     },
-    "/api/v1/payment-intents/pi_CZ7QZQhgR9ZhxXnjMCba/payout": {
-      "post": {
-        "summary": "payout intent",
-        "deprecated": false,
-        "description": "",
-        "tags": [],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {}
-                }
-              }
-            },
-            "headers": {}
-          }
-        },
-        "security": []
-      }
-    },
+
     "/payment-links": {
       "post": {
         "summary": "create payment link",
@@ -5610,7 +5448,7 @@
         "security": []
       }
     },
-    "/v1/links/plink_zKRmjtZKvqPCDHmay4CEKobgzWTrgRQD0C7u": {
+    "/v1/links/{id}": {
       "get": {
         "summary": "get payment link by id",
         "deprecated": false,
@@ -5634,34 +5472,7 @@
         "security": []
       }
     },
-    "/v1/admin/links/plink_WcyvYkRgyqd0WsSyWj28LrPlnucXuMKQrB0X": {
-      "get": {
-        "summary": "[ADMIN] get payment link by id",
-        "deprecated": false,
-        "description": "",
-        "tags": [],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {}
-                }
-              }
-            },
-            "headers": {}
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
+
     "/v1/links": {
       "get": {
         "summary": "get account payment link",
@@ -5690,7 +5501,7 @@
         ]
       }
     },
-    "/v1/links/plink_C45ocHrSgvsV1WtVnM5gQNPVOVD2QpfaqLKC": {
+    "/v1/links/{id}": {
       "put": {
         "summary": "edit",
         "deprecated": false,
@@ -6102,7 +5913,199 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {}
+                  "properties": {
+                    "amount": {
+                      "type": "integer",
+                      "example": 1000
+                    },
+                    "currency": {
+                      "type": "string",
+                      "example": "xaf"
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "processing"
+                    },
+                    "firstName": {
+                      "type": "string",
+                      "example": "Jean"
+                    },
+                    "lastName": {
+                      "type": "string",
+                      "example": "Dupont"
+                    },
+                    "operatorName": {
+                      "type": "string",
+                      "example": "mtn"
+                    },
+                    "country": {
+                      "type": "string",
+                      "example": "cg"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "example": "242066594470"
+                    },
+                    "object": {
+                      "type": "string",
+                      "example": "disbursement"
+                    },
+                    "type": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "shouldExecutedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-18T09:24:57.555Z"
+                    },
+                    "id": {
+                      "type": "string",
+                      "example": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-17T10:24:57.559+01:00"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-17T10:24:57.559+01:00"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disbursement/{id}": {
+      "get": {
+        "summary": "Get a disbursement",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "wt_JwXuT14tMoczRLCsOt8LYBiEKd8EwBPnXnDV"
+                    },
+                    "object": {
+                      "type": "string",
+                      "example": "disbursement"
+                    },
+                    "walletId": {
+                      "type": "string",
+                      "example": "wa_pccbQrBBOVJMV8tGduoXjEhoQDnaD4p3hgDE"
+                    },
+                    "financialTransactionId": {
+                      "type": "string",
+                      "example": "2088156440"
+                    },
+                    "transactionId": {
+                      "type": "string",
+                      "example": "5bb18982-c19b-4689-807a-c65b8052f9c9"
+                    },
+                    "amount": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "currency": {
+                      "type": "string",
+                      "example": "xaf"
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "succeeded"
+                    },
+                    "failureCode": {
+                      "type": ["string", "null"],
+                      "example": null
+                    },
+                    "failureMessage": {
+                      "type": ["string", "null"],
+                      "example": null
+                    },
+                    "externalId": {
+                      "type": "string",
+                      "example": "ext_BeII42S4VYLF9W9KIMoW90GJk7xsxZEkAWdh"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-15T17:59:57.791+01:00"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-16T14:00:09.602+01:00"
+                    },
+                    "executedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-15T23:00:00.000Z"
+                    },
+                    "shouldExecutedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-15T23:00:00.000Z"
+                    },
+                    "otp": {
+                      "type": ["string", "null"],
+                      "example": null
+                    },
+                    "phone": {
+                      "type": "string",
+                      "example": "242066594470"
+                    },
+                    "country": {
+                      "type": "string",
+                      "example": "cg"
+                    },
+                    "operatorName": {
+                      "type": "string",
+                      "example": "mtn"
+                    },
+                    "firstName": {
+                      "type": "string",
+                      "example": "Scoty"
+                    },
+                    "lastName": {
+                      "type": "string",
+                      "example": "Loumbou"
+                    },
+                    "type": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
                 }
               }
             },
@@ -6185,7 +6188,7 @@
         "security": []
       }
     },
-    "/api/v1/business-type/1": {
+    "/api/v1/business-type/{id}": {
       "put": {
         "summary": "edit",
         "deprecated": false,

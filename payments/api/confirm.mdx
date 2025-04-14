@@ -1,0 +1,117 @@
+---
+title: "Confirm a Payment Intent"
+description: "Confirm a payment intent to process a payment"
+---
+
+After creating the payment intent, you need to confirm it to capture the amount. This usually happens when the end-user has completed all the necessary steps (such as providing payment information or accepting the terms and conditions).
+
+## Confirm a Payment Intent
+
+In order to collect payment from the customer, you must confirm the previously generated payment intent. You can confirm the payment intent as many times as necessary until it is confirmed with a successful payment.
+
+### Prepare your request
+
+You need to use the following parameters to confirm the payment intent:
+
+- `client_secret`: This parameter is the secret identifier of the payment intent. It is used to perform secure operations related to this specific payment intent.
+- Customer's informations (optional):
+  - `first_name`: The first name of the customer
+  - `last_name`: The last name of the customer
+  - `receipt_email`: The email address of the customer
+- `payment_method_data`: This section contains the specific details of the payment method chosen by the customer.
+  - `type`: The type of payment method `momo` (Mobile Money).
+  - `momo`: The mobile money details.
+    - `country`: The country code of the mobile money.
+    - `msisdn`: The mobile money number in international format (e.g., `+242XXXXX`).
+    - `operator_name`: The operator name of the mobile money.
+
+<Note>
+  `client_secret` must be kept confidential and must never be exposed in the
+  frontend or client code. It must only be used on the server side. It is used
+  to authenticate the payment intent.
+</Note>
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+    body: JSON.stringify({
+      client_secret: "YOUR_CLIENT_SECRET",
+      first_name: "John",
+      last_name: "Doe",
+      receipt_email: "john.doe@example.com",
+      payment_method_data: {
+        type: "momo",
+        momo: {
+          country: "xaf",
+          msisdn: "+242123456789",
+          operator_name: "mtn",
+        },
+      },
+    }),
+  }
+);
+
+const data = await response.json();
+```
+
+By calling this method, the amount associated with the payment intent will be captured, and the payment will be considered successful if all goes well.
+
+With this two-step model, developers can gain greater control over the payment process while delivering a smooth user experience. You can adapt these two steps to your specific needs (for example, pre-authorization or deferred payment).
+
+<Warning>
+  Error handling is important, as confirmation of a payment intention can fail
+  for a variety of reasons (insufficient funds, incorrect payment information,
+  etc.).
+</Warning>
+
+## Response
+
+### 200 OK
+
+The response body will contain the following parameters:
+
+```JavaScript
+{
+    "intent_id": "pi_9aATHBv8UXuD6H5qrSav",
+    "financial_transaction_id": "832546449",
+    "transaction_id": "3c043d55-e659-4a86-9fab-b377fea9ee6b",
+    "amount": 500,
+    "currency": "xaf",
+    "status": "succeeded",
+    "captured": true,
+    "external_id": "ext_3rxAagDtTSlN9XO96R1slJk14WENvxOlJbCu",
+    "id": "ch_1jro7CEishIEWadybzlm",
+}
+```
+
+### 422 Bad Request
+
+If the request is invalid, the server will return a 422 status code with an error message.
+
+```javascript
+{
+    "error": {
+        "message": "E_CONFIRMED_INTENT_EXCEPTION: Intent already confirmed",
+        "code": "E_CONFIRMED_INTENT_EXCEPTION"
+    }
+}
+```
+
+### 401 Unauthorized
+
+If the secret key is invalid, the server will return a 401 status code with an error message.
+
+```javascript
+{
+    "error": {
+        "message": "Unauthorized",
+        "code": "Unauthorized"
+    }
+}
+```

@@ -2,28 +2,37 @@
 title: "Create a Yabetoo-hosted checkout page"
 ---
 
-## Installer la bibliothèque
+## Create a Checkout Session
 
-Installez la bibliothèque avec composer et initialisez-la avec votre clé API secrète. Si vous partez de zéro et que vous avez besoin d'un fichier composer.json, vous pouvez également télécharger les fichiers à l'aide du lien de téléchargement dans l'éditeur de code.
+Add an endpoint on your server that creates a Checkout session. A Checkout session controls the information your customer can see on the payment page, such as the order amount and currency, as well as the accepted payment methods.
 
-```bash
-composer require yabetoo/yabetoo-sdk
-```
-
-## Créer une session Checkout
-
-Ajoutez sur votre serveur un endpoint qui crée une session Checkout. Une session Checkout contrôle les informations que votre client peut consulter sur la page de paiement, par exemple les postes de facture, le montant et la devise de la commande, ainsi que les moyens de paiement acceptés. Par défaut, nous activons les cartes bancaires et d'autres moyens de paiement que vous utilisez fréquemment, mais vous pouvez activer et désactiver des moyens de paiement directement depuis le Dashboard Stripe.
+<Note>
+  The endpoint to use is `POST https://buy.api.yabetoopay.com/v1/sessions`.
+</Note>
 
 ```javascript
+const response = await fetch("https://buy.api.yabetoopay.com/v1/sessions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer YOUR_SECRET_KEY",
+  },
+  body: JSON.stringify({
+    total: 200000,
+    currency: "xaf",
+    accountId: "acct_xxxxxxxx",
+  }),
+});
 
+const data = await response.json();
 ```
 
-## Définir un produit à vendre
+## Define a Product to Sell
 
-Conservez toujours les informations sensibles concernant votre inventaire de produits (tarif, disponibilité, etc.) sur votre serveur afin qu'aucun client ne puisse les modifier. Définissez les informations de vos produits lorsque vous créez la session Checkout à l’aide d’ID de tarifs prédéfinis, ou à la volée avec le paramètre price_data.
+Always store sensitive information about your product inventory (such as price, availability, etc.) on your server to prevent any customer from modifying it. Define your product details when creating the Checkout session.
 
 ```javascript
-items: [
+const items = [
   {
     productId: "prt_XoPjNH2l5Q1g19mIZPxqYWEXwRJzOmlNXhcb",
     quantity: 1,
@@ -33,9 +42,24 @@ items: [
 ];
 ```
 
-## Définir les métadonnées (optionnel)
+```javascript
+const response = await fetch("https://buy.api.yabetoopay.com/v1/sessions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer YOUR_SECRET_KEY",
+  },
+  body: JSON.stringify({
+    items,
+  }),
+});
 
-Vous pouvez ajouter des métadonnées à votre session Checkout pour stocker des informations supplémentaires, comme l'ID de la commande, l'ID du client, etc.
+const data = await response.json();
+```
+
+## Define Metadata (optional)
+
+You can add metadata to your Checkout session to store additional information, such as the order ID, customer ID, and more.
 
 ```javascript
 metadata: {
@@ -44,35 +68,104 @@ metadata: {
 },
 ```
 
-## Fournir les URL de réussite et d’annulation
+## Provide Success and Cancel URLs
 
-Fournissez des URLs de succès et d’annulation pour rediriger votre client vers la page de votre site web après le paiement. Ces URLs sont utilisées pour indiquer au client le statut de la transaction, ainsi que pour effectuer des actions supplémentaires sur votre serveur, comme la mise à jour de l'état de la commande.
+Provide success and cancel URLs to redirect your customer back to your website after the payment. These URLs are used to inform the customer about the status of the transaction and to perform additional actions on your server, such as updating the order status.
 
-## Rediriger vers Checkout
-
-Une fois la session Checkout créée, redirigez votre client vers l'URL de la page de paiement hébergée. Cette URL est disponible dans la réponse de la session Checkout.
-
-<RequestExample>
-
-```php Créer une session Checkout
-use Yabetoo\Yabetoo;
-$yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
-$response = $yabetoo->sessions->create([
-    "total" => 200000,
-    "currency" => "xaf",
-    "accountId" => "acct_xxxxxxxx", // ID du compte de l'utilisateur
-    "successUrl" => "https://votre-site.com/checkout-success", // URL en cas de succès
-    "cancelUrl" => "https://votre-site.com/checkout-cancel",   // URL en cas d'annulation
-    "metadata" => ["orderID" => "1234"], // Métadonnées associées à la session
-    "items" => [
-        [
-            "productId" => "prod_12345",
-            "quantity" => 1,
-            "price" => 200000,
-            "productName" => "Écran HD"
-        ]
-    ]
-]);
+```javascript
+const successUrl = "https://votre-site.com/checkout-success";
+const cancelUrl = "https://votre-site.com/checkout-cancel";
 ```
 
-</RequestExample>
+## Full exemple
+
+The following example shows how to create a Checkout session with all the required parameters.
+
+```javascript
+const response = await fetch("https://buy.api.yabetoopay.com/v1/sessions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer YOUR_SECRET_KEY",
+  },
+  body: JSON.stringify({
+    total: 200000,
+    currency: "xaf",
+    accountId: "acct_xxxxxxxx",
+    successUrl: "https://votre-site.com/checkout-success",
+    cancelUrl: "https://votre-site.com/checkout-cancel",
+    metadata: { orderId: "1234" },
+    items: [
+      {
+        productId: "prod_12345",
+        quantity: 1,
+        price: 200000,
+        productName: "Écran HD",
+      },
+    ],
+  }),
+});
+
+const data = await response.json();
+```
+
+### Response
+
+The response contains the session ID and other details.
+
+```json
+{
+  "accountId": "acct_iNXIGeot1lqyhGI5eP7KL0LcWTCTgFLytfRa",
+  "successUrl": "https://votre-site.com/checkout-success",
+  "cancelUrl": "https://votre-site.com/checkout-cancel",
+  "orderId": "ord_KowaIWyMlD25Lhb8MyY3GQyvN8nFaxTZ7ji7",
+  "expiresAt": "2024-05-28T13:33:51.760+00:00",
+  "id": "session_ajrw3pQUUZD8UI2eFkWyUgLxJ4kGuXCoaQeb",
+  "createdAt": "2024-05-28T12:33:51.762+00:00",
+  "updatedAt": "2024-05-28T12:33:51.762+00:00"
+}
+```
+
+## Redirect to Checkout
+
+Once the Checkout session is created, redirect your customer to the hosted payment page URL. This URL is available in the Checkout session response.
+
+## Redirect the Customer
+
+Once the payment is completed, the customer is redirected to the success or cancel URL you specified in the `successUrl` or `cancelUrl` field.
+
+Our system will add the transaction ID to your callback like this: `https://your_callback?paymentId={id}`. It is in your interest to verify the correct receipt of the payment by checking the status of the transaction in our system by following this process:
+
+<Note>
+  Sandbox : `https://pay.sandbox.yabetoopay.com/v1/payment-intents/{paymentId}`
+</Note>
+
+<Note>
+  Production : `https://pay.api.yabetoopay.com/v1/payment-intents/{paymentId}`
+</Note>
+
+```javascript
+const paymentId = new URLSearchParams(window.location.search).get("paymentId");
+
+const response = await fetch(`${url}/${paymentId}`, {
+  method: "GET",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer YOUR_SECRET_KEY",
+  },
+});
+
+const data = await response.json();
+
+console.log(data);
+```
+
+### Why Perform a Double Verification?
+
+1. **Security** : Ensures that the payment was genuinely made and that you do not process false transactions.
+2. **Confidence** : By formally verifying the payment status via the API, you maintain a reliable record of successful and failed transactions.
+3. **Prevention of fraud** : By verifying the payment status, you reduce the risk of potential fraud.
+
+The redirect step after the payment is crucial for finalizing a transaction. By retrieving the payment ID provided in the URL and performing a double verification with the Yabetoo API, you reinforce the security of your order process and ensure that only confirmed payments are processed.
+
+The use of a hosted checkout page with sessions of payment simplifies the process of integrating payments into your application. It allows you to delegate the management of sensitive data to Yabetoo, while offering a smooth and secure payment experience to your users.
