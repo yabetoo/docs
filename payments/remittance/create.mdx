@@ -1,0 +1,166 @@
+---
+title: "Create Remittance"
+description: "Send money to a beneficiary on behalf of a user through your Yabetoo business account."
+---
+
+## Prepare your request
+
+To create a remittance, use the following endpoint:
+
+- **Sandbox**: `POST https://pay.sandbox.yabetoopay.com/v1/remittance`
+- **Production**: `POST https://pay.api.yabetoopay.com/v1/remittance`
+
+<Note>
+  <strong>Secret key security:</strong> Your secret key (<code>secret_key</code>)
+  must be kept confidential and should never be exposed in frontend or client-side
+  code. It must only be used on the server side.
+</Note>
+
+1. Authenticate your request using your secret key in the `Authorization` header.
+2. Include the required fields in the request body:
+
+```json
+{
+  "amount": "100",
+  "currency": "XAF",
+  "first_name": "John",
+  "last_name": "Doe",
+  "payment_method_data": {
+    "type": "momo",
+    "momo": {
+      "msisdn": "242066594470",
+      "country": "CG",
+      "operator_name": "mtn"
+    }
+  },
+  "metadata": {
+    "internal_ref": "tr_8493983"
+  }
+}
+```
+
+### Request Body
+
+Send a `JSON` payload with the following fields:
+
+### Required Fields
+
+| Field                 | Type     | Description                                                               |
+| --------------------- | -------- | ------------------------------------------------------------------------- |
+| `amount`              | `string` | The amount to be transferred (in the smallest currency unit, e.g. cents). |
+| `currency`            | `string` | Currency code (e.g., `xaf`, `usd`).                                       |
+| `first_name`          | `string` | Recipient's first name.                                                   |
+| `last_name`           | `string` | Recipient's last name.                                                    |
+| `payment_method_data` | `object` | Payment method details (see below).                                       |
+
+### Optional Fields
+
+| Field      | Type     | Description                                                 |
+| ---------- | -------- | ----------------------------------------------------------- |
+| `metadata` | `object` | Key-value metadata for internal tracking or business logic. |
+
+### `payment_method_data` structure
+
+```json
+{
+  "type": "momo",
+  "momo": {
+    "country": "cg",
+    "msisdn": "242066594470",
+    "operator_name": "mtn"
+  }
+}
+```
+
+## Create a Remittance
+
+Use the following endpoint:
+
+- **Sandbox**: `POST https://pay.sandbox.yabetoopay.com/v1/remittance`
+- **Production**: `POST https://pay.api.yabetoopay.com/v1/remittance`
+
+This example shows how to create a remittance, you should adapt it to your needs.
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/remittance",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secret_key}`,
+    },
+    body: JSON.stringify({
+      amount: "100",
+      currency: "XAF",
+      first_name: "John",
+      last_name: "Doe",
+      payment_method_data: {
+        type: "momo",
+        momo: {
+          msisdn: "242066594470",
+          country: "CG",
+          operator_name: "mtn",
+        },
+      },
+      metadata: {
+        source: "yabetoo-partner-portal",
+      },
+    }),
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+### Response
+
+In this section, you will find the possible responses from the API.
+
+#### 200 OK
+
+When the remittance was successfully created, the API will return a 200 OK response with the following body:
+
+```json
+{
+  "id": "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "object": "remittance",
+  "amount": 1000,
+  "currency": "xaf",
+  "status": "succeeded",
+  "firstName": "John",
+  "lastName": "Doe",
+  "operatorName": "mtn",
+  "country": "cg",
+  "phone": "242066594470",
+  "type": 1,
+  "shouldExecutedAt": "2025-03-18T09:24:57.555Z",
+  "createdAt": "2025-03-17T10:24:57.559+01:00",
+  "updatedAt": "2025-03-17T10:24:57.559+01:00"
+}
+```
+
+#### 400 Bad Request
+
+When the request is invalid, the API will return a 400 Bad Request response with the following body:
+
+```json
+{
+  "errors": [
+    {
+      "rule": "required",
+      "field": "currency",
+      "message": "required validation failed"
+    }
+  ]
+}
+```
+
+#### 401 Unauthorized
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

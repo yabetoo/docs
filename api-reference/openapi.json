@@ -5987,6 +5987,289 @@
         ]
       }
     },
+    "/v1/remittance": {
+      "get": {
+        "summary": "Get all remittances",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of remittances with pagination metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "total": { "type": "integer", "example": 2 },
+                        "perPage": { "type": "integer", "example": 10 },
+                        "currentPage": { "type": "integer", "example": 1 },
+                        "lastPage": { "type": "integer", "example": 1 },
+                        "firstPage": { "type": "integer", "example": 1 },
+                        "firstPageUrl": {
+                          "type": "string",
+                          "example": "/?page=1"
+                        },
+                        "lastPageUrl": {
+                          "type": "string",
+                          "example": "/?page=1"
+                        },
+                        "nextPageUrl": {
+                          "type": ["string", "null"],
+                          "example": null
+                        },
+                        "previousPageUrl": {
+                          "type": ["string", "null"],
+                          "example": null
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "example": "rem_xxx" },
+                          "object": {
+                            "type": "string",
+                            "example": "remittance"
+                          },
+                          "walletId": { "type": "string" },
+                          "financialTransactionId": { "type": "string" },
+                          "transactionId": { "type": "string" },
+                          "amount": { "type": "integer" },
+                          "currency": { "type": "string", "example": "xaf" },
+                          "status": {
+                            "type": "string",
+                            "example": "succeeded"
+                          },
+                          "failureCode": {
+                            "type": ["string", "null"],
+                            "example": null
+                          },
+                          "failureMessage": {
+                            "type": ["string", "null"],
+                            "example": null
+                          },
+                          "externalId": { "type": "string" },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "executedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "shouldExecutedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "otp": {
+                            "type": ["string", "null"],
+                            "example": null
+                          },
+                          "phone": { "type": "string" },
+                          "country": { "type": "string", "example": "cg" },
+                          "operatorName": {
+                            "type": "string",
+                            "example": "mtn"
+                          },
+                          "firstName": { "type": "string", "example": "Scoty" },
+                          "lastName": {
+                            "type": "string",
+                            "example": "Loumbou"
+                          },
+                          "type": { "type": "integer", "example": 1 }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a remittance",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object"
+                  },
+                  "payment_method_data": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      },
+                      "momo": {
+                        "type": "object",
+                        "properties": {
+                          "country": {
+                            "type": "string"
+                          },
+                          "msisdn": {
+                            "type": "string"
+                          },
+                          "operator_name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["country", "msisdn", "operator_name"]
+                      }
+                    },
+                    "required": ["type", "momo"]
+                  }
+                },
+                "required": [
+                  "amount",
+                  "last_name",
+                  "first_name",
+                  "currency",
+                  "payment_method_data"
+                ]
+              },
+              "examples": {
+                "1": {
+                  "value": {
+                    "amount": "100",
+                    "last_name": "Loumbou",
+                    "first_name": "Scoty",
+                    "currency": "xaf",
+                    "metadata": {
+                      "key": "value"
+                    },
+                    "payment_method_data": {
+                      "type": "momo",
+                      "momo": {
+                        "country": "cg",
+                        "msisdn": "242066594470",
+                        "operator_name": "mtn"
+                      }
+                    }
+                  },
+                  "description": ""
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "amount": {
+                      "type": "integer",
+                      "example": 1000
+                    },
+                    "currency": {
+                      "type": "string",
+                      "example": "xaf"
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "processing"
+                    },
+                    "firstName": {
+                      "type": "string",
+                      "example": "Jean"
+                    },
+                    "lastName": {
+                      "type": "string",
+                      "example": "Dupont"
+                    },
+                    "operatorName": {
+                      "type": "string",
+                      "example": "mtn"
+                    },
+                    "country": {
+                      "type": "string",
+                      "example": "cg"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "example": "242066594470"
+                    },
+                    "object": {
+                      "type": "string",
+                      "example": "remittance"
+                    },
+                    "type": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "shouldExecutedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-18T09:24:57.555Z"
+                    },
+                    "id": {
+                      "type": "string",
+                      "example": "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-17T10:24:57.559+01:00"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-17T10:24:57.559+01:00"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+
     "/v1/disbursement/{id}": {
       "get": {
         "summary": "Get a disbursement",
@@ -5999,7 +6282,7 @@
             "in": "path",
             "description": "",
             "required": true,
-            "example": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+            "example": "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
             "schema": {
               "type": "string"
             }
@@ -6015,11 +6298,143 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "example": "wt_JwXuT14tMoczRLCsOt8LYBiEKd8EwBPnXnDV"
+                      "example": "rem_JwXuT14tMoczRLCsOt8LYBiEKd8EwBPnXnDV"
                     },
                     "object": {
                       "type": "string",
-                      "example": "disbursement"
+                      "example": "remittance"
+                    },
+                    "walletId": {
+                      "type": "string",
+                      "example": "wa_pccbQrBBOVJMV8tGduoXjEhoQDnaD4p3hgDE"
+                    },
+                    "financialTransactionId": {
+                      "type": "string",
+                      "example": "2088156440"
+                    },
+                    "transactionId": {
+                      "type": "string",
+                      "example": "5bb18982-c19b-4689-807a-c65b8052f9c9"
+                    },
+                    "amount": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "currency": {
+                      "type": "string",
+                      "example": "xaf"
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "succeeded"
+                    },
+                    "failureCode": {
+                      "type": ["string", "null"],
+                      "example": null
+                    },
+                    "failureMessage": {
+                      "type": ["string", "null"],
+                      "example": null
+                    },
+                    "externalId": {
+                      "type": "string",
+                      "example": "ext_BeII42S4VYLF9W9KIMoW90GJk7xsxZEkAWdh"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-15T17:59:57.791+01:00"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-16T14:00:09.602+01:00"
+                    },
+                    "executedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-15T23:00:00.000Z"
+                    },
+                    "shouldExecutedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-03-15T23:00:00.000Z"
+                    },
+                    "otp": {
+                      "type": ["string", "null"],
+                      "example": null
+                    },
+                    "phone": {
+                      "type": "string",
+                      "example": "242066594470"
+                    },
+                    "country": {
+                      "type": "string",
+                      "example": "cg"
+                    },
+                    "operatorName": {
+                      "type": "string",
+                      "example": "mtn"
+                    },
+                    "firstName": {
+                      "type": "string",
+                      "example": "Scoty"
+                    },
+                    "lastName": {
+                      "type": "string",
+                      "example": "Loumbou"
+                    },
+                    "type": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/remittance/{id}": {
+      "get": {
+        "summary": "Get a remittance",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "rem_JwXuT14tMoczRLCsOt8LYBiEKd8EwBPnXnDV"
+                    },
+                    "object": {
+                      "type": "string",
+                      "example": "remittance"
                     },
                     "walletId": {
                       "type": "string",
@@ -6348,6 +6763,15 @@
       }
     }
   },
-
-  "security": []
+  "servers": [
+    {
+      "url": "https://pay.sandbox.yabetoopay.com",
+      "description": "Yabetoo API"
+    }
+  ],
+  "security": [
+    {
+      "bearer": []
+    }
+  ]
 }

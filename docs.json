@@ -15,23 +15,12 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction", "quickstart", "development"]
+            "pages": ["introduction", "quickstart", "development"],
+            "icon": "code"
           },
           {
             "group": "Setup account",
             "pages": ["account/overview", "account/activate"]
-          },
-
-          {
-            "group": "Essentials",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/settings",
-              "essentials/navigation",
-              "essentials/reusable-snippets"
-            ]
           }
         ]
       },
@@ -59,6 +48,13 @@
               "payments/disbursement/overview",
               "payments/disbursement/create",
               "payments/disbursement/get"
+            ]
+          },
+          {
+            "group": "Remittance",
+            "pages": [
+              "payments/remittance/overview",
+              "payments/remittance/create"
             ]
           },
           {
@@ -126,6 +122,14 @@
             ]
           },
           {
+            "group": "Remittance",
+            "pages": [
+              "api-reference/remittance/create",
+              "api-reference/remittance/get",
+              "api-reference/remittance/all"
+            ]
+          },
+          {
             "group": "Webhook",
             "pages": [
               "api-reference/webhook/create",
@@ -137,23 +141,7 @@
       }
     ],
     "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "discord"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
+      "anchors": []
     }
   },
   "logo": {
