@@ -14,7 +14,7 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Get started",
             "pages": ["introduction", "quickstart", "development"],
             "icon": "code"
           },
@@ -27,6 +27,10 @@
       {
         "tab": "Payments",
         "groups": [
+          {
+            "group": "Get started",
+            "pages": ["payments/overview"]
+          },
           {
             "group": "Build a checkout page",
             "pages": [

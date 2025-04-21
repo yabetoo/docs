@@ -34,10 +34,10 @@ The following test numbers are provided for the sandbox environment. Each number
 
 These numbers simulate a successful payment flow where the transaction is completed and confirmed.
 
-| Number         | Operator     | Country           | Status      | Reason          |
+| Number         | Operator     | Country           | Status      | Failure message |
 | -------------- | ------------ | ----------------- | ----------- | --------------- |
-| `242066000001` | Airtel Money | Congo-Brazzaville | `succeeded` | `NO_REASON`     |
-| `Any other`    | MTN MoMo     | Congo-Brazzaville | `succeeded` | `NO_REASON`     |
+| `242066000001` | Airtel Money | Congo-Brazzaville | `succeeded` | `NULL`          |
+| `Any other`    | MTN MoMo     | Congo-Brazzaville | `succeeded` | `NULL`          |
 | `46733123454`  | MTN MoMo     | Congo-Brazzaville | `succeeded` | `PAYER_DELAYED` |
 
 ---
@@ -46,7 +46,7 @@ These numbers simulate a successful payment flow where the transaction is comple
 
 These numbers simulate different types of transaction failures. Use them to verify how your system responds to specific failure reasons.
 
-| Number         | Operator     | Country           | Status   | Reason                         |
+| Number         | Operator     | Country           | Status   | Failure message                |
 | -------------- | ------------ | ----------------- | -------- | ------------------------------ |
 | `242050017890` | Airtel Money | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`    |
 | `46733123450`  | MTN MoMo     | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`    |
@@ -61,14 +61,14 @@ These numbers simulate different types of transaction failures. Use them to veri
 
 These numbers simulate delayed or unresponsive transactions. They are ideal for testing time-based logic like retries or expired payment sessions.
 
-| Number        | Operator | Country           | Status    | Reason    |
-| ------------- | -------- | ----------------- | --------- | --------- |
-| `46733123452` | MTN MoMo | Congo-Brazzaville | `failed`  | `EXPIRED` |
-| `46733123453` | MTN MoMo | Congo-Brazzaville | `expired` | `TIMEOUT` |
+| Number        | Operator | Country           | Status    | Failure message |
+| ------------- | -------- | ----------------- | --------- | --------------- |
+| `46733123452` | MTN MoMo | Congo-Brazzaville | `failed`  | `EXPIRED`       |
+| `46733123453` | MTN MoMo | Congo-Brazzaville | `expired` | `TIMEOUT`       |
 
-## Explanation of Reason Values
+## Explanation of Failure message Values
 
-The `reason` field provides additional context about the transaction outcome. Here's a breakdown of the possible values
+The `failure_message` field provides additional context about the transaction outcome. Here's a breakdown of the possible values
 
 Each test number is associated with a predefined status (succeeded, failed, or expired) and a corresponding reason. This helps simulate various real-world failure scenarios when testing payment flows in the sandbox environment.
 
@@ -77,14 +77,15 @@ Each test number is associated with a predefined status (succeeded, failed, or e
   handling, retry logic, and user feedback.
 </Tip>
 
-| Reason                         | Description                                                                   |
-| ------------------------------ | ----------------------------------------------------------------------------- |
-| `NO_REASON`                    | The transaction was successful. No error or exceptional condition occurred.   |
-| `INTERNAL_PROCESSING_ERROR`    | A generic error occurred within the payment processing system.                |
-| `APPROVAL_REJECTED`            | The transaction was manually rejected by the payer or the system.             |
-| `EXPIRED`                      | The payment request expired before the user took action.                      |
-| `TIMEOUT`                      | The payment session remained inactive for too long and timed out.             |
-| `PAYER_DELAYED`                | The payer took too long to confirm, but the transaction eventually succeeded. |
-| `PAYER_NOT_FOUND`              | The payer's number does not exist or is not registered with the operator.     |
-| `PAYEE_NOT_ALLOWED_TO_RECEIVE` | The recipient account is not authorized to receive funds.                     |
-| `NOT_ALLOWED`                  | The transaction is not permitted due to configuration or policy restrictions. |
+| Failure message                                     | Description                                                                                 |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `NULL`                                              | The transaction was successful. No error or exceptional condition occurred.                 |
+| `INTERNAL_PROCESSING_ERROR`                         | A generic error occurred within the payment processing system.                              |
+| `APPROVAL_REJECTED`                                 | The transaction was manually rejected by the payer or the system.                           |
+| `EXPIRED`                                           | The payment request expired before the user took action.                                    |
+| `TIMEOUT`                                           | The payment session remained inactive for too long and timed out.                           |
+| `PAYER_DELAYED`                                     | The payer took too long to confirm, but the transaction eventually succeeded.               |
+| `PAYER_NOT_FOUND`                                   | The payer's number does not exist or is not registered with the operator.                   |
+| `PAYEE_NOT_ALLOWED_TO_RECEIVE`                      | The recipient account is not authorized to receive funds.                                   |
+| `NOT_ALLOWED`                                       | The transaction is not permitted due to configuration or policy restrictions.               |
+| `LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED` | The payer's balance is too low or the recipient account is not authorized to receive funds. |
