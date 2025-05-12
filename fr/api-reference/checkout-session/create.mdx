@@ -1,0 +1,92 @@
+---
+title: Créer une session
+description: Créez une nouvelle session de paiement.
+---
+
+## Endpoint
+
+```bash
+POST /v1/checkout/sessions
+```
+
+## Paramètres
+
+### Corps de la requête
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `success_url` | `string` | **Obligatoire**. URL de redirection après un paiement réussi |
+| `cancel_url` | `string` | **Obligatoire**. URL de redirection en cas d'annulation |
+| `line_items` | `array` | **Obligatoire**. Liste des articles à payer |
+| `currency` | `string` | **Obligatoire**. Code devise (ex: XAF, XOF) |
+| `metadata` | `object` | Données personnalisées pour cette session |
+| `customer_email` | `string` | Email du client |
+| `expires_at` | `integer` | Expiration en timestamp Unix |
+
+### Structure d'un line_item
+
+```json
+{
+  "product_name": "T-shirt",
+  "quantity": 2,
+  "price": 5000,
+  "product_id": "prod_123"
+}
+```
+
+## Exemple de requête
+
+```bash
+curl -X POST https://api.yabetoopay.com/v1/checkout/sessions \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "success_url": "https://example.com/success",
+    "cancel_url": "https://example.com/cancel",
+    "line_items": [
+      {
+        "product_name": "T-shirt",
+        "quantity": 2,
+        "price": 5000,
+        "product_id": "prod_123"
+      }
+    ],
+    "currency": "XAF",
+    "metadata": {
+      "order_id": "6735"
+    }
+  }'
+```
+
+## Réponse
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "cs_test_123456789",
+    "object": "checkout.session",
+    "amount": 10000,
+    "currency": "XAF",
+    "status": "pending",
+    "url": "https://checkout.yabetoopay.com/c/cs_test_123456789",
+    "expires_at": 1683907200,
+    "metadata": {
+      "order_id": "6735"
+    }
+  }
+}
+```
+
+## Codes d'erreur
+
+| Code | Description |
+|------|-------------|
+| `invalid_request` | Paramètres manquants ou invalides |
+| `currency_not_supported` | Devise non supportée |
+| `amount_too_small` | Montant inférieur au minimum |
+| `amount_too_large` | Montant supérieur au maximum |
+
+<Note>
+  Les sessions expirent après 24 heures par défaut si non spécifié autrement.
+</Note>

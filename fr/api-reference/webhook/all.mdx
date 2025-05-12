@@ -1,0 +1,127 @@
+---
+title: Lister les webhooks
+description: Récupérez la liste de tous vos webhooks.
+---
+
+## Endpoint
+
+```bash
+GET /v1/webhooks
+```
+
+## Paramètres
+
+### Paramètres de requête
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `limit` | `integer` | Nombre d'éléments par page (défaut: 10, max: 100) |
+| `page` | `integer` | Numéro de la page (commence à 1) |
+| `status` | `string` | Filtrer par statut |
+
+## Exemple de requête
+
+```bash
+curl "https://api.yabetoopay.com/v1/webhooks?limit=5&status=active" \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+## Réponse
+
+```json
+{
+  "status": "success",
+  "data": {
+    "object": "list",
+    "data": [
+      {
+        "id": "whk_123456789",
+        "object": "webhook",
+        "url": "https://example.com/webhooks",
+        "description": "Webhook de production",
+        "status": "active",
+        "enabled_events": [
+          "payment_intent.succeeded",
+          "payment_intent.failed"
+        ],
+        "metadata": {
+          "environment": "production"
+        },
+        "created_at": "2023-05-12T10:12:32Z",
+        "last_error": null,
+        "stats": {
+          "successful_deliveries": 150,
+          "failed_deliveries": 2,
+          "average_response_time": 245
+        }
+      }
+      // ... autres webhooks
+    ],
+    "has_more": true,
+    "total": 25,
+    "page": 1,
+    "pages": 5
+  }
+}
+```
+
+### Filtres de statut disponibles
+
+| Statut | Description |
+|--------|-------------|
+| `active` | Webhooks actifs |
+| `disabled` | Webhooks désactivés manuellement |
+| `failed` | Webhooks désactivés après échecs |
+
+## Statistiques globales
+
+La réponse inclut également des statistiques globales :
+
+```json
+{
+  "stats": {
+    "total_webhooks": {
+      "active": 15,
+      "disabled": 5,
+      "failed": 2
+    },
+    "delivery_stats": {
+      "last_24h": {
+        "successful": 1250,
+        "failed": 23,
+        "success_rate": 98.19
+      },
+      "last_7d": {
+        "successful": 8500,
+        "failed": 142,
+        "success_rate": 98.35
+      }
+    }
+  }
+}
+```
+
+## Codes d'erreur
+
+| Code | Description |
+|------|-------------|
+| `invalid_request` | Paramètres invalides |
+
+### Exemples de filtrage
+
+#### Par statut
+
+```bash
+curl "https://api.yabetoopay.com/v1/webhooks?status=active"
+```
+
+#### Pagination
+
+```bash
+curl "https://api.yabetoopay.com/v1/webhooks?limit=20&page=2"
+```
+
+<Note>
+  Les webhooks sont essentiels pour maintenir la synchronisation entre Yabetoo
+  et vos systèmes. Surveillez régulièrement leurs performances.
+</Note>

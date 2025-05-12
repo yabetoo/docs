@@ -1,0 +1,91 @@
+---
+title: "Tester votre intégration"
+description: "Simulez des paiements pour tester votre intégration"
+---
+
+Pour simplifier et rationaliser le processus de test, Yabetoo fournit un ensemble d'utilisateurs et de comptes de test prédéfinis. Ces utilisateurs et comptes sont préconfigurés avec des données réalistes et sont associés à des scénarios de test prédéfinis qui simulent divers cas d'utilisation. Cela permet aux développeurs de tester rapidement les fonctionnalités clés de la plateforme — comme la création de sessions de paiement, la confirmation d'intentions de paiement ou la gestion des callbacks — sans avoir besoin de configurer manuellement les données à chaque fois.
+
+Chaque utilisateur de test est lié à un compte spécifique et possède des attributs prédéfinis (par exemple, solde, statut du compte, historique des transactions) conçus pour couvrir un large éventail de flux commerciaux typiques. En utilisant ces entités prédéfinies, vous pouvez assurer la cohérence de vos cas de test et accélérer le processus d'intégration.
+
+## Comment utiliser les numéros
+
+Tous les tests sont effectués dans l'environnement sandbox, qui est spécifiquement conçu pour simuler des flux de paiement réels sans traiter de véritables transactions. Cet environnement vous permet d'intégrer et de valider en toute sécurité votre implémentation de l'API Yabetoo sans aucun impact financier.
+
+Pour interagir avec l'environnement sandbox, vous devez utiliser des clés API de test. Ces clés sont distinctes de vos clés API de production et sont destinées uniquement au développement et aux tests. Lorsqu'une clé API de test est fournie lors de l'initialisation du SDK ou de l'API, toutes les requêtes sont automatiquement dirigées vers le point de terminaison sandbox, assurant une isolation complète du système de production.
+
+Les clés API de test se comportent de manière similaire aux clés de production, vous permettant d'effectuer toutes les opérations de base telles que la création de sessions de paiement, la génération d'intentions de paiement, la confirmation de transactions et la réception de webhooks — dans les limites du sandbox.
+
+<Warning>
+  **Important :** N'utilisez jamais de clés API de test dans votre application de production, et
+  vice versa. Les clés de test sont préfixées par `sk_test_` pour les clés secrètes et
+  `pk_test_` pour les clés publiques.
+</Warning>
+
+## Numéros de test
+
+Les numéros de test suivants sont fournis pour l'environnement sandbox. Chaque numéro simule un utilisateur de mobile money avec un résultat de transaction prédéfini.
+
+<Note>
+  Ces numéros ne sont valables que dans l'environnement sandbox et ne peuvent pas être utilisés pour
+  des transactions réelles.
+</Note>
+
+### Transactions réussies
+
+Ces numéros simulent un flux de paiement réussi où la transaction est complétée et confirmée.
+
+| Numéro         | Opérateur    | Pays              | Statut     | Message d'erreur |
+| -------------- | ------------ | ----------------- | ---------- | ---------------- |
+| `242066000001` | Airtel Money | Congo-Brazzaville | `succeeded` | `NULL`           |
+| `Tout autre`   | MTN MoMo     | Congo-Brazzaville | `succeeded` | `NULL`           |
+| `46733123454`  | MTN MoMo     | Congo-Brazzaville | `succeeded` | `PAYER_DELAYED`  |
+
+---
+
+### Transactions échouées
+
+Ces numéros simulent différents types d'échecs de transaction. Utilisez-les pour vérifier comment votre système répond à des raisons d'échec spécifiques.
+
+| Numéro         | Opérateur    | Pays              | Statut   | Message d'erreur                 |
+| -------------- | ------------ | ----------------- | -------- | ------------------------------- |
+| `242050017890` | Airtel Money | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`     |
+| `46733123450`  | MTN MoMo     | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`     |
+| `46733123451`  | MTN MoMo     | Congo-Brazzaville | `failed` | `APPROVAL_REJECTED`             |
+| `46733123455`  | MTN MoMo     | Congo-Brazzaville | `failed` | `PAYER_NOT_FOUND`               |
+| `46733123456`  | MTN MoMo     | Congo-Brazzaville | `failed` | `PAYEE_NOT_ALLOWED_TO_RECEIVE`  |
+| `46733123457`  | MTN MoMo     | Congo-Brazzaville | `failed` | `NOT_ALLOWED`                   |
+
+---
+
+### Scénarios expirés / délai dépassé
+
+Ces numéros simulent des transactions retardées ou sans réponse. Ils sont idéaux pour tester la logique basée sur le temps comme les tentatives ou les sessions de paiement expirées.
+
+| Numéro        | Opérateur | Pays              | Statut    | Message d'erreur |
+| ------------- | --------- | ----------------- | --------- | ---------------- |
+| `46733123452` | MTN MoMo  | Congo-Brazzaville | `failed`  | `EXPIRED`        |
+| `46733123453` | MTN MoMo  | Congo-Brazzaville | `expired` | `TIMEOUT`        |
+
+## Explication des valeurs des messages d'erreur
+
+Le champ `failure_message` fournit un contexte supplémentaire sur le résultat de la transaction. Voici une explication des valeurs possibles :
+
+Chaque numéro de test est associé à un statut prédéfini (réussi, échoué ou expiré) et à une raison correspondante. Cela aide à simuler divers scénarios d'échec du monde réel lors des tests des flux de paiement dans l'environnement sandbox.
+
+<Tip>
+  Ces raisons sont particulièrement utiles lors du test de la gestion des erreurs,
+  de la logique de nouvelle tentative et du retour d'information aux utilisateurs de votre application.
+</Tip>
+
+| Message d'erreur                                     | Description                                                                                  |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `NULL`                                              | La transaction a réussi. Aucune erreur ou condition exceptionnelle ne s'est produite.        |
+| `INTERNAL_PROCESSING_ERROR`                         | Une erreur générique s'est produite dans le système de traitement des paiements.            |
+| `APPROVAL_REJECTED`                                 | La transaction a été manuellement rejetée par le payeur ou le système.                       |
+| `EXPIRED`                                           | La demande de paiement a expiré avant que l'utilisateur ne prenne des mesures.              |
+| `TIMEOUT`                                           | La session de paiement est restée inactive trop longtemps et a expiré.                       |
+| `PAYER_DELAYED`                                     | Le payeur a mis trop de temps à confirmer, mais la transaction a finalement réussi.         |
+| `PAYER_NOT_FOUND`                                   | Le numéro du payeur n'existe pas ou n'est pas enregistré auprès de l'opérateur.            |
+| `PAYEE_NOT_ALLOWED_TO_RECEIVE`                      | Le compte du bénéficiaire n'est pas autorisé à recevoir des fonds.                         |
+| `NOT_ALLOWED`                                       | La transaction n'est pas autorisée en raison de restrictions de configuration ou de politique.|
+| `LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED` | Le solde du payeur est trop faible ou le compte du bénéficiaire n'est pas autorisé à recevoir des fonds. |

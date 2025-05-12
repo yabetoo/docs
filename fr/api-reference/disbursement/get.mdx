@@ -1,0 +1,92 @@
+---
+title: Récupérer un versement
+description: Récupérez les détails d'un versement existant.
+---
+
+## Endpoint
+
+```bash
+GET /v1/disbursements/:id
+```
+
+## Paramètres
+
+### Paramètres de chemin
+
+| Paramètre | Description |
+|-----------|-------------|
+| `id` | **Obligatoire**. ID du versement |
+
+## Exemple de requête
+
+```bash
+curl https://api.yabetoopay.com/v1/disbursements/disb_123456789 \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+## Réponse
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "disb_123456789",
+    "object": "disbursement",
+    "amount": 50000,
+    "currency": "XAF",
+    "status": "succeeded",
+    "recipient": {
+      "type": "momo",
+      "momo_details": {
+        "msisdn": "242066594470",
+        "country": "CG",
+        "operator_name": "mtn",
+        "first_name": "Jean",
+        "last_name": "Dupont"
+      }
+    },
+    "description": "Paiement freelance",
+    "metadata": {
+      "invoice_id": "INV-2023-001"
+    },
+    "created_at": "2023-05-12T10:12:32Z",
+    "succeeded_at": "2023-05-12T10:15:45Z",
+    "error": null
+  }
+}
+```
+
+### Détails des statuts
+
+| Statut | Description |
+|--------|-------------|
+| `processing` | En cours de traitement |
+| `succeeded` | Versement réussi |
+| `failed` | Versement échoué |
+| `canceled` | Versement annulé |
+
+### Structure d'erreur
+
+En cas d'échec, le champ `error` contient :
+
+```json
+{
+  "code": "insufficient_funds",
+  "message": "Solde insuffisant pour effectuer le versement",
+  "details": {
+    "available_balance": 30000,
+    "required_amount": 50000
+  }
+}
+```
+
+## Codes d'erreur
+
+| Code | Description |
+|------|-------------|
+| `disbursement_not_found` | Versement introuvable |
+| `invalid_disbursement_id` | Format d'ID de versement invalide |
+
+<Note>
+  Les versements restent accessibles pendant 90 jours après leur création.
+</Note>

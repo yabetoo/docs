@@ -1,0 +1,117 @@
+---
+title: "Confirmer une intention de paiement"
+description: "Confirmez une intention de paiement pour traiter un paiement"
+---
+
+Après avoir créé l'intention de paiement, vous devez la confirmer pour capturer le montant. Cela se produit généralement lorsque l'utilisateur final a terminé toutes les étapes nécessaires (comme fournir les informations de paiement ou accepter les conditions générales).
+
+## Confirmer une intention de paiement
+
+Pour collecter le paiement auprès du client, vous devez confirmer l'intention de paiement précédemment générée. Vous pouvez confirmer l'intention de paiement autant de fois que nécessaire jusqu'à ce qu'elle soit confirmée avec un paiement réussi.
+
+### Préparer votre requête
+
+Vous devez utiliser les paramètres suivants pour confirmer l'intention de paiement :
+
+- `client_secret` : Ce paramètre est l'identifiant secret de l'intention de paiement. Il est utilisé pour effectuer des opérations sécurisées liées à cette intention de paiement spécifique.
+- Informations du client (optionnel) :
+  - `first_name` : Le prénom du client
+  - `last_name` : Le nom de famille du client
+  - `receipt_email` : L'adresse email du client
+- `payment_method_data` : Cette section contient les détails spécifiques du mode de paiement choisi par le client.
+  - `type` : Le type de moyen de paiement `momo` (Mobile Money).
+  - `momo` : Les détails du mobile money.
+    - `country` : Le code pays du mobile money.
+    - `msisdn` : Le numéro de mobile money au format international (ex : `+242XXXXX`).
+    - `operator_name` : Le nom de l'opérateur du mobile money.
+
+<Note>
+  `client_secret` doit rester confidentiel et ne doit jamais être exposé dans le
+  frontend ou le code client. Il doit uniquement être utilisé côté serveur. Il est utilisé
+  pour authentifier l'intention de paiement.
+</Note>
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+    body: JSON.stringify({
+      client_secret: "YOUR_CLIENT_SECRET",
+      first_name: "John",
+      last_name: "Doe",
+      receipt_email: "john.doe@example.com",
+      payment_method_data: {
+        type: "momo",
+        momo: {
+          country: "xaf",
+          msisdn: "+242123456789",
+          operator_name: "mtn",
+        },
+      },
+    }),
+  }
+);
+
+const data = await response.json();
+```
+
+En appelant cette méthode, le montant associé à l'intention de paiement sera capturé, et le paiement sera considéré comme réussi si tout se passe bien.
+
+Avec ce modèle en deux étapes, les développeurs peuvent obtenir un plus grand contrôle sur le processus de paiement tout en offrant une expérience utilisateur fluide. Vous pouvez adapter ces deux étapes à vos besoins spécifiques (par exemple, pré-autorisation ou paiement différé).
+
+<Warning>
+  La gestion des erreurs est importante, car la confirmation d'une intention de paiement peut échouer
+  pour diverses raisons (fonds insuffisants, informations de paiement incorrectes,
+  etc.).
+</Warning>
+
+## Réponse
+
+### 200 OK
+
+Le corps de la réponse contiendra les paramètres suivants :
+
+```JavaScript
+{
+    "intent_id": "pi_9aATHBv8UXuD6H5qrSav",
+    "financial_transaction_id": "832546449",
+    "transaction_id": "3c043d55-e659-4a86-9fab-b377fea9ee6b",
+    "amount": 500,
+    "currency": "xaf",
+    "status": "succeeded",
+    "captured": true,
+    "external_id": "ext_3rxAagDtTSlN9XO96R1slJk14WENvxOlJbCu",
+    "id": "ch_1jro7CEishIEWadybzlm",
+}
+```
+
+### 422 Mauvaise requête
+
+Si la requête est invalide, le serveur renverra un code d'état 422 avec un message d'erreur.
+
+```javascript
+{
+    "error": {
+        "message": "E_CONFIRMED_INTENT_EXCEPTION: L'intention est déjà confirmée",
+        "code": "E_CONFIRMED_INTENT_EXCEPTION"
+    }
+}
+```
+
+### 401 Non autorisé
+
+Si la clé secrète est invalide, le serveur renverra un code d'état 401 avec un message d'erreur.
+
+```javascript
+{
+    "error": {
+        "message": "Non autorisé",
+        "code": "Unauthorized"
+    }
+}
+```

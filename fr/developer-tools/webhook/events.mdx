@@ -1,0 +1,28 @@
+---
+title: "Événements supportés"
+description: "Liste des événements qui peuvent être déclenchés par l'API"
+---
+
+## Types d'événements
+
+Yabetoo prend actuellement en charge les types d'événements webhook suivants. Chaque événement correspond à une action spécifique qui se produit sur votre compte et peut être utilisé pour déclencher une logique dans votre backend (par exemple, mettre à jour les statuts des commandes, envoyer des notifications, etc.).
+
+### `intent.completed`
+
+Déclenché lorsqu'un paiement a été reçu avec succès sur votre compte.
+
+- **Cas d'utilisation :** Confirmer qu'un client a effectué son paiement.
+- **Actions typiques :**
+  - Marquer une commande comme payée
+  - Envoyer un email ou SMS de confirmation
+  - Mettre à jour le statut du paiement dans votre base de données
+
+### `disbursement.completed`
+
+Déclenché lorsqu'un décaissement (retrait) a été traité avec succès depuis votre compte vers un destinataire.
+
+- **Cas d'utilisation :** Suivre les paiements sortants ou automatiser les tâches comptables.
+- **Actions typiques :**
+  - Notifier le destinataire
+  - Enregistrer la transaction dans votre système financier
+  - Mettre à jour le statut du paiement dans votre tableau de bord administrateur

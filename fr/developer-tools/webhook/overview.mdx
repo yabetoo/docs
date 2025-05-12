@@ -1,0 +1,169 @@
+---
+title: "Démarrage rapide"
+description: "Les webhooks sont des callbacks qui sont appelés lorsqu'un événement spécifique se produit"
+---
+
+Les webhooks permettent à votre application de recevoir des notifications en temps réel chaque fois que des événements spécifiques se produisent sur votre compte Yabetoo. Au lieu d'interroger continuellement l'API pour vérifier les mises à jour, vous pouvez configurer des webhooks pour recevoir automatiquement les données d'événements dès qu'ils se produisent.
+
+Ce mécanisme est essentiel pour réagir aux événements du cycle de vie des paiements tels que `payment_intent.succeeded`, `payment_intent.failed`, ou `session.created`, permettant à votre backend de rester synchronisé avec le flux de paiement de l'utilisateur.
+
+## Comment fonctionnent les Webhooks
+
+1. Vous enregistrez une **URL Webhook** dans votre tableau de bord ou vos paramètres d'intégration.
+2. Lorsqu'un événement se produit (par exemple, un paiement est confirmé), Yabetoo envoie une requête HTTP `POST` à votre point de terminaison.
+3. La requête contient une **charge utile JSON** décrivant l'événement.
+4. Votre serveur doit répondre avec un statut `200 OK` pour accuser réception.
+
+<Tip>
+  **Conseil de sécurité :** Vous devez toujours vérifier la signature du webhook pour vous assurer que
+  la requête provient réellement de Yabetoo.
+</Tip>
+
+## Comment créer un point de terminaison Webhook
+
+Suivez ces étapes pour configurer un point de terminaison webhook pour votre intégration Yabetoo
+
+<Card>
+  <img
+    className="block rounded-lg"
+    src="/assets/images/webhook.png"
+    alt="Webhook"
+  />
+</Card>
+
+### 1. Accéder au tableau de bord développeur
+
+- Connectez-vous à votre tableau de bord Yabetoo.
+- Dans le menu de gauche, cliquez sur **Développeurs**.
+
+### 2. Ouvrir l'onglet Webhooks
+
+- Une fois sur la page Développeur, cliquez sur l'onglet **Webhooks** en haut (à côté de "Clés API").
+
+### 3. Ajouter un nouveau point de terminaison
+
+- Cliquez sur le bouton ➕ **Ajouter un point de terminaison** situé dans le coin supérieur droit.
+
+### 4. Configurer le Webhook
+
+- Entrez l'URL complète de votre point de terminaison webhook (par exemple `https://votre-domaine.com/webhook/yabetoo`).
+- Choisissez les types d'événements auxquels vous souhaitez vous abonner (par exemple `payment_intent.succeeded`, `session.created`, etc.).
+- Cliquez sur **Enregistrer** pour enregistrer votre webhook.
+
+<Note>
+Votre point de terminaison **doit accepter les requêtes HTTP `POST`** de Yabetoo et répondre avec un code de statut `200 OK` dans un délai raisonnable (généralement moins de 5 secondes).
+
+Si votre serveur ne répond pas ou renvoie un statut non-2xx, Yabetoo **réessaiera** la livraison plusieurs fois sur une courte période.
+</Note>
+
+## En-têtes de sécurité Webhook
+
+Chaque requête webhook envoyée par Yabetoo inclut un ensemble d'en-têtes HTTP personnalisés qui vous permettent de :
+
+- Vérifier l'**authenticité** de la requête.
+- Identifier le **type d'événement**.
+- Suivre les **livraisons** individuelles de webhooks.
+- Prévenir les **attaques par rejeu** en utilisant l'horodatage.
+
+Voici la liste des en-têtes que vous devez attendre et gérer :
+
+| Nom de l'en-tête                | Description                                                                                                     |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `X-Yabetoo-Webhook-Signature` | Une signature HMAC-SHA256 générée à l'aide de votre secret webhook. Utilisée pour vérifier que la charge utile n'a pas été modifiée. |
+| `X-Yabetoo-Webhook-Timestamp` | L'horodatage Unix (en secondes) lorsque la requête a été envoyée. Utilisez-le pour prévenir les attaques par rejeu. |
+| `X-Yabetoo-Webhook-Event`     | Le type d'événement (par exemple `payment_intent.succeeded`, `session.created`).                                  |
+| `X-Yabetoo-Webhook-Id`        | Un identifiant unique pour la livraison du webhook. Utile pour le débogage ou la journalisation.                |
+
+---
+
+### Exemple d'en-têtes bruts
+
+```http
+POST /webhook/yabetoo HTTP/1.1
+Host: votre-domaine.com
+Content-Type: application/json
+X-Yabetoo-Webhook-Signature: v1=bb8f4e3a6a9d...
+X-Yabetoo-Webhook-Timestamp: 1713108000
+X-Yabetoo-Webhook-Event: payment_intent.succeeded
+X-Yabetoo-Webhook-Id: evt_92JsDK8WqRjaoA
+```
+
+## Vérification des signatures Webhook
+
+Pour vous assurer que les requêtes webhook sont légitimement envoyées par Yabetoo et n'ont pas été altérées, vous devez vérifier la signature incluse dans l'en-tête `X-Yabetoo-Webhook-Signature`.
+
+### Étapes de vérification
+
+Suivez les étapes ci-dessous pour valider de manière sécurisée les requêtes webhook entrantes :
+
+### 1. Récupérer votre secret Webhook
+
+Obtenez votre **Secret Webhook** depuis votre tableau de bord Yabetoo dans la section Webhooks. Ce secret est utilisé pour calculer la signature HMAC.
+
+### 2. Extraire la signature et l'horodatage
+
+À partir des en-têtes de la requête, extrayez :
+
+- `X-Yabetoo-Webhook-Signature` — contient la chaîne de signature, par exemple : `t=1620123456,v1=abcdef1234567890abcdef1234567890`
+- `X-Yabetoo-Webhook-Timestamp` — l'horodatage utilisé dans la signature
+
+### 3. Construire la charge utile signée
+
+Créez la chaîne à signer en concaténant :
+
+```text
+{timestamp}.{raw_body}
+```
+
+Où :
+
+- `timestamp` = valeur de `X-Yabetoo-Webhook-Timestamp`
+- `raw_body` = le corps brut exact de la requête, en tant que chaîne UTF-8 (avant l'analyse JSON)
+
+**Exemple :** `1713108000.{"id":"evt_92JsDK8WqRjaoA","type":"payment_intent.succeeded"}`
+
+### 4. Calculer la signature HMAC
+
+Calculez le HMAC en utilisant **SHA-256** avec votre secret webhook comme clé :
+
+```javascript
+const crypto = require("crypto");
+
+const secret = "votre_secret_webhook";
+const payload =
+  '1713108000.{"id":"evt_92JsDK8WqRjaoA","type":"payment_intent.succeeded"}';
+const hmac = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+```
+
+### 5. Comparer le HMAC
+
+Comparez le HMAC calculé avec la valeur de `X-Yabetoo-Webhook-Signature`.
+
+Utilisez une **comparaison à temps constant** pour comparer votre signature calculée avec celle reçue dans l'en-tête (`v1=...`). Cela aide à prévenir les attaques temporelles.
+
+Si les signatures correspondent, la requête est authentique et peut être considérée comme fiable.
+
+---
+
+### Exemple JavaScript (Node.js)
+
+```js
+const crypto = require("crypto");
+
+function verifyWebhookSignature(payload, signature, timestamp, secret) {
+  // Construire la charge utile signée
+  const signedPayload = `${timestamp}.${JSON.stringify(payload)}`;
+
+  // Calculer la signature HMAC-SHA256
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(signedPayload)
+    .digest("hex");
+
+  // Comparer les signatures (utiliser une comparaison à temps constant)
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+```

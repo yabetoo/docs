@@ -1,0 +1,23 @@
+---
+title: "Vue d'ensemble"
+description: "Les décaissements sont des paiements de votre compte vers le compte d'un client"
+---
+
+Les décaissements sont des paiements de votre compte vers le compte d'un client. Il s'agit d'un paiement unique utilisé pour transférer des fonds de votre compte vers le compte d'un client.
+
+<Note>
+  Veuillez noter que l'API de décaissement est disponible exclusivement pour les comptes
+  partenaires. Pour obtenir l'accès à cette fonctionnalité, veuillez nous envoyer une demande.
+</Note>
+
+## Décaissement : Traitement asynchrone
+
+Un décaissement est traité de manière asynchrone, ce qui signifie que l'API renverra une réponse immédiatement, mais le paiement effectif peut prendre un certain temps pour être complété, généralement J+1 après la création de la demande. Cela est dû à la nécessité de vérifier le compte du client et de traiter le paiement.
+
+## Notification via Webhook
+
+Un webhook est une URL de callback qui est appelée lorsqu'un décaissement est créé ou mis à jour. Cela vous permet de recevoir des notifications sur le statut du décaissement et de prendre les mesures appropriées.
+
+Pour être informé en temps réel de l'exécution d'un décaissement, vous devez créer un webhook de type `disbursement.complete`.
+
+Ce webhook est déclenché automatiquement dès que le décaissement est effectivement exécuté.

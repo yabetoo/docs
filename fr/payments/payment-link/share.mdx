@@ -1,0 +1,115 @@
+---
+title: "Partager un lien de paiement"
+description: "Apprenez à partager vos liens de paiement avec vos clients"
+---
+
+## Méthodes de partage
+
+Une fois que vous avez créé un lien de paiement, vous pouvez le partager de plusieurs manières avec vos clients.
+
+### 1. Partage direct du lien
+
+Le moyen le plus simple est de copier l'URL du lien de paiement et de la partager directement avec votre client via :
+- Email
+- SMS
+- WhatsApp
+- Messagerie instantanée
+- Réseaux sociaux
+
+```javascript
+const paymentLink = "https://pay.yabetoopay.com/pay/pl_1jro7CEishIEWadybzlm";
+```
+
+### 2. Intégration par email
+
+Vous pouvez intégrer le lien de paiement dans un email personnalisé :
+
+```html
+<a href="https://pay.yabetoopay.com/pay/pl_1jro7CEishIEWadybzlm" 
+   style="background-color: #0070f3; 
+          color: white; 
+          padding: 12px 24px; 
+          text-decoration: none; 
+          border-radius: 4px;">
+  Payer maintenant
+</a>
+```
+
+### 3. Code QR
+
+Vous pouvez générer un code QR pour votre lien de paiement. Les clients peuvent scanner le code avec leur téléphone pour accéder directement à la page de paiement.
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-links/pl_1jro7CEishIEWadybzlm/qr",
+  {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${secret_key}`,
+    },
+  }
+);
+
+const qrCode = await response.blob();
+```
+
+## Bonnes pratiques
+
+### Sécurité
+- Ne partagez jamais votre clé secrète avec vos clients
+- Vérifiez toujours que le lien est valide avant de le partager
+- Utilisez HTTPS pour les intégrations web
+
+### Expérience utilisateur
+- Incluez une description claire du produit ou service
+- Précisez le montant et la devise
+- Indiquez la durée de validité du lien
+- Fournissez des instructions de paiement si nécessaire
+
+### Suivi
+- Utilisez des métadonnées pour suivre la source du partage
+- Configurez des webhooks pour être notifié des paiements
+- Gardez une trace des liens partagés
+
+## Personnalisation de l'expérience
+
+### Email personnalisé
+
+Voici un exemple de template d'email HTML :
+
+```html
+<!DOCTYPE html>
+<html>
+<body>
+  <h2>Votre commande est prête !</h2>
+  <p>Bonjour [Nom du client],</p>
+  <p>Voici le lien pour payer votre commande :</p>
+  
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="https://pay.yabetoopay.com/pay/pl_1jro7CEishIEWadybzlm"
+       style="background-color: #0070f3;
+              color: white;
+              padding: 12px 24px;
+              text-decoration: none;
+              border-radius: 4px;">
+      Payer 5000 XAF
+    </a>
+  </div>
+  
+  <p>Ce lien expirera dans 7 jours.</p>
+</body>
+</html>
+```
+
+### SMS
+
+Exemple de message SMS :
+
+```text
+[Nom de votre entreprise] : Payez votre commande (5000 XAF) en cliquant sur ce lien sécurisé : https://pay.yabetoopay.com/pay/pl_1jro7CEishIEWadybzlm
+```
+
+<Note>
+  Pour une meilleure traçabilité, utilisez des UTM parameters dans vos liens
+  lorsque vous les partagez via différents canaux.
+</Note>

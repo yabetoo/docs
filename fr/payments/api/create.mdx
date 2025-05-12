@@ -1,0 +1,110 @@
+---
+title: "Créer une intention de paiement"
+description: "Créez une intention de paiement pour traiter un paiement"
+---
+
+## Qu'est-ce qu'une intention de paiement ?
+
+Une intention de paiement est une ressource qui représente votre souhait de recevoir un paiement pour un montant spécifique. Lorsque vous créez une intention de paiement, vous ne capturez pas immédiatement le montant ; c'est une étape préparatoire.
+
+Une intention de paiement suit le processus de paiement d'un client. Elle enregistre des détails tels que le montant, la devise et la méthode de paiement.
+
+## Préparer votre requête
+
+Le point de terminaison à utiliser est `POST https://pay.sandbox.yabetoopay.com/v1/payment-intents` pour l'environnement sandbox et `POST https://pay.api.yabetoopay.com/v1/payment-intents` pour l'environnement de production.
+
+<Note>
+  Sécurité de la clé secrète : La clé secrète (secret_key) doit rester confidentielle et
+  ne doit jamais être exposée dans le frontend ou le code client. Elle doit uniquement être utilisée
+  côté serveur.
+</Note>
+
+1. Utilisez la clé secrète fournie `secret_key` pour vous authentifier auprès de l'API. Pour des raisons de sécurité, cette clé ne doit être utilisée que côté serveur.
+2. Le corps de la requête doit contenir les paramètres suivants :
+
+```javascript
+{
+  amount: 2000,
+  currency: "xaf",
+  description: "Paiement pour produit",
+  metadata: { orderId: "1234" },
+}
+```
+
+### Paramètres
+
+- `amount` : Le montant à payer
+- `currency` : La devise du paiement
+- `description` : Une description du paiement (optionnel)
+- `metadata` : Métadonnées supplémentaires (optionnel)
+
+## Créer une intention de paiement
+
+Vous pouvez créer une intention de paiement en utilisant le code suivant. Cet exemple est en JavaScript (Node.js) mais vous pouvez utiliser n'importe quel langage en suivant la même logique.
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+    body: JSON.stringify({
+      amount: 2000,
+      currency: "xaf",
+    }),
+  }
+);
+
+const data = await response.json();
+```
+
+## Réponse
+
+### 200 OK
+
+Le corps de la réponse contiendra les paramètres suivants :
+
+- `amount` : Le montant à payer
+- `currency` : La devise du paiement
+- `label` : Le libellé de l'intention de paiement
+- `id` : L'identifiant de l'intention de paiement
+- `client_secret` : Le secret client de l'intention de paiement
+
+```javascript
+{
+    "amount": 2000,
+    "currency": "xaf",
+    "label": "payment_intent",
+    "id": "pi_XdLeavDjiiaEx2y5nRz0",
+    "client_secret": ""
+}
+```
+
+### 422 Mauvaise requête
+
+Si la requête est invalide, le serveur renverra un code d'état 422 avec un message d'erreur.
+
+```javascript
+{
+    "errors": [
+        {
+            "rule": "required",
+            "field": "currency",
+            "message": "La validation requise a échoué"
+        }
+    ]
+}
+```
+
+### 401 Non autorisé
+
+Si la clé secrète est invalide, le serveur renverra un code d'état 401 avec un message d'erreur.
+
+```javascript
+{
+    "error": "Non autorisé"
+}
+```

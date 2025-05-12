@@ -1,0 +1,221 @@
+---
+title: Java
+description: Bibliothèque pour interagir avec votre intégration Yabetoo en Java.
+icon: "java"
+---
+
+Ce SDK vous permet d'intégrer facilement le système de paiement sécurisé de Yabetoo dans vos applications Java. Que vous développiez une application web, mobile ou de bureau, ce SDK fournit une interface simple et intuitive pour interagir avec l'API de Yabetoo.
+
+## Installation
+
+### Prérequis
+
+- Java 8 ou supérieur
+- Maven ou Gradle
+- Un compte Yabetoo actif
+- Vos clés API Yabetoo
+
+### Installation avec Maven
+
+Ajoutez la dépendance suivante à votre fichier `pom.xml` :
+
+```xml
+<dependency>
+    <groupId>com.yabetoo</groupId>
+    <artifactId>yabetoo-java</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+### Installation avec Gradle
+
+Ajoutez la dépendance suivante à votre fichier `build.gradle` :
+
+```groovy
+implementation 'com.yabetoo:yabetoo-java:1.0.0'
+```
+
+## Configuration
+
+### Initialisation du SDK
+
+```java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+Yabetoo yabetoo = new Yabetoo(config);
+```
+
+## Gestion des paiements
+
+### Créer une intention de paiement
+
+```java
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.request.PaymentIntentRequest;
+
+PaymentIntentRequest request = PaymentIntentRequest.builder()
+    .amount(5000)
+    .currency("XAF")
+    .description("Achat de services Yabetoo")
+    .putMetadata("order_id", "6735")
+    .putMetadata("customer_id", "12345")
+    .build();
+
+PaymentIntent paymentIntent = yabetoo.paymentIntents().create(request);
+System.out.println("ID du paiement : " + paymentIntent.getId());
+```
+
+### Confirmer une intention de paiement
+
+```java
+import com.yabetoo.model.PaymentMethod;
+
+PaymentMethod.MomoDetails momoDetails = PaymentMethod.MomoDetails.builder()
+    .msisdn("242066594470")
+    .country("CG")
+    .operatorName("mtn")
+    .build();
+
+PaymentMethod paymentMethod = PaymentMethod.builder()
+    .type("momo")
+    .momoDetails(momoDetails)
+    .build();
+
+PaymentIntent confirmedPayment = yabetoo.paymentIntents().confirm(
+    paymentIntent.getId(),
+    PaymentIntentConfirmRequest.builder()
+        .clientSecret(paymentIntent.getClientSecret())
+        .firstName("Jean")
+        .lastName("Dupont")
+        .email("jean.dupont@example.com")
+        .paymentMethod(paymentMethod)
+        .build()
+);
+```
+
+### Gestion des erreurs
+
+```java
+try {
+    PaymentIntent payment = yabetoo.paymentIntents().confirm(/* ... */);
+} catch (YabetooException e) {
+    System.err.println("Code d'erreur : " + e.getCode());
+    System.err.println("Message : " + e.getMessage());
+    System.err.println("Détails : " + e.getDetails());
+}
+```
+
+## Sessions de paiement
+
+### Créer une session
+
+```java
+import com.yabetoo.model.Session;
+import com.yabetoo.request.SessionCreateRequest;
+
+SessionCreateRequest request = SessionCreateRequest.builder()
+    .successUrl("https://votre-site.com/success")
+    .cancelUrl("https://votre-site.com/cancel")
+    .addLineItem(LineItem.builder()
+        .productId("prod_12345")
+        .quantity(1)
+        .price(200000)
+        .productName("Écran HD")
+        .build())
+    .currency("XAF")
+    .build();
+
+Session session = yabetoo.sessions().create(request);
+String checkoutUrl = session.getUrl();
+```
+
+### Récupérer une session
+
+```java
+Session session = yabetoo.sessions().retrieve("cs_123456789");
+```
+
+## Webhooks
+
+### Vérifier une signature webhook
+
+```java
+String payload = "..."; // Corps de la requête webhook
+String signature = request.getHeader("X-Yabetoo-Webhook-Signature");
+String secret = "whsec_..."; // Votre clé secrète webhook
+
+try {
+    Event event = Webhook.constructEvent(payload, signature, secret);
+    // Gérer l'événement selon son type
+    switch (event.getType()) {
+        case "payment_intent.succeeded":
+            PaymentIntent payment = (PaymentIntent) event.getData();
+            handleSuccessfulPayment(payment);
+            break;
+        // Gérer d'autres types d'événements...
+    }
+} catch (YabetooException e) {
+    // Gérer l'erreur de signature invalide
+    System.err.println("Signature webhook invalide");
+}
+```
+
+## Configuration avancée
+
+### Timeouts personnalisés
+
+```java
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+    .setConnectTimeout(30000)  // 30 secondes
+    .setReadTimeout(30000);    // 30 secondes
+
+Yabetoo yabetoo = new Yabetoo(config);
+```
+
+### Proxy HTTP
+
+```java
+Proxy proxy = new Proxy(Proxy.Type.HTTP, 
+    new InetSocketAddress("proxy.example.com", 8080));
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+    .setProxy(proxy);
+
+Yabetoo yabetoo = new Yabetoo(config);
+```
+
+## Bonnes pratiques
+
+1. **Gestion des secrets**
+   - Ne stockez jamais les clés API directement dans le code
+   - Utilisez des variables d'environnement ou un gestionnaire de secrets
+
+2. **Gestion des erreurs**
+   - Implémentez une gestion complète des erreurs
+   - Journalisez les erreurs pour le débogage
+   - Fournissez des messages d'erreur appropriés aux utilisateurs
+
+3. **Validation**
+   - Validez toutes les entrées utilisateur avant de les envoyer à l'API
+   - Vérifiez les montants et les devises
+   - Validez les numéros de téléphone et les emails
+
+4. **Sécurité**
+   - Utilisez HTTPS pour toutes les communications
+   - Vérifiez toujours les signatures webhook
+   - Effectuez une double vérification des paiements réussis
+
+## Conclusion
+
+Le SDK Java de Yabetoo simplifie l'intégration des paiements dans vos applications Java. Sa conception orientée objet et son API fluide rendent le code plus lisible et maintenable. Pour plus d'informations et des exemples détaillés, consultez notre [documentation complète](https://docs.yabetoo.com).
+
+<Note>
+  Pour toute question ou assistance technique, n'hésitez pas à contacter notre
+  équipe support à support@yabetoopay.com
+</Note>

@@ -1,0 +1,79 @@
+---
+title: Récupérer une session
+description: Récupérez les détails d'une session de paiement existante.
+---
+
+## Endpoint
+
+```bash
+GET /v1/checkout/sessions/:id
+```
+
+## Paramètres
+
+### Paramètres de chemin
+
+| Paramètre | Description |
+|-----------|-------------|
+| `id` | **Obligatoire**. ID de la session de paiement |
+
+## Exemple de requête
+
+```bash
+curl https://api.yabetoopay.com/v1/checkout/sessions/cs_test_123456789 \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+## Réponse
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "cs_test_123456789",
+    "object": "checkout.session",
+    "amount": 10000,
+    "currency": "XAF",
+    "status": "complete",
+    "payment_status": "paid",
+    "url": "https://checkout.yabetoopay.com/c/cs_test_123456789",
+    "customer_details": {
+      "email": "client@example.com",
+      "name": "Jean Dupont"
+    },
+    "line_items": [
+      {
+        "product_name": "T-shirt",
+        "quantity": 2,
+        "price": 5000,
+        "product_id": "prod_123"
+      }
+    ],
+    "metadata": {
+      "order_id": "6735"
+    },
+    "created_at": "2023-05-12T10:12:32Z",
+    "expires_at": 1683907200
+  }
+}
+```
+
+### Statuts possibles
+
+| Statut | Description |
+|--------|-------------|
+| `pending` | Session créée, en attente de paiement |
+| `complete` | Paiement effectué avec succès |
+| `expired` | Session expirée sans paiement |
+| `canceled` | Session annulée |
+
+## Codes d'erreur
+
+| Code | Description |
+|------|-------------|
+| `session_not_found` | Session introuvable |
+| `invalid_session_id` | Format d'ID de session invalide |
+
+<Note>
+  Les sessions complétées ou expirées restent accessibles pendant 30 jours.
+</Note>

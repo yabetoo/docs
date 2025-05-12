@@ -1,0 +1,112 @@
+---
+title: Introduction
+description: Guide de démarrage pour l'API Yabetoo.
+---
+
+L'API Yabetoo est organisée autour des principes REST. Notre API utilise des endpoints prévisibles avec des ressources orientées URL, accepte des requêtes JSON encodées en form-data, renvoie des réponses JSON encodées, et utilise les codes de statut HTTP standard.
+
+## Base URL
+
+```bash
+https://api.yabetoopay.com
+```
+
+Pour le mode test, utilisez :
+```bash
+https://api.sandbox.yabetoopay.com
+```
+
+## Authentication
+
+L'API Yabetoo utilise des clés API pour authentifier les requêtes. Vous pouvez gérer vos clés API dans le [tableau de bord](https://dashboard.yabetoopay.com/settings/api-keys).
+
+Toutes les requêtes API doivent être effectuées via HTTPS et doivent inclure votre clé API dans l'en-tête Authorization :
+
+```bash
+Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+## Formats de requête
+
+### Content-Type
+
+Pour les requêtes POST et PUT, le corps doit être encodé en JSON avec l'en-tête :
+
+```bash
+Content-Type: application/json
+```
+
+### Paramètres de pagination
+
+Pour les endpoints qui renvoient des listes, utilisez ces paramètres :
+
+- `limit` : Nombre d'éléments par page (défaut : 10, max : 100)
+- `page` : Numéro de la page (commence à 1)
+
+## Réponses
+
+### Structure
+
+Toutes les réponses sont en JSON avec cette structure :
+
+```json
+{
+  "status": "success",
+  "data": {
+    // Les données de la réponse
+  },
+  "message": "Description optionnelle"
+}
+```
+
+### Codes HTTP
+
+- `200` : Succès
+- `201` : Ressource créée
+- `400` : Requête invalide
+- `401` : Non authentifié
+- `403` : Non autorisé
+- `404` : Ressource non trouvée
+- `429` : Trop de requêtes
+- `500` : Erreur serveur
+
+## Gestion des erreurs
+
+En cas d'erreur, vous recevrez :
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "invalid_request",
+    "message": "Description de l'erreur",
+    "details": {
+      // Détails supplémentaires si disponibles
+    }
+  }
+}
+```
+
+## Limites de taux
+
+Les requêtes sont limitées à :
+- 100 requêtes par minute en mode test
+- 1000 requêtes par minute en production
+
+## Versions
+
+- Spécifiez la version dans l'URL : `/v1/payments`
+- Ou via l'en-tête : `Yabetoo-Version: 2023-01-01`
+
+## Idempotence
+
+Pour les requêtes POST, utilisez un ID unique dans l'en-tête :
+
+```bash
+Idempotency-Key: a026169c-8558-4f58-94c4-c45b0b77647f
+```
+
+<Note>
+  Conservez vos clés API en sécurité. Ne les partagez jamais publiquement ou dans
+  le code client.
+</Note>

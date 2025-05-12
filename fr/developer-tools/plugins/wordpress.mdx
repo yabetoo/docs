@@ -1,0 +1,82 @@
+---
+title: WordPress
+description: Intégrez Yabetoo à votre site WordPress.
+---
+
+Le plugin WordPress Yabetoo vous permet d'accepter facilement les paiements sur votre site WordPress.
+
+## Installation
+
+1. Connectez-vous à votre tableau de bord WordPress en tant qu'administrateur
+2. Accédez à "Extensions" > "Ajouter"
+3. Recherchez "Yabetoo Payment Gateway"
+4. Cliquez sur "Installer maintenant" puis sur "Activer"
+
+## Configuration
+
+1. Accédez à "WooCommerce" > "Réglages" > "Paiements"
+2. Activez "Yabetoo" en cliquant sur le bouton
+3. Cliquez sur "Gérer"
+4. Configurez les paramètres suivants :
+   - Mode Test/Production
+   - Clé API secrète
+   - Clé API publique
+   - Description de la méthode de paiement (affichée aux clients)
+5. Cliquez sur "Enregistrer les modifications"
+
+## Personnalisation
+
+### Modifier l'apparence du bouton
+
+Vous pouvez personnaliser l'apparence du bouton de paiement en ajoutant du CSS personnalisé dans votre thème :
+
+```css
+.yabetoo-payment-button {
+    background-color: #your-color;
+    color: #text-color;
+}
+```
+
+### Hooks WordPress
+
+Le plugin fournit plusieurs hooks pour personnaliser son comportement :
+
+```php
+// Modifier les paramètres de paiement avant la création
+add_filter('yabetoo_payment_parameters', function($parameters, $order) {
+    // Personnaliser les paramètres
+    return $parameters;
+}, 10, 2);
+
+// Action après un paiement réussi
+add_action('yabetoo_payment_success', function($order_id) {
+    // Votre code ici
+});
+```
+
+## Dépannage
+
+### Problèmes courants
+
+1. **Le bouton de paiement ne s'affiche pas**
+   - Vérifiez que le plugin est activé
+   - Assurez-vous que les clés API sont correctement configurées
+
+2. **Erreur de configuration**
+   - Vérifiez que vous utilisez les bonnes clés API pour le mode choisi
+   - Assurez-vous que votre site est en HTTPS
+
+3. **Webhooks non reçus**
+   - Vérifiez que l'URL des webhooks est accessible publiquement
+   - Confirmez que la signature webhook est correctement configurée
+
+## Support
+
+Pour toute assistance supplémentaire :
+- Consultez notre [documentation complète](https://docs.yabetoo.com)
+- Contactez notre support à support@yabetoopay.com
+
+<Note>
+  Assurez-vous de toujours tester le plugin en mode Test avant de passer en
+  production.
+</Note>

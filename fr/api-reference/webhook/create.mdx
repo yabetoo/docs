@@ -1,0 +1,95 @@
+---
+title: Créer un webhook
+description: Créez un nouvel endpoint webhook pour recevoir des notifications.
+---
+
+## Endpoint
+
+```bash
+POST /v1/webhooks
+```
+
+## Paramètres
+
+### Corps de la requête
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `url` | `string` | **Obligatoire**. URL de l'endpoint webhook |
+| `description` | `string` | Description du webhook |
+| `enabled_events` | `array` | **Obligatoire**. Liste des événements à recevoir |
+| `metadata` | `object` | Données personnalisées |
+
+## Exemple de requête
+
+```bash
+curl -X POST https://api.yabetoopay.com/v1/webhooks \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks",
+    "description": "Webhook de production",
+    "enabled_events": [
+      "payment_intent.succeeded",
+      "payment_intent.failed",
+      "disbursement.succeeded",
+      "disbursement.failed"
+    ],
+    "metadata": {
+      "environment": "production"
+    }
+  }'
+```
+
+## Réponse
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": "whk_123456789",
+    "object": "webhook",
+    "url": "https://example.com/webhooks",
+    "description": "Webhook de production",
+    "status": "active",
+    "secret": "whsec_XXXXXXXXXXXXXXXXXXXXXXXX",
+    "enabled_events": [
+      "payment_intent.succeeded",
+      "payment_intent.failed",
+      "disbursement.succeeded",
+      "disbursement.failed"
+    ],
+    "metadata": {
+      "environment": "production"
+    },
+    "created_at": "2023-05-12T10:12:32Z",
+    "last_error": null
+  }
+}
+```
+
+### Événements disponibles
+
+| Événement | Description |
+|-----------|-------------|
+| `payment_intent.succeeded` | Paiement réussi |
+| `payment_intent.failed` | Paiement échoué |
+| `payment_intent.canceled` | Paiement annulé |
+| `disbursement.succeeded` | Versement réussi |
+| `disbursement.failed` | Versement échoué |
+| `remittance.succeeded` | Transfert réussi |
+| `remittance.failed` | Transfert échoué |
+| `remittance.pending_verification` | Transfert en attente de vérification |
+
+## Codes d'erreur
+
+| Code | Description |
+|------|-------------|
+| `invalid_request` | Paramètres manquants ou invalides |
+| `invalid_url` | URL invalide |
+| `invalid_events` | Événements non supportés |
+
+<Note>
+  Conservez précieusement le `secret` du webhook. Il est nécessaire pour
+  vérifier l'authenticité des notifications reçues.
+</Note>

@@ -1,0 +1,95 @@
+---
+title: "Vue d'ensemble"
+---
+
+## Vue d'ensemble de la page de paiement hébergée
+
+Yabetoo fournit une **page de paiement hébergée** — une solution sécurisée et facile à intégrer qui vous permet d'accepter des paiements sans manipuler directement les données de paiement sensibles.
+
+En utilisant nos **Sessions de paiement**, vous pouvez rediriger vos clients vers une page de paiement professionnelle hébergée par Yabetoo, où ils peuvent finaliser leur achat en toute sécurité. Cette approche est similaire à des solutions comme Stripe Checkout.
+
+<Card>
+  <img
+    className="block rounded-lg"
+    src="/assets/images/checkout.png"
+    alt="Checkout Light"
+  />
+</Card>
+
+### Avantages de l'utilisation d'une Session de paiement
+
+L'utilisation d'une page de paiement hébergée offre plusieurs avantages pour vous en tant que développeur ou commerçant.
+
+- **Sécurité** : Yabetoo gère la sécurité des paiements, vous permettant de vous concentrer sur votre application.
+- **Conformité** : En utilisant une page de paiement hébergée, vous réduisez vos obligations de conformité PCI, car Yabetoo gère les informations sensibles.
+- **Expérience utilisateur** : La page de paiement est optimisée pour une expérience utilisateur fluide et rapide.
+- **Personnalisation** : Vous pouvez personnaliser l'apparence de la page de paiement pour correspondre à votre marque.
+
+### Flux de la Session de paiement
+
+<Steps>
+  <Step title="Créer une Session de paiement">
+    Lors de la création d'une session, vous envoyez les informations sur les articles,
+    le montant total, la devise et les URLs de redirection (pour succès ou annulation).
+  </Step>
+  <Step title="Page de paiement hébergée">
+    Yabetoo renvoie une URL unique que vous pouvez utiliser pour rediriger les utilisateurs
+    vers la page de paiement hébergée.
+  </Step>
+  <Step title="Confirmation du paiement">
+    Une fois le paiement effectué avec succès, l'utilisateur est redirigé vers
+    l'URL que vous avez spécifiée dans successUrl, avec les détails de la transaction.
+    Si l'utilisateur annule, il sera redirigé vers l'URL définie dans cancelUrl.
+  </Step>
+</Steps>
+
+## Personnaliser le paiement
+
+<CardGroup cols={2}>
+  <Card title="Personnaliser l'apparence" icon="pencil">
+    ![Bientôt disponible](https://img.shields.io/badge/statut-bient%C3%B4t%20disponible-blue) Vous
+    pouvez personnaliser l'apparence de la page de paiement pour correspondre à votre marque et
+    design.
+  </Card>
+  <Card title="Collecter des informations supplémentaires" icon="user" href="#">
+    Vous pouvez collecter des informations supplémentaires comme le nom et l'email
+    du client.
+  </Card>
+  <Card title="Personnaliser le flux de paiement" icon="code" href="#">
+    Vous pouvez personnaliser le flux de paiement selon vos besoins.
+  </Card>
+</CardGroup>
+
+### Cas d'utilisation
+
+- **E-commerce** : Accepter des paiements pour des biens et services.
+- **Services d'abonnement** : Gérer des paiements récurrents pour des abonnements.
+- **Associations caritatives** : Accepter des dons et des paiements pour des événements.
+- **Éducation** : Vendre des cours et des produits numériques.
+- **Entreprise** : Accepter des paiements pour des services et produits.
+
+### Prérequis
+
+Avant d'utiliser la page de paiement hébergée Yabetoo, assurez-vous d'avoir :
+
+- Un compte Yabetoo valide et des identifiants API.
+- Un nom de domaine et un certificat SSL pour un traitement sécurisé des paiements.
+- Une méthode de paiement configurée dans votre compte Yabetoo.
+
+### Prochaines étapes
+
+1. [Créer une Session de paiement](create)
+2. [Intégrer la Session de paiement](integrate)
+3. [Gérer les événements de paiement](events)
+4. [Tester l'intégration](test)
+
+### Considérations de sécurité
+
+- Toujours valider et assainir toutes les entrées utilisateur.
+- Utiliser HTTPS pour sécuriser la transmission des données.
+- Implémenter une gestion appropriée des erreurs et des logs.
+- Mettre à jour régulièrement vos dépendances et protocoles de sécurité.
+
+### Support
+
+Pour obtenir de l'aide, contactez notre équipe de support à support@yabetoo.com.
