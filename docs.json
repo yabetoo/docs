@@ -9,136 +9,144 @@
   },
   "favicon": "/fav.svg",
   "navigation": {
-    "tabs": [
+    "languages": [
       {
-        "tab": "Guides",
-        "groups": [
+        "language": "en",
+        "tabs": [
           {
-            "group": "Get started",
-            "pages": ["introduction", "quickstart", "development"],
-            "icon": "code"
-          },
-          {
-            "group": "Setup account",
-            "pages": ["account/overview", "account/activate"]
-          }
-        ]
-      },
-      {
-        "tab": "Payments",
-        "groups": [
-          {
-            "group": "Get started",
-            "pages": ["payments/overview"]
-          },
-          {
-            "group": "Build a checkout page",
-            "pages": [
-              "payments/checkout-page/intro",
-              "payments/checkout-page/create"
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": ["en/introduction", "en/quickstart", "en/development"],
+                "icon": "code"
+              },
+              {
+                "group": "Setup account",
+                "pages": ["en/account/overview", "en/account/activate"]
+              }
             ]
           },
           {
-            "group": "Build an advanced payments integration",
-            "pages": [
-              "payments/api/overview",
-              "payments/api/create",
-              "payments/api/confirm"
+            "tab": "Payments",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": ["en/payments/overview"]
+              },
+              {
+                "group": "Build a checkout page",
+                "pages": [
+                  "en/payments/checkout-page/intro",
+                  "en/payments/checkout-page/create"
+                ]
+              },
+              {
+                "group": "Build an advanced payments integration",
+                "pages": [
+                  "en/payments/api/overview",
+                  "en/payments/api/create",
+                  "en/payments/api/confirm"
+                ]
+              },
+              {
+                "group": "Disbursements",
+                "pages": [
+                  "en/payments/disbursement/overview",
+                  "en/payments/disbursement/create",
+                  "en/payments/disbursement/get"
+                ]
+              },
+              {
+                "group": "Remittance",
+                "pages": [
+                  "en/payments/remittance/overview",
+                  "en/payments/remittance/create"
+                ]
+              },
+              {
+                "group": "Use Payment Links",
+                "pages": [
+                  "en/payments/payment-link/intro",
+                  "en/payments/payment-link/create",
+                  "en/payments/payment-link/share"
+                ]
+              }
             ]
           },
-          {
-            "group": "Disbursements",
-            "pages": [
-              "payments/disbursement/overview",
-              "payments/disbursement/create",
-              "payments/disbursement/get"
-            ]
-          },
-          {
-            "group": "Remittance",
-            "pages": [
-              "payments/remittance/overview",
-              "payments/remittance/create"
-            ]
-          },
-          {
-            "group": "Use Payment Links",
-            "pages": [
-              "payments/payment-link/intro",
-              "payments/payment-link/create",
-              "payments/payment-link/share"
-            ]
-          }
-        ]
-      },
 
-      {
-        "tab": "Developer tools",
-        "groups": [
           {
-            "group": "Testing",
-            "pages": ["developer-tools/test/overview"]
-          },
-          {
-            "group": "Webhook",
-            "pages": [
-              "developer-tools/webhook/overview",
-              "developer-tools/webhook/events"
+            "tab": "Developer tools",
+            "groups": [
+              {
+                "group": "Testing",
+                "pages": ["en/developer-tools/test/overview"]
+              },
+              {
+                "group": "Webhook",
+                "pages": [
+                  "en/developer-tools/webhook/overview",
+                  "en/developer-tools/webhook/events"
+                ]
+              },
+              {
+                "group": "Libraries",
+                "pages": [
+                  "en/developer-tools/sdk/php",
+                  "en/developer-tools/sdk/java"
+                ]
+              },
+              {
+                "group": "Plugins",
+                "pages": ["en/developer-tools/plugins/wordpress"]
+              }
             ]
           },
           {
-            "group": "Libraries",
-            "pages": ["developer-tools/sdk/php", "developer-tools/sdk/java"]
-          },
-          {
-            "group": "Plugins",
-            "pages": ["developer-tools/plugins/wordpress"]
-          }
-        ]
-      },
-      {
-        "tab": "API Reference",
-        "groups": [
-          {
-            "group": "API Documentation",
-            "pages": ["api-reference/introduction"]
-          },
-          {
-            "group": "Checkout Session",
-            "pages": [
-              "api-reference/checkout-session/create",
-              "api-reference/checkout-session/get"
-            ]
-          },
-          {
-            "group": "Payment Intent",
-            "pages": [
-              "api-reference/payment-intent/create",
-              "api-reference/payment-intent/confirm",
-              "api-reference/payment-intent/get"
-            ]
-          },
-          {
-            "group": "Disbursement",
-            "pages": [
-              "api-reference/disbursement/create",
-              "api-reference/disbursement/get"
-            ]
-          },
-          {
-            "group": "Remittance",
-            "pages": [
-              "api-reference/remittance/create",
-              "api-reference/remittance/get",
-              "api-reference/remittance/all"
-            ]
-          },
-          {
-            "group": "Webhook",
-            "pages": [
-              "api-reference/webhook/create",
-              "api-reference/webhook/get",
-              "api-reference/webhook/all"
+            "tab": "API Reference",
+            "groups": [
+              {
+                "group": "API Documentation",
+                "pages": ["en/api-reference/introduction"]
+              },
+              {
+                "group": "Checkout Session",
+                "pages": [
+                  "en/api-reference/checkout-session/create",
+                  "en/api-reference/checkout-session/get"
+                ]
+              },
+              {
+                "group": "Payment Intent",
+                "pages": [
+                  "en/api-reference/payment-intent/create",
+                  "en/api-reference/payment-intent/confirm",
+                  "en/api-reference/payment-intent/get"
+                ]
+              },
+              {
+                "group": "Disbursement",
+                "pages": [
+                  "en/api-reference/disbursement/create",
+                  "en/api-reference/disbursement/get"
+                ]
+              },
+              {
+                "group": "Remittance",
+                "pages": [
+                  "en/api-reference/remittance/create",
+                  "en/api-reference/remittance/get",
+                  "en/api-reference/remittance/all"
+                ]
+              },
+              {
+                "group": "Webhook",
+                "pages": [
+                  "en/api-reference/webhook/create",
+                  "en/api-reference/webhook/get",
+                  "en/api-reference/webhook/all"
+                ]
+              }
             ]
           }
         ]
