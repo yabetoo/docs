@@ -1,0 +1,116 @@
+---
+title: "Obtenir vos clés API"
+description: "Apprenez comment obtenir vos clés API secrètes pour commencer l'intégration avec Yabetoo"
+---
+
+# Introduction
+
+Avant de pouvoir intégrer un produit ou une solution Yabetoo Pay, vous devez configurer votre environnement de développement pour obtenir l'identifiant client OAuth 2.0 et les informations d'identification secrètes pour les environnements sandbox et production.
+
+Vous échangez ces informations d'identification contre un token d'accès qui autorise vos appels à l'API REST. Pour tester vos applications web et mobiles, vous créez des comptes sandbox.
+
+## Obtenir vos clés APIs
+
+Pour générer les identifiants de l'API REST pour le sandbox :
+
+1. Créer un compte en cliquant [ici](https://app.yabetoopay.com).
+2. Ensuite vous serez invité à créer une boutique.
+3. Vous trouverez vos clés APIs dans l'onglet développeur.
+
+Les clés d'APIs sont propres à chaque boutique, elles sont strictement personnelles. En aucun cas vous ne devez les communiquer à des tiers personnes.
+
+Votre clé secrète vous permet d'interagir avec les APIs Yabetoo.
+
+<Note>
+  Gardez vos clés API sécurisées et ne les exposez jamais dans le code côté
+  client. Utilisez-les uniquement dans vos applications côté serveur.
+</Note>
+
+## Types de clés API
+
+### Clés de test
+
+- **Utilisation** : Pour le développement et les tests
+- **Environnement** : Sandbox
+- **Transactions** : Aucun argent réel traité
+- **Préfixe** : Commence généralement par `test_`
+
+### Clés de production
+
+- **Utilisation** : Pour les transactions en production
+- **Environnement** : Production
+- **Transactions** : Argent réel traité
+- **Préfixe** : Commence généralement par `live_`
+
+## Bonnes pratiques de sécurité
+
+<Warning>
+  Vos clés secrètes peuvent effectuer n'importe quelle action sur votre compte.
+  Traitez-les comme des mots de passe : - Ne les partagez jamais publiquement -
+  Ne les incluez pas dans le code côté client - Utilisez des variables
+  d'environnement pour les stocker - Changez-les régulièrement - Surveillez leur
+  utilisation
+</Warning>
+
+### Variables d'environnement
+
+Stockez vos clés de manière sécurisée en utilisant des variables d'environnement :
+
+```bash
+# fichier .env
+YABETOO_TEST_SECRET_KEY=test_votre_cle_secrete_ici
+YABETOO_LIVE_SECRET_KEY=live_votre_cle_secrete_ici
+```
+
+### Exemple de code
+
+```php
+// Exemple PHP
+$secretKey = $_ENV['YABETOO_TEST_SECRET_KEY']; // Utilisez la clé de test pour le développement
+// $secretKey = $_ENV['YABETOO_LIVE_SECRET_KEY']; // Utilisez la clé de production pour la production
+
+$yabetoo = new YabetooClient($secretKey);
+```
+
+## Effectuer des appels à l'API REST
+
+Une fois que vous avez vos clés API, vous pouvez commencer à effectuer des requêtes authentifiées vers l'API Yabetoo. Incluez votre clé secrète dans l'en-tête Authorization :
+
+```bash
+curl -X POST "https://api.yabetoopay.com/v1/checkout-sessions" \
+  -H "Authorization: Bearer votre_cle_secrete_ici" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1000,
+    "currency": "EUR",
+    "success_url": "https://votresite.com/success",
+    "cancel_url": "https://votresite.com/cancel"
+  }'
+```
+
+## Étapes suivantes
+
+<CardGroup cols={2}>
+  <Card
+    title="Créer votre premier checkout"
+    icon="credit-card"
+    href="/fr/payments/checkout-page/intro"
+  >
+    Commencez à accepter des paiements avec nos pages de checkout hébergées
+  </Card>
+  <Card
+    title="Guide d'intégration API"
+    icon="code"
+    href="/fr/payments/api/overview"
+  >
+    Créez des flux de paiement personnalisés avec notre API REST
+  </Card>
+</CardGroup>
+
+## Besoin d'aide ?
+
+Si vous rencontrez des problèmes pour obtenir vos clés API ou avez des questions sur l'authentification :
+
+- Consultez notre [Référence API](/fr/api-reference/introduction) pour une documentation détaillée
+- Contactez notre équipe de support développeur
+- Visitez notre [guide de test](/fr/developer-tools/test/overview) pour des conseils d'utilisation du sandbox

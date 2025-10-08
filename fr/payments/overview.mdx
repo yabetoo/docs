@@ -3,54 +3,127 @@ title: "Vue d'ensemble"
 description: "Commencez avec les paiements Yabetoo"
 ---
 
-## Introduction aux paiements
+## Qu'est-ce que Yabetoo ?
 
-Yabetoo offre plusieurs façons d'accepter des paiements, adaptées à différents besoins commerciaux :
+Yabetoo est une plateforme de paiement complète conçue pour simplifier les transactions en ligne pour les entreprises de toutes tailles. Conçue avec les développeurs à l'esprit, Yabetoo fournit des solutions de paiement sécurisées, fiables et faciles à intégrer qui vous permettent de vous concentrer sur la croissance de votre entreprise pendant que nous gérons les complexités du traitement des paiements.
+
+Notre plateforme offre plusieurs options d'intégration, des pages de paiement hébergées simples aux intégrations API avancées, garantissant que vous puissiez implémenter des solutions de paiement qui correspondent parfaitement à vos besoins commerciaux et exigences techniques.
+
+## Solutions de paiement principales
+
+### Pages de paiement hébergées
+
+Découvrez la façon la plus simple d'accepter des paiements avec nos pages de paiement sécurisées et conçues professionnellement. Redirigez simplement vos clients vers notre environnement hébergé où ils peuvent finaliser leurs achats en toute sécurité. Cette solution réduit votre charge de conformité PCI tout en offrant une expérience utilisateur optimisée.
+
+**Avantages clés :**
+
+- **Zéro charge de conformité PCI** - Nous gérons toutes les données de paiement sensibles
+- **Design optimisé mobile** - Expérience fluide sur tous les appareils
+- **Personnalisation de marque** - Adaptez vos couleurs et votre style de marque
+- **Support multilingue** - Servez des clients dans le monde entier
+- **Configuration instantanée** - Commencez à accepter des paiements en quelques minutes
+
+### Intégration API avancée
+
+Pour les entreprises nécessitant plus de contrôle et de personnalisation, notre API REST fournit des capacités de traitement de paiement flexibles directement dans votre application. Créez des flux de paiement personnalisés qui s'intègrent parfaitement avec vos systèmes existants.
+
+**Fonctionnalités :**
+
+- **Intentions de paiement** - Créez et gérez les transactions de paiement par programmation
+- **Mises à jour de statut en temps réel** - Suivez instantanément l'avancement des paiements
+- **Flux de confirmation flexibles** - Support pour 3D Secure et autres méthodes d'authentification
+- **Système de webhook complet** - Recevez des notifications instantanées des événements de paiement
+
+## Services de paiement supplémentaires
+
+### Décaissements
+
+Transférez des fonds de votre compte vers les comptes clients avec notre API de décaissement. Parfait pour les places de marché, les plateformes d'économie collaborative et toute entreprise qui doit effectuer des paiements à plusieurs bénéficiaires.
+
+**Capacités :**
+
+- **Traitement asynchrone** - Gestion efficace des paiements en masse
+- **Webhooks en temps réel** - Notifications instantanées lorsque les décaissements sont terminés
+- **Exclusif aux comptes partenaires** - Disponible pour les comptes d'entreprise vérifiés
+
+### Services de transfert de fonds
+
+Permettez les transferts d'argent internationaux avec notre solution de transfert de fonds, conçue pour les entreprises opérant à travers les frontières ou servant des clients ayant des besoins de paiement internationaux.
+
+### Liens de paiement
+
+Créez des liens de paiement partageables pour faciliter la collecte de paiements sans nécessiter une configuration e-commerce complète. Parfait pour la facturation, les dons ou les transactions ponctuelles.
+
+## Expérience développeur
+
+### SDK et bibliothèques
+
+Nous fournissons des SDK officiels pour accélérer votre intégration :
+
+- **SDK PHP** - Bibliothèque complète pour les applications PHP
+- **SDK Java** - Intégration prête pour l'entreprise pour les environnements Java
+- **Plus de langages à venir** - Y compris Python, Node.js et .NET
+
+### Plugin WordPress
+
+Pour les utilisateurs WordPress, notre plugin officiel fournit une intégration transparente avec WooCommerce et les sites WordPress personnalisés, permettant l'acceptation de paiements sans aucun codage requis.
+
+### Environnement de test
+
+Des outils de test complets vous aident à valider votre intégration :
+
+- **Environnement sandbox** - Parité API complète avec la production
+- **Numéros de carte de test** - Simulez divers scénarios de paiement
+- **Test de webhook** - Validez votre logique de gestion d'événements
+
+## Sécurité et conformité
+
+Yabetoo est construit avec la sécurité au cœur :
+
+- **Certifié PCI DSS Level 1** - Le plus haut niveau de sécurité de paiement
+- **Détection de fraude avancée** - Évaluation des risques alimentée par l'apprentissage automatique
+- **Support 3D Secure** - Authentification renforcée pour les paiements par carte
+- **Chiffrement de bout en bout** - Toutes les données protégées en transit et au repos
+
+## Commencer
+
+Prêt à commencer à accepter des paiements ? Voici comment débuter :
 
 <CardGroup cols={2}>
   <Card
-    title="Page de paiement hébergée"
-    icon="globe"
+    title="Démarrage rapide avec checkout hébergé"
+    icon="rocket"
     href="/fr/payments/checkout-page/intro"
   >
-    Solution clé en main pour accepter des paiements en ligne rapidement
+    Soyez opérationnel en quelques minutes avec nos pages de paiement hébergées
   </Card>
   <Card
-    title="Intégration API"
+    title="Guide d'intégration API"
     icon="code"
     href="/fr/payments/api/overview"
   >
-    Personnalisez entièrement l'expérience de paiement avec notre API
+    Créez des flux de paiement personnalisés avec notre API flexible
   </Card>
 </CardGroup>
-
-## Fonctionnalités supplémentaires
 
 <CardGroup cols={2}>
   <Card
-    title="Décaissements"
-    icon="money-bill-transfer"
-    href="/fr/payments/disbursement/overview"
+    title="Testez votre intégration"
+    icon="flask"
+    href="/fr/developer-tools/test/overview"
   >
-    Envoyez de l'argent à vos clients ou partenaires
+    Utilisez nos outils de test pour valider votre implémentation
   </Card>
-  <Card
-    title="Liens de paiement"
-    icon="link"
-    href="/fr/payments/payment-link/intro"
-  >
-    Créez des liens de paiement partageables
+  <Card title="Référence API" icon="book" href="/fr/api-reference/introduction">
+    Explorez notre documentation API complète
   </Card>
 </CardGroup>
 
-## Sécurité
+## Support et ressources
 
-Tous les paiements sont sécurisés avec :
-- Cryptage de bout en bout
-- Authentification forte (3D Secure)
-- Protection contre la fraude
-- Conformité PCI DSS
+- **Support développeur 24/7** - Obtenez de l'aide quand vous en avez besoin
+- **Documentation complète** - Guides détaillés et exemples
+- **Communauté active** - Connectez-vous avec d'autres développeurs
+- **Mises à jour régulières** - Nouvelles fonctionnalités et améliorations livrées en continu
 
-<Note>
-  Pour commencer à accepter des paiements réels, assurez-vous d'avoir [activé votre compte](/fr/account/activate).
-</Note>
+Que vous construisiez un simple site e-commerce ou une place de marché complexe, Yabetoo fournit l'infrastructure de paiement dont vous avez besoin pour réussir. Commencez votre intégration aujourd'hui et rejoignez des milliers d'entreprises qui utilisent déjà Yabetoo pour alimenter leurs paiements.

@@ -1,33 +1,248 @@
 ---
-title: "Overview"
-description: "Example section for showcasing API endpoints"
+title: "API Reference"
+description: "Complete guide to the Yabetoo Payment API"
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+## Welcome to the Yabetoo API
 
-## Welcome
+The Yabetoo API is organized around REST principles, featuring predictable resource-oriented URLs, JSON request and response bodies, and standard HTTP response codes. Our API is designed to be simple, secure, and developer-friendly.
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
-
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
+<Card title="Base URL" icon="link">
+  All API requests should be made to: `https://api.yabetoopay.com`
 </Card>
+
+## Quick Start
+
+Get started with the Yabetoo API in minutes:
+
+<Steps>
+  <Step title="Get Your API Keys">
+    Sign up and obtain your API keys from the [developer
+    dashboard](https://app.yabetoopay.com)
+  </Step>
+  <Step title="Make Your First Request">
+    Test the API by creating a checkout session or payment intent
+  </Step>
+  <Step title="Handle Webhooks">
+    Set up webhooks to receive real-time notifications about payment events
+  </Step>
+</Steps>
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API endpoints require authentication using your secret API key. Include your key in the Authorization header of every request:
+
+```bash
+Authorization: Bearer your_secret_key_here
+```
+
+<Warning>
+  Never expose your secret API keys in client-side code. Always make API calls
+  from your server.
+</Warning>
+
+## Request Format
+
+The Yabetoo API accepts JSON-formatted request bodies and returns JSON responses. Always include the appropriate Content-Type header:
+
+```bash
+Content-Type: application/json
+```
+
+### Example Request
+
+```bash
+curl -X POST "https://api.yabetoopay.com/v1/checkout-sessions" \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 2000,
+    "currency": "EUR",
+    "success_url": "https://yoursite.com/success",
+    "cancel_url": "https://yoursite.com/cancel"
+  }'
+```
+
+## Core Resources
+
+### Checkout Sessions
+
+Create secure, hosted payment pages for accepting payments without handling sensitive card data.
+
+<Card
+  title="Checkout Sessions"
+  icon="credit-card"
+  href="/en/api-reference/checkout-session/create"
+>
+  Create and manage checkout sessions for hosted payments
+</Card>
+
+### Payment Intents
+
+Build custom payment flows with full control over the payment process.
+
+<Card
+  title="Payment Intents"
+  icon="code"
+  href="/en/api-reference/payment-intent/create"
+>
+  Create and confirm payment intents for advanced integrations
+</Card>
+
+### Disbursements
+
+Transfer funds from your account to customer accounts for marketplace and platform scenarios.
+
+<Card
+  title="Disbursements"
+  icon="money-bill-transfer"
+  href="/en/api-reference/disbursement/create"
+>
+  Send money to customers or partners
+</Card>
+
+### Remittances
+
+Enable international money transfers with our remittance API.
+
+<Card
+  title="Remittances"
+  icon="globe"
+  href="/en/api-reference/remittance/create"
+>
+  Process cross-border payments and transfers
+</Card>
+
+### Webhooks
+
+Receive real-time notifications about events in your account.
+
+<Card title="Webhooks" icon="bell" href="/en/api-reference/webhook/create">
+  Configure endpoints to receive event notifications
+</Card>
+
+## HTTP Status Codes
+
+The Yabetoo API uses standard HTTP status codes to indicate success or failure:
+
+| Code  | Description                                             |
+| ----- | ------------------------------------------------------- |
+| `200` | Success - Request completed successfully                |
+| `201` | Created - Resource created successfully                 |
+| `400` | Bad Request - Invalid request parameters                |
+| `401` | Unauthorized - Invalid or missing API key               |
+| `402` | Payment Required - Insufficient funds or failed payment |
+| `403` | Forbidden - Access denied                               |
+| `404` | Not Found - Resource not found                          |
+| `429` | Too Many Requests - Rate limit exceeded                 |
+| `500` | Internal Server Error - Something went wrong on our end |
+
+## Error Handling
+
+When an error occurs, the API returns a JSON object with error details:
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
+{
+  "error": {
+    "type": "invalid_request_error",
+    "code": "parameter_missing",
+    "message": "Missing required parameter: amount",
+    "param": "amount"
   }
-]
+}
 ```
+
+### Error Types
+
+- `api_error` - Issues with our API
+- `authentication_error` - Problems with your API key
+- `invalid_request_error` - Invalid parameters or format
+- `rate_limit_error` - Too many requests
+- `payment_error` - Payment processing failed
+
+## Rate Limiting
+
+The Yabetoo API implements rate limiting to ensure fair usage:
+
+- **Test Mode**: 100 requests per minute
+- **Live Mode**: 1000 requests per minute
+
+Rate limit information is included in response headers:
+
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1609459200
+```
+
+## Pagination
+
+List endpoints support pagination using `limit` and `offset` parameters:
+
+```bash
+GET /v1/payment-intents?limit=20&offset=40
+```
+
+Response includes pagination metadata:
+
+```json
+{
+  "data": [...],
+  "has_more": true,
+  "total": 150
+}
+```
+
+## Idempotency
+
+Safely retry requests by including an `Idempotency-Key` header with a unique value:
+
+```bash
+Idempotency-Key: your-unique-key-here
+```
+
+This prevents duplicate processing if you need to retry a request.
+
+## Versioning
+
+The current API version is `v1`. We maintain backward compatibility and announce changes well in advance. Specify the API version in your requests:
+
+```bash
+GET https://api.yabetoopay.com/v1/payment-intents
+```
+
+## SDKs and Libraries
+
+Accelerate your integration with our official SDKs:
+
+<CardGroup cols={2}>
+  <Card title="PHP SDK" icon="php" href="/en/developer-tools/sdk/php">
+    Official PHP library for server-side integration
+  </Card>
+  <Card title="Java SDK" icon="java" href="/en/developer-tools/sdk/java">
+    Enterprise-ready Java SDK
+  </Card>
+</CardGroup>
+
+## Testing
+
+Use our sandbox environment to test your integration without processing real payments:
+
+- **Test API Key**: Starts with `sk_test_`
+- **Test Endpoint**: Same as live (`https://api.yabetoopay.com`)
+- **Test Cards**: Use our [test card numbers](/en/developer-tools/test/overview)
+
+## Support
+
+Need help with the API?
+
+- **Documentation**: Complete guides and examples
+- **Developer Support**: Contact our technical team
+- **Status Page**: Check API status and uptime
+- **Community**: Join our developer community
+
+<Note>
+  This API reference provides complete documentation for all Yabetoo API
+  endpoints. Each endpoint includes request/response examples, parameter
+  descriptions, and error codes.
+</Note>

@@ -1,0 +1,115 @@
+---
+title: "Getting Your API Keys"
+description: "Learn how to obtain your secret API keys to start integrating with Yabetoo"
+---
+
+# Introduction
+
+Before you can integrate any Yabetoo Pay product or solution, you need to configure your development environment to obtain the OAuth 2.0 client identifier and secret credentials for both sandbox and production environments.
+
+You exchange these credentials for an access token that authorizes your REST API calls. To test your web and mobile applications, you create sandbox accounts.
+
+## Obtaining Your API Keys
+
+To generate REST API credentials for the sandbox:
+
+1. Create an account by clicking [here](https://app.yabetoopay.com).
+2. You will then be invited to create a store.
+3. You will find your API keys in the developer tab.
+
+API keys are specific to each store and are strictly personal - you should never share them with third parties.
+
+Your secret key allows you to interact with Yabetoo APIs.
+
+<Note>
+  Keep your API keys secure and never expose them in client-side code. Always
+  use them on your server-side applications only.
+</Note>
+
+## API Key Types
+
+### Test Keys
+
+- **Purpose**: For development and testing
+- **Environment**: Sandbox
+- **Transactions**: No real money processed
+- **Prefix**: Usually starts with `test_`
+
+### Live Keys
+
+- **Purpose**: For production transactions
+- **Environment**: Production
+- **Transactions**: Real money processed
+- **Prefix**: Usually starts with `live_`
+
+## Security Best Practices
+
+<Warning>
+  Your secret keys can perform any action on your account. Treat them like
+  passwords: - Never share them publicly - Don't include them in client-side
+  code - Use environment variables to store them - Rotate them regularly -
+  Monitor their usage
+</Warning>
+
+### Environment Variables
+
+Store your keys securely using environment variables:
+
+```bash
+# .env file
+YABETOO_TEST_SECRET_KEY=test_your_secret_key_here
+YABETOO_LIVE_SECRET_KEY=live_your_secret_key_here
+```
+
+### Code Example
+
+```php
+// PHP example
+$secretKey = $_ENV['YABETOO_TEST_SECRET_KEY']; // Use test key for development
+// $secretKey = $_ENV['YABETOO_LIVE_SECRET_KEY']; // Use live key for production
+
+$yabetoo = new YabetooClient($secretKey);
+```
+
+## Making REST API Calls
+
+Once you have your API keys, you can start making authenticated requests to the Yabetoo API. Include your secret key in the Authorization header:
+
+```bash
+curl -X POST "https://api.yabetoopay.com/v1/checkout-sessions" \
+  -H "Authorization: Bearer your_secret_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1000,
+    "currency": "EUR",
+    "success_url": "https://yoursite.com/success",
+    "cancel_url": "https://yoursite.com/cancel"
+  }'
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Create Your First Checkout"
+    icon="credit-card"
+    href="/en/payments/checkout-page/intro"
+  >
+    Start accepting payments with our hosted checkout pages
+  </Card>
+  <Card
+    title="API Integration Guide"
+    icon="code"
+    href="/en/payments/api/overview"
+  >
+    Build custom payment flows with our REST API
+  </Card>
+</CardGroup>
+
+## Need Help?
+
+If you encounter any issues obtaining your API keys or have questions about authentication:
+
+- Check our [API Reference](/en/api-reference/introduction) for detailed documentation
+- Contact our developer support team
+- Visit our [testing guide](/en/developer-tools/test/overview) for sandbox usage tips
