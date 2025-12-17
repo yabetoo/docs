@@ -1,0 +1,555 @@
+{
+  "info": {
+    "_postman_id": "yabetoo-api-collection",
+    "name": "Yabetoo API",
+    "description": "Official Postman collection for the Yabetoo Payment API.\n\n## Getting Started\n\n1. Import this collection into Postman\n2. Import the environment file (Sandbox or Production)\n3. Set your `secret_key` in the environment variables\n4. Start making API calls!\n\n## Authentication\n\nAll requests use Bearer token authentication. Your secret key is automatically included via the `{{secret_key}}` variable.\n\n## Support\n\nFor questions, contact support@yabetoopay.com",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{secret_key}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "{{base_url}}"
+    }
+  ],
+  "item": [
+    {
+      "name": "Checkout Session",
+      "description": "Create hosted checkout pages for quick payment integration.",
+      "item": [
+        {
+          "name": "Create Checkout Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"XAF\",\n  \"successUrl\": \"https://yoursite.com/success\",\n  \"cancelUrl\": \"https://yoursite.com/cancel\",\n  \"metadata\": {\n    \"orderId\": \"order_123\",\n    \"customerEmail\": \"client@example.com\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/checkout/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "checkout", "sessions"]
+            },
+            "description": "Create a new checkout session. The response includes a URL where you can redirect your customer to complete the payment.\n\n**Parameters:**\n- `amount` (required): Amount in smallest currency unit (e.g., 5000 = 5,000 XAF)\n- `currency` (required): Currency code (XAF, XOF)\n- `successUrl` (required): Redirect URL after successful payment\n- `cancelUrl` (required): Redirect URL if customer cancels\n- `metadata` (optional): Custom key-value pairs for your reference"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has checkout URL\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('url');",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "});",
+                  "",
+                  "// Save session ID for later use",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"checkout_session_id\", jsonData.id);",
+                  "    console.log(\"Checkout session created: \" + jsonData.id);",
+                  "    console.log(\"Checkout URL: \" + jsonData.url);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Checkout Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/checkout/sessions/{{checkout_session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "checkout", "sessions", "{{checkout_session_id}}"]
+            },
+            "description": "Retrieve details of an existing checkout session.\n\n**Path Parameters:**\n- `id`: The checkout session ID (automatically set after creating a session)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has session data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Payment Intent",
+      "description": "Advanced payment integration with full control over the payment flow.",
+      "item": [
+        {
+          "name": "Create Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 10000,\n  \"currency\": \"XAF\",\n  \"description\": \"Payment for Order #12345\",\n  \"metadata\": {\n    \"orderId\": \"12345\",\n    \"productName\": \"Premium Subscription\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/payment_intents",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "payment_intents"]
+            },
+            "description": "Create a new payment intent. This is the first step in the advanced payment flow.\n\n**Parameters:**\n- `amount` (required): Amount in smallest currency unit\n- `currency` (required): Currency code (XAF, XOF)\n- `description` (optional): Description of the payment\n- `metadata` (optional): Custom key-value pairs"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has payment intent data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData.status).to.equal('requires_confirmation');",
+                  "});",
+                  "",
+                  "// Save payment intent ID for later use",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"payment_intent_id\", jsonData.id);",
+                  "    console.log(\"Payment intent created: \" + jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethod\": {\n    \"type\": \"momo\",\n    \"momo\": {\n      \"msisdn\": \"242066000000\",\n      \"country\": \"cg\",\n      \"operatorName\": \"mtn\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/payment_intents/{{payment_intent_id}}/confirm",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "payment_intents", "{{payment_intent_id}}", "confirm"]
+            },
+            "description": "Confirm a payment intent with customer's payment method.\n\n**Path Parameters:**\n- `id`: The payment intent ID\n\n**Body Parameters:**\n- `paymentMethod.type`: Payment method type (\"momo\" for Mobile Money)\n- `paymentMethod.momo.msisdn`: Customer's phone number\n- `paymentMethod.momo.country`: Country code (cg, cm, tg, bj)\n- `paymentMethod.momo.operatorName`: Mobile operator (mtn, airtel)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Payment is processing\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(['processing', 'succeeded']).to.include(jsonData.status);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log(\"Payment status: \" + jsonData.status);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Payment Intent",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/payment_intents/{{payment_intent_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "payment_intents", "{{payment_intent_id}}"]
+            },
+            "description": "Retrieve the current status and details of a payment intent.\n\n**Path Parameters:**\n- `id`: The payment intent ID"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has payment data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('amount');",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Disbursement",
+      "description": "Send money to mobile money accounts (payouts, refunds, etc.).",
+      "item": [
+        {
+          "name": "Create Disbursement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 25000,\n  \"currency\": \"XAF\",\n  \"firstName\": \"Jean\",\n  \"lastName\": \"Dupont\",\n  \"paymentMethodData\": {\n    \"type\": \"momo\",\n    \"momo\": {\n      \"msisdn\": \"242066000000\",\n      \"country\": \"cg\",\n      \"operatorName\": \"mtn\"\n    }\n  },\n  \"metadata\": {\n    \"reason\": \"driver_payout\",\n    \"driverId\": \"drv_123\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/disbursements",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "disbursements"]
+            },
+            "description": "Create a disbursement to send money to a mobile money account.\n\n**Parameters:**\n- `amount` (required): Amount to send\n- `currency` (required): Currency code\n- `firstName` (required): Recipient's first name\n- `lastName` (required): Recipient's last name\n- `paymentMethodData` (required): Recipient's mobile money details\n- `metadata` (optional): Custom key-value pairs"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Disbursement created\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"disbursement_id\", jsonData.id);",
+                  "    console.log(\"Disbursement created: \" + jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Disbursement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/disbursements/{{disbursement_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "disbursements", "{{disbursement_id}}"]
+            },
+            "description": "Retrieve the status and details of a disbursement.\n\n**Path Parameters:**\n- `id`: The disbursement ID"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has disbursement data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Remittance",
+      "description": "International money transfers.",
+      "item": [
+        {
+          "name": "Create Remittance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000,\n  \"currency\": \"XAF\",\n  \"destinationCountry\": \"cm\",\n  \"recipient\": {\n    \"firstName\": \"Marie\",\n    \"lastName\": \"Nguema\",\n    \"msisdn\": \"237670000000\",\n    \"operatorName\": \"mtn\"\n  },\n  \"metadata\": {\n    \"purpose\": \"family_support\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/remittances",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "remittances"]
+            },
+            "description": "Create an international remittance transfer.\n\n**Parameters:**\n- `amount` (required): Amount to send\n- `currency` (required): Source currency\n- `destinationCountry` (required): Destination country code\n- `recipient` (required): Recipient details"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"remittance_id\", jsonData.id);",
+                  "    console.log(\"Remittance created: \" + jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Remittance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/remittances/{{remittance_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "remittances", "{{remittance_id}}"]
+            },
+            "description": "Retrieve remittance details.\n\n**Path Parameters:**\n- `id`: The remittance ID"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Remittances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/remittances?limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "remittances"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "List all remittances.\n\n**Query Parameters:**\n- `limit` (optional): Number of results (default: 10)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhook",
+      "description": "Manage webhook endpoints for receiving payment notifications.",
+      "item": [
+        {
+          "name": "Create Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://yoursite.com/webhooks/yabetoo\",\n  \"events\": [\n    \"payment_intent.succeeded\",\n    \"payment_intent.failed\",\n    \"disbursement.completed\",\n    \"disbursement.failed\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/webhooks",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "webhooks"]
+            },
+            "description": "Register a new webhook endpoint.\n\n**Parameters:**\n- `url` (required): Your webhook endpoint URL (must be HTTPS)\n- `events` (required): Array of events to subscribe to\n\n**Available Events:**\n- `payment_intent.succeeded`\n- `payment_intent.failed`\n- `disbursement.completed`\n- `disbursement.failed`\n- `checkout.session.completed`"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"webhook_id\", jsonData.id);",
+                  "    console.log(\"Webhook created: \" + jsonData.id);",
+                  "    console.log(\"Webhook secret: \" + jsonData.secret);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Webhook",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/webhooks/{{webhook_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "webhooks", "{{webhook_id}}"]
+            },
+            "description": "Retrieve webhook endpoint details."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Webhooks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/webhooks",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "webhooks"]
+            },
+            "description": "List all registered webhook endpoints."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

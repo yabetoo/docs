@@ -79,7 +79,10 @@
             "groups": [
               {
                 "group": "Tests",
-                "pages": ["fr/developer-tools/test/overview"]
+                "pages": [
+                  "fr/developer-tools/test/overview",
+                  "fr/developer-tools/postman"
+                ]
               },
               {
                 "group": "Webhook",
@@ -245,7 +248,10 @@
             "groups": [
               {
                 "group": "Testing",
-                "pages": ["en/developer-tools/test/overview"]
+                "pages": [
+                  "en/developer-tools/test/overview",
+                  "en/developer-tools/postman"
+                ]
               },
               {
                 "group": "Webhook",
