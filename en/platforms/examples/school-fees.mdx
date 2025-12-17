@@ -18,17 +18,13 @@ Educational institutions need payment solutions to handle:
 
 ## Architecture
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   School        │────▶│    Yabetoo      │────▶│  Mobile Money   │
-│   Portal        │◀────│      API        │◀────│   (MTN/Airtel)  │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                       │
-        ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│   Student       │     │    Webhook      │
-│   Database      │     │   Notifications │
-└─────────────────┘     └─────────────────┘
+```mermaid
+flowchart LR
+    A[School Portal] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> A
+    A --> D[Email/SMS]
 ```
 
 ## Implementation

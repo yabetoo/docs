@@ -27,17 +27,12 @@ SafeLock is a mobile-first financial management app that helps users save money 
 
 ## Architecture
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Mobile App    │────▶│    Yabetoo      │────▶│  Mobile Money   │
-│   (SafeLock)    │◀────│      API        │◀────│   (MTN/Airtel)  │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                       │
-        ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│   Vault         │     │   Scheduled     │
-│   Database      │     │   Jobs          │
-└─────────────────┘     └─────────────────┘
+```mermaid
+flowchart LR
+    A[Savings App] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> A
 ```
 
 ## Implementation

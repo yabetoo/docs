@@ -21,14 +21,12 @@ SaaS platforms need flexible payment solutions to handle:
 
 ## Architecture
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Your SaaS     │────▶│    Yabetoo      │────▶│  Mobile Money   │
-│   Application   │◀────│      API        │◀────│   (MTN/Airtel)  │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                                                │
-        │              Webhook Events                    │
-        └────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    A[Your SaaS App] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> A
 ```
 
 ## Implementation

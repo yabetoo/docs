@@ -28,16 +28,14 @@ In Congo Brazzaville, Gozem uses Yabetoo for mobile money payment processing.
 
 ## Architecture
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Passenger     │────▶│    Yabetoo      │────▶│  Mobile Money   │
-│      App        │     │      API        │     │   (MTN/Airtel)  │
-└─────────────────┘     └────────┬────────┘     └─────────────────┘
-                                 │
-┌─────────────────┐     ┌────────▼────────┐
-│    Driver       │◀────│   Disbursement  │
-│      App        │     │     Service     │
-└─────────────────┘     └─────────────────┘
+```mermaid
+flowchart LR
+    A[Passenger App] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> D[Super App]
+    D --> B
+    B --> E[Driver]
 ```
 
 ## Implementation

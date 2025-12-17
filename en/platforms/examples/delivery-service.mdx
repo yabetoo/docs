@@ -17,21 +17,14 @@ Delivery platforms need to handle:
 
 ## Architecture
 
-```
-┌─────────────────┐                              ┌─────────────────┐
-│    Customer     │──── Payment ────────────────▶│    Yabetoo      │
-│      App        │                              │      API        │
-└─────────────────┘                              └────────┬────────┘
-                                                          │
-┌─────────────────┐                              ┌────────▼────────┐
-│    Driver       │◀─── Payout ─────────────────│   Disbursement  │
-│      App        │                              │     Service     │
-└─────────────────┘                              └─────────────────┘
-                                                          │
-┌─────────────────┐                              ┌────────▼────────┐
-│    Merchant     │◀─── Settlement ─────────────│    Settlement   │
-│    Dashboard    │                              │     Service     │
-└─────────────────┘                              └─────────────────┘
+```mermaid
+flowchart LR
+    A[Customer App] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> D[Delivery Platform]
+    D --> B
+    B --> E[Driver/Merchant]
 ```
 
 ## Implementation

@@ -18,17 +18,13 @@ Les établissements éducatifs ont besoin de solutions de paiement pour gérer :
 
 ## Architecture
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Portail       │────▶│    Yabetoo      │────▶│  Mobile Money   │
-│   École         │◀────│      API        │◀────│   (MTN/Airtel)  │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                       │
-        ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│   Base de       │     │   Notifications │
-│   données       │     │   Webhook       │
-└─────────────────┘     └─────────────────┘
+```mermaid
+flowchart LR
+    A[Portail École] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> A
+    A --> D[Email/SMS]
 ```
 
 ## Implémentation

@@ -17,21 +17,14 @@ Les plateformes de livraison doivent gérer :
 
 ## Architecture
 
-```
-┌─────────────────┐                              ┌─────────────────┐
-│    Client       │──── Paiement ───────────────▶│    Yabetoo      │
-│      App        │                              │      API        │
-└─────────────────┘                              └────────┬────────┘
-                                                          │
-┌─────────────────┐                              ┌────────▼────────┐
-│    Livreur      │◀─── Paiement ───────────────│   Décaissement  │
-│      App        │                              │     Service     │
-└─────────────────┘                              └─────────────────┘
-                                                          │
-┌─────────────────┐                              ┌────────▼────────┐
-│    Marchand     │◀─── Règlement ──────────────│    Règlement    │
-│    Dashboard    │                              │     Service     │
-└─────────────────┘                              └─────────────────┘
+```mermaid
+flowchart LR
+    A[App Client] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> D[Plateforme Livraison]
+    D --> B
+    B --> E[Livreur/Marchand]
 ```
 
 ## Implémentation
