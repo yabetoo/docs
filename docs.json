@@ -111,15 +111,7 @@
                 "pages": ["fr/platforms/overview"],
                 "icon": "globe"
               },
-              {
-                "group": "Partenaires",
-                "pages": [
-                  "fr/platforms/partners/overview",
-                  "fr/platforms/partners/become-a-partner"
-                ],
-                "icon": "users"
-              },
-              {
+                            {
                 "group": "Études de cas",
                 "pages": [
                   "fr/platforms/examples",
@@ -311,15 +303,7 @@
                 ],
                 "icon": "code"
               },
-              {
-                "group": "Partners",
-                "pages": [
-                  "en/platforms/partners/overview",
-                  "en/platforms/partners/become-a-partner"
-                ],
-                "icon": "users"
-              },
-              {
+                            {
                 "group": "Case Studies",
                 "pages": [
                   "en/platforms/examples",
