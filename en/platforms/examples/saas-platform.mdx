@@ -1,0 +1,366 @@
+---
+title: SaaS Platform
+description: How to integrate Yabetoo for subscription billing and recurring payments in your SaaS application.
+icon: "cloud"
+---
+
+Learn how to implement payment collection for a Software-as-a-Service (SaaS) platform using Yabetoo. This guide covers subscription management, one-time payments, and handling plan upgrades.
+
+## Overview
+
+SaaS platforms need flexible payment solutions to handle:
+- Monthly and annual subscription billing
+- One-time purchases (add-ons, credits)
+- Plan upgrades and downgrades
+- Trial period management
+- Payment failure handling
+
+<Note>
+  Yabetoo currently supports one-time payments. For recurring billing, you'll need to implement a cron job or scheduler that creates payment intents at regular intervals.
+</Note>
+
+## Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Your SaaS     │────▶│    Yabetoo      │────▶│  Mobile Money   │
+│   Application   │◀────│      API        │◀────│   (MTN/Airtel)  │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+        │                                                │
+        │              Webhook Events                    │
+        └────────────────────────────────────────────────┘
+```
+
+## Implementation
+
+### 1. Define Your Pricing Plans
+
+First, define your subscription tiers:
+
+```typescript
+// pricing.ts
+export const PLANS = {
+  starter: {
+    id: 'starter',
+    name: 'Starter',
+    monthlyPrice: 5000,   // 5,000 XAF/month
+    annualPrice: 50000,   // 50,000 XAF/year (2 months free)
+    features: ['5 users', '10GB storage', 'Email support']
+  },
+  professional: {
+    id: 'professional',
+    name: 'Professional',
+    monthlyPrice: 15000,  // 15,000 XAF/month
+    annualPrice: 150000,  // 150,000 XAF/year
+    features: ['25 users', '100GB storage', 'Priority support', 'API access']
+  },
+  enterprise: {
+    id: 'enterprise',
+    name: 'Enterprise',
+    monthlyPrice: 50000,  // 50,000 XAF/month
+    annualPrice: 500000,  // 500,000 XAF/year
+    features: ['Unlimited users', '1TB storage', '24/7 support', 'Custom integrations']
+  }
+};
+```
+
+### 2. Create Subscription Payment
+
+When a user subscribes, create a payment intent:
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+async function createSubscriptionPayment(
+  userId: string,
+  planId: string,
+  billingCycle: 'monthly' | 'annual'
+) {
+  const plan = PLANS[planId];
+  const amount = billingCycle === 'monthly' ? plan.monthlyPrice : plan.annualPrice;
+
+  // Create payment intent
+  const intent = await yabetoo.payments.create({
+    amount,
+    currency: 'XAF',
+    description: `${plan.name} Plan - ${billingCycle} subscription`,
+    metadata: {
+      userId,
+      planId,
+      billingCycle,
+      subscriptionStart: new Date().toISOString(),
+      type: 'subscription'
+    }
+  });
+
+  // Store pending subscription in database
+  await db.pendingSubscriptions.create({
+    userId,
+    planId,
+    billingCycle,
+    paymentIntentId: intent.id,
+    status: 'pending'
+  });
+
+  return intent;
+}
+```
+
+### 3. Handle Payment Confirmation
+
+After the user provides payment details:
+
+```typescript
+async function confirmSubscriptionPayment(
+  paymentIntentId: string,
+  paymentMethod: PaymentMethodData
+) {
+  const pendingSub = await db.pendingSubscriptions.findByPaymentIntent(paymentIntentId);
+
+  const confirmation = await yabetoo.payments.confirm(paymentIntentId, {
+    clientSecret: pendingSub.clientSecret,
+    paymentMethodData: paymentMethod,
+    firstName: pendingSub.user.firstName,
+    lastName: pendingSub.user.lastName,
+    receiptEmail: pendingSub.user.email
+  });
+
+  return confirmation;
+}
+```
+
+### 4. Webhook Handler for Subscription Activation
+
+Set up a webhook to activate subscriptions when payment succeeds:
+
+```typescript
+// webhook-handler.ts
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+app.post('/webhooks/yabetoo', async (req, res) => {
+  const event = req.body;
+
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      await handlePaymentSuccess(event.data);
+      break;
+    case 'payment_intent.failed':
+      await handlePaymentFailure(event.data);
+      break;
+  }
+
+  res.json({ received: true });
+});
+
+async function handlePaymentSuccess(data: any) {
+  const { metadata } = data;
+
+  if (metadata.type === 'subscription') {
+    // Activate the subscription
+    const subscription = await db.subscriptions.create({
+      userId: metadata.userId,
+      planId: metadata.planId,
+      billingCycle: metadata.billingCycle,
+      status: 'active',
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: calculatePeriodEnd(metadata.billingCycle),
+      paymentIntentId: data.id
+    });
+
+    // Grant access to features
+    await grantPlanFeatures(metadata.userId, metadata.planId);
+
+    // Send confirmation email
+    await sendSubscriptionConfirmation(metadata.userId, subscription);
+
+    // Clean up pending subscription
+    await db.pendingSubscriptions.delete(data.id);
+  }
+}
+
+function calculatePeriodEnd(billingCycle: string): Date {
+  const now = new Date();
+  if (billingCycle === 'monthly') {
+    return new Date(now.setMonth(now.getMonth() + 1));
+  }
+  return new Date(now.setFullYear(now.getFullYear() + 1));
+}
+```
+
+### 5. Implement Recurring Billing
+
+Set up a scheduled job to handle recurring payments:
+
+```typescript
+// cron-job.ts (runs daily)
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+async function processRecurringBilling() {
+  // Find subscriptions expiring in the next 3 days
+  const expiringSubscriptions = await db.subscriptions.findMany({
+    where: {
+      status: 'active',
+      currentPeriodEnd: {
+        lte: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+      }
+    }
+  });
+
+  for (const subscription of expiringSubscriptions) {
+    try {
+      const plan = PLANS[subscription.planId];
+      const amount = subscription.billingCycle === 'monthly'
+        ? plan.monthlyPrice
+        : plan.annualPrice;
+
+      // Create renewal payment
+      const intent = await yabetoo.payments.create({
+        amount,
+        currency: 'XAF',
+        description: `${plan.name} Plan - Renewal`,
+        metadata: {
+          userId: subscription.userId,
+          planId: subscription.planId,
+          billingCycle: subscription.billingCycle,
+          subscriptionId: subscription.id,
+          type: 'renewal'
+        }
+      });
+
+      // Notify user about upcoming renewal
+      await sendRenewalReminder(subscription.userId, intent);
+
+    } catch (error) {
+      console.error(`Failed to create renewal for subscription ${subscription.id}:`, error);
+      await notifyAdminOfBillingIssue(subscription);
+    }
+  }
+}
+```
+
+### 6. Handle Plan Upgrades
+
+Allow users to upgrade their plan:
+
+```typescript
+async function upgradePlan(
+  userId: string,
+  currentPlanId: string,
+  newPlanId: string
+) {
+  const currentPlan = PLANS[currentPlanId];
+  const newPlan = PLANS[newPlanId];
+
+  // Calculate prorated amount
+  const subscription = await db.subscriptions.findByUser(userId);
+  const daysRemaining = calculateDaysRemaining(subscription.currentPeriodEnd);
+  const dailyRate = newPlan.monthlyPrice / 30;
+  const proratedAmount = Math.ceil(dailyRate * daysRemaining);
+
+  // Create upgrade payment
+  const intent = await yabetoo.payments.create({
+    amount: proratedAmount,
+    currency: 'XAF',
+    description: `Upgrade to ${newPlan.name} Plan (prorated)`,
+    metadata: {
+      userId,
+      fromPlan: currentPlanId,
+      toPlan: newPlanId,
+      type: 'upgrade',
+      subscriptionId: subscription.id
+    }
+  });
+
+  return intent;
+}
+```
+
+## Complete Subscription Flow
+
+<Steps>
+  <Step title="User Selects Plan">
+    User chooses a subscription plan and billing cycle on your pricing page.
+  </Step>
+  <Step title="Create Payment Intent">
+    Your backend creates a payment intent with subscription metadata.
+  </Step>
+  <Step title="Collect Payment Details">
+    User enters their mobile money number and confirms payment.
+  </Step>
+  <Step title="Payment Processing">
+    Yabetoo processes the payment via MTN or Airtel Money.
+  </Step>
+  <Step title="Webhook Notification">
+    Yabetoo sends a webhook when payment succeeds or fails.
+  </Step>
+  <Step title="Activate Subscription">
+    Your webhook handler activates the subscription and grants access.
+  </Step>
+  <Step title="Recurring Billing">
+    A scheduled job creates renewal payments before each billing period ends.
+  </Step>
+</Steps>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Grace Period">
+    Implement a grace period (e.g., 3-7 days) for failed renewal payments before suspending access.
+  </Accordion>
+  <Accordion title="Payment Reminders">
+    Send reminders 7 days, 3 days, and 1 day before subscription renewal.
+  </Accordion>
+  <Accordion title="Failed Payment Handling">
+    Retry failed payments automatically (e.g., 3 attempts over 7 days) before canceling.
+  </Accordion>
+  <Accordion title="Proration">
+    Calculate prorated amounts fairly when users upgrade or downgrade mid-cycle.
+  </Accordion>
+</AccordionGroup>
+
+## Example Database Schema
+
+```sql
+-- Subscriptions table
+CREATE TABLE subscriptions (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  plan_id VARCHAR(50) NOT NULL,
+  billing_cycle VARCHAR(20) NOT NULL,
+  status VARCHAR(20) DEFAULT 'active',
+  current_period_start TIMESTAMP NOT NULL,
+  current_period_end TIMESTAMP NOT NULL,
+  canceled_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Payment history
+CREATE TABLE subscription_payments (
+  id UUID PRIMARY KEY,
+  subscription_id UUID REFERENCES subscriptions(id),
+  payment_intent_id VARCHAR(100) NOT NULL,
+  amount INTEGER NOT NULL,
+  currency VARCHAR(3) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  type VARCHAR(20) NOT NULL, -- 'initial', 'renewal', 'upgrade'
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Payment Intents" icon="credit-card" href="/en/payments/api/overview">
+    Learn about creating and confirming payments
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/en/developer-tools/webhook/overview">
+    Set up webhooks for payment notifications
+  </Card>
+</CardGroup>

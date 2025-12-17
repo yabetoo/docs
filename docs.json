@@ -91,6 +91,8 @@
               {
                 "group": "Bibliothèques",
                 "pages": [
+                  "fr/developer-tools/sdk/javascript",
+                  "fr/developer-tools/sdk/python",
                   "fr/developer-tools/sdk/php",
                   "fr/developer-tools/sdk/java"
                 ]
@@ -121,8 +123,12 @@
                 "group": "Études de cas",
                 "pages": [
                   "fr/platforms/examples",
-                  "fr/platforms/examples/boutique-mode",
-                  "fr/platforms/examples/marketplace"
+                  "fr/platforms/examples/saas-platform",
+                  "fr/platforms/examples/school-fees",
+                  "fr/platforms/examples/event-ticketing",
+                  "fr/platforms/examples/delivery-service",
+                  "fr/platforms/examples/savings-vault",
+                  "fr/platforms/examples/ride-hailing"
                 ],
                 "icon": "book"
               }
@@ -259,6 +265,8 @@
               {
                 "group": "Libraries",
                 "pages": [
+                  "en/developer-tools/sdk/javascript",
+                  "en/developer-tools/sdk/python",
                   "en/developer-tools/sdk/php",
                   "en/developer-tools/sdk/java"
                 ]
@@ -315,8 +323,12 @@
                 "group": "Case Studies",
                 "pages": [
                   "en/platforms/examples",
-                  "en/platforms/examples/fashion-store",
-                  "en/platforms/examples/marketplace"
+                  "en/platforms/examples/saas-platform",
+                  "en/platforms/examples/school-fees",
+                  "en/platforms/examples/event-ticketing",
+                  "en/platforms/examples/delivery-service",
+                  "en/platforms/examples/savings-vault",
+                  "en/platforms/examples/ride-hailing"
                 ],
                 "icon": "book"
               }

@@ -1,0 +1,626 @@
+---
+title: JavaScript / TypeScript
+description: Bibliothèque JavaScript/TypeScript pour intégrer les paiements Yabetoo dans vos applications.
+icon: "js"
+---
+
+Ce SDK vous permet d'intégrer facilement le système de paiement sécurisé de Yabetoo dans vos applications JavaScript et TypeScript. Que vous souhaitiez accepter des paiements en ligne, gérer des sessions de paiement ou vérifier les transactions effectuées, ce SDK fournit une interface simple et intuitive pour interagir avec l'API Yabetoo.
+
+## Installation
+
+### Prérequis
+
+- Node.js 16.0 ou supérieur
+- npm, yarn ou pnpm (gestionnaire de paquets)
+- Accès à l'API Yabetoo (clés API)
+- Un compte Yabetoo actif
+
+### Installation via npm
+
+Pour installer le SDK, utilisez npm, yarn ou pnpm. Exécutez l'une des commandes suivantes dans votre projet :
+
+```bash
+npm install yabetoo
+# ou
+yarn add yabetoo
+# ou
+pnpm add yabetoo
+```
+
+## Configuration
+
+### Initialisation du SDK
+
+Avant d'utiliser le SDK, vous devez initialiser une instance de la classe `Yabetoo`. Fournissez simplement votre clé API lors de l'initialisation. Le SDK détecte automatiquement si vous êtes en mode test ou production en fonction du préfixe de votre clé.
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');  // Utilisez votre clé API
+```
+
+### Configuration Avancée
+
+Vous pouvez personnaliser le comportement du SDK avec des options supplémentaires :
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX', {
+  options: {
+    timeout: 30000,        // Délai d'expiration en millisecondes (défaut: 30000)
+    maxRetries: 3,         // Nombre de tentatives de réessai (défaut: 3)
+    retryDelay: 1000,      // Délai entre les réessais en millisecondes (défaut: 1000)
+    customHeaders: {}      // En-têtes personnalisés supplémentaires
+  }
+});
+```
+
+## Gestion des Paiements avec Yabetoo
+
+Vous pouvez créer des paiements, récupérer des informations sur des paiements spécifiques et gérer les paiements en utilisant la ressource `payments`.
+
+Yabetoo fonctionne sur un modèle de paiement en deux étapes. Cela signifie que pour traiter un paiement, vous devez d'abord créer une intention de paiement puis confirmer cette intention pour capturer le montant.
+
+Cette approche offre une flexibilité accrue, vous permettant par exemple de vérifier les fonds disponibles ou d'obtenir l'autorisation de l'utilisateur avant de finaliser une transaction. Voici comment cela fonctionne étape par étape :
+
+1. **Créer une intention de paiement** : Vous créez une intention de paiement en spécifiant le montant, la devise et d'autres détails pertinents.
+2. **Confirmer l'intention de paiement** : Une fois l'intention créée, vous pouvez la confirmer pour capturer le montant. Cela peut être fait immédiatement ou à une date ultérieure, selon vos besoins.
+3. **Gérer les paiements** : Vous pouvez récupérer les informations de paiement, annuler des paiements ou gérer d'autres aspects liés aux transactions.
+
+### Créer une Intention de Paiement
+
+Une intention de paiement est une ressource qui représente votre souhait de recevoir un paiement pour un montant spécifique. Lorsque vous créez une intention de paiement, vous ne capturez pas immédiatement le montant ; c'est une étape préparatoire.
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const intent = await yabetoo.payments.create({
+  amount: 5000,
+  currency: 'XAF',
+  description: 'Achat de services Yabetoo',
+  metadata: {
+    orderId: '6735',
+    customerId: '12345'
+  }
+});
+
+console.log(`ID de l'intention de paiement : ${intent.id}`);
+console.log(`Secret client : ${intent.clientSecret}`);
+```
+
+Ce code crée une intention de paiement de 5000 XAF. La réponse de l'API contient un identifiant unique (`id`) pour l'intention de paiement que vous utiliserez lors de la confirmation.
+
+### Confirmer une Intention de Paiement
+
+Après avoir créé l'intention de paiement, vous devez la confirmer pour capturer le montant. Cela se produit généralement lorsque l'utilisateur final a effectué toutes les étapes nécessaires (comme fournir les informations de paiement ou accepter les conditions générales).
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const confirmation = await yabetoo.payments.confirm(intent.id, {
+  clientSecret: intent.clientSecret,
+  firstName: 'Jean',
+  lastName: 'Dupont',
+  receiptEmail: 'jean.dupont@example.com',
+  paymentMethodData: {
+    type: 'momo',
+    momo: {
+      country: 'cg',
+      msisdn: '242123456789',
+      operatorName: 'mtn'
+    }
+  }
+});
+
+console.log(`ID de la charge : ${confirmation.id}`);
+console.log(`Statut : ${confirmation.status}`);
+```
+
+En appelant cette méthode, le montant associé à l'intention de paiement sera capturé, et le paiement sera considéré comme réussi si tout se passe bien.
+
+Avec ce modèle en deux étapes, les développeurs peuvent avoir un meilleur contrôle sur le processus de paiement tout en offrant une expérience utilisateur fluide. Vous pouvez adapter ces deux étapes à vos besoins spécifiques (par exemple, pré-autorisation ou paiement différé).
+
+### Gestion des Erreurs Lors de la Confirmation
+
+<Note>
+  Il est important de gérer les erreurs car la confirmation d'une intention de paiement peut échouer pour diverses raisons (fonds insuffisants, informations de paiement incorrectes, etc.).
+</Note>
+
+Voici un exemple de gestion des erreurs lors de la confirmation :
+
+```typescript
+import Yabetoo, {
+  YabetooError,
+  ValidationError,
+  APIError,
+  NetworkError,
+  AuthenticationError
+} from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+try {
+  const confirmation = await yabetoo.payments.confirm(intent.id, confirmData);
+  console.log(`Paiement confirmé : ${confirmation.id}`);
+} catch (error) {
+  if (error instanceof ValidationError) {
+    console.log('Erreur de validation :');
+    if (error.errors) {
+      for (const err of error.errors) {
+        console.log(`  - Champ '${err.field}' : ${err.message}`);
+      }
+    }
+  } else if (error instanceof APIError) {
+    console.log(`Erreur API : ${error.message}`);
+    if (error.code) {
+      console.log(`Code d'erreur : ${error.code}`);
+    }
+  } else if (error instanceof NetworkError) {
+    console.log(`Erreur réseau : ${error.message}`);
+  } else if (error instanceof YabetooError) {
+    console.log(`Erreur générale : ${error}`);
+  }
+}
+```
+
+Dans cet exemple, si la confirmation échoue, un message d'erreur sera affiché au lieu de faire planter l'application. Vous pouvez également enregistrer ces erreurs pour une analyse ultérieure ou afficher un message convivial à l'utilisateur.
+
+### Récupérer les Détails d'un Paiement
+
+Pour récupérer des informations sur un paiement existant, utilisez l'ID du paiement comme paramètre :
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const payment = await yabetoo.payments.retrieve('pi_XXXXXXXXXXXX');
+
+console.log(`ID du paiement : ${payment.id}`);
+console.log(`Montant : ${payment.amount}`);
+console.log(`Statut : ${payment.status}`);
+```
+
+Ce code vous permet d'obtenir des informations détaillées sur un paiement spécifique, y compris son statut, son montant et d'autres métadonnées associées.
+
+### Lister Tous Vos Paiements
+
+Pour récupérer une liste de tous vos paiements, utilisez la méthode `all`. Vous pouvez également filtrer les paiements par statut ou d'autres critères si nécessaire.
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+// Pagination simple
+const payments = await yabetoo.payments.getPage(1, 10);
+
+console.log(`Total des paiements : ${payments.totalCount}`);
+console.log(`Éléments de la page actuelle : ${payments.items.length}`);
+console.log(`Plus de pages : ${payments.hasMore}`);
+
+for (const payment of payments.items) {
+  console.log(`  - ${payment.id} : ${payment.amount} ${payment.currency}`);
+}
+```
+
+#### Filtrage et Tri Avancés
+
+```typescript
+// Avec tri
+const sortedPayments = await yabetoo.payments.getPage(1, 10, [
+  { id: 'createdAt', desc: true }  // Plus récents en premier
+]);
+
+// Utilisation de l'objet de filtrage
+const filteredPayments = await yabetoo.payments.all({
+  page: 1,
+  perPage: 10,
+  sorting: [
+    { id: 'amount', desc: true },     // Montants les plus élevés d'abord
+    { id: 'createdAt', desc: false }  // Puis les plus anciens d'abord
+  ]
+});
+```
+
+## Utilisation des Sessions de Paiement avec Yabetoo
+
+Avec Yabetoo, vous pouvez créer des sessions de paiement qui permettent à vos utilisateurs de passer par une page de paiement hébergée. Cette page est entièrement gérée et sécurisée par Yabetoo, simplifiant l'intégration des paiements en ligne tout en assurant la conformité et la sécurité des transactions.
+
+### Qu'est-ce qu'une Session de Paiement ?
+
+Une session de paiement est une instance qui génère une URL unique pointant vers une page de paiement hébergée par Yabetoo. Cette page permet à vos clients de finaliser leur paiement simplement et en toute sécurité, sans que vous ayez à gérer directement les détails sensibles comme les informations de carte de crédit ou de mobile money.
+
+### Avantages de l'Utilisation d'une Session de Paiement
+
+L'utilisation d'une page de paiement hébergée offre plusieurs avantages pour vous en tant que développeur ou commerçant :
+
+- **Sécurité** : Yabetoo gère la sécurité des paiements, vous permettant de vous concentrer sur votre application.
+- **Conformité** : En utilisant une page de paiement hébergée, vous réduisez votre charge de conformité PCI puisque Yabetoo gère les informations sensibles.
+- **Expérience Utilisateur** : La page de paiement est optimisée pour offrir une expérience utilisateur fluide et rapide.
+- **Personnalisation** : Vous pouvez personnaliser l'apparence de la page de paiement pour correspondre à votre marque.
+
+### Créer une Session de Paiement
+
+Les sessions de paiement vous permettent de créer un processus de paiement sécurisé et fluide pour vos utilisateurs. Cette session redirige l'utilisateur vers une page de paiement hébergée pour finaliser la transaction.
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+// Créer les articles du panier
+const items = [
+  {
+    productId: 'prod_12345',
+    productName: 'Écran HD',
+    quantity: 1,
+    price: 200000
+  },
+  {
+    productId: 'prod_67890',
+    productName: 'Clavier sans fil',
+    quantity: 2,
+    price: 35000
+  }
+];
+
+// Créer la session de paiement
+const session = await yabetoo.sessions.create({
+  accountId: 'acct_xxxxxxxx',           // Votre ID de compte
+  total: 270000,                         // Montant total
+  currency: 'XAF',
+  successUrl: 'https://votre-site.com/paiement-reussi',
+  cancelUrl: 'https://votre-site.com/paiement-annule',
+  items: items,
+  metadata: { orderId: 'ORD-1234' }
+});
+
+console.log(`ID de session : ${session.id}`);
+console.log(`URL de paiement : ${session.url}`);
+console.log(`Expire à : ${session.expiresAt}`);
+
+// Rediriger l'utilisateur vers la page de paiement
+// window.location.href = session.url;
+```
+
+### Comment Fonctionne la Session de Paiement
+
+<Steps>
+  <Step title="Création de la Session">
+    Lorsque vous créez une session, vous envoyez des informations sur les articles, le montant total, la devise et les URLs de redirection (pour le succès ou l'annulation).
+  </Step>
+  <Step title="Page de Paiement Hébergée">
+    Yabetoo retourne une URL unique que vous pouvez utiliser pour rediriger vos utilisateurs vers la page de paiement hébergée.
+  </Step>
+  <Step title="Confirmation du Paiement">
+    Une fois le paiement effectué avec succès, l'utilisateur est redirigé vers l'URL que vous avez définie dans `successUrl`, avec les détails de la transaction. Si l'utilisateur annule, il sera redirigé vers l'URL définie dans `cancelUrl`.
+  </Step>
+</Steps>
+
+### Redirection Après le Paiement
+
+Lorsque le paiement est effectué via la page de paiement hébergée par Yabetoo, vous serez redirigé vers l'URL que vous avez définie dans le champ `successUrl`. Yabetoo ajoute automatiquement un paramètre à cette URL : l'ID du paiement. Cet ID de paiement est crucial pour vérifier les détails du paiement et effectuer une double vérification du statut du paiement.
+
+```typescript
+// Dans votre gestionnaire d'URL de succès (ex : Express.js ou Next.js)
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+// Exemple Express.js
+app.get('/paiement-reussi', async (req, res) => {
+  const paymentId = req.query.payment_id as string;
+
+  if (paymentId) {
+    // Récupérer les détails du paiement
+    const payment = await yabetoo.payments.retrieve(paymentId);
+
+    // Double vérification du statut du paiement
+    if (payment.status === 'succeeded') {
+      // Paiement confirmé, traiter la commande
+      console.log('Paiement réussi. Vous pouvez maintenant traiter la commande.');
+      res.json({ status: 'success', payment });
+    } else {
+      // Paiement non finalisé ou échoué
+      console.log('Paiement en attente ou échoué. Veuillez vérifier.');
+      res.json({ status: 'pending', payment });
+    }
+  } else {
+    res.json({ status: 'error', message: 'Aucun ID de paiement trouvé' });
+  }
+});
+```
+
+<Note>
+  Il est important de toujours effectuer cette double vérification pour assurer la sécurité et l'intégrité de votre processus de paiement.
+</Note>
+
+## Décaissements
+
+Les décaissements vous permettent d'envoyer de l'argent à des destinataires (clients, partenaires, etc.) via Mobile Money.
+
+### Créer un Décaissement
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const disbursement = await yabetoo.disbursements.create({
+  amount: 5000,
+  currency: 'XAF',
+  firstName: 'Jean',
+  lastName: 'Dupont',
+  paymentMethodData: {
+    type: 'momo',
+    momo: {
+      country: 'cg',
+      msisdn: '+242123456789',
+      operatorName: 'mtn'
+    }
+  }
+});
+
+console.log(`ID du décaissement : ${disbursement.id}`);
+console.log(`Statut : ${disbursement.status}`);
+```
+
+### Récupérer le Statut d'un Décaissement
+
+```typescript
+// Vérifier le statut du décaissement
+const status = await yabetoo.disbursements.retrieve(disbursement.id);
+
+console.log(`Statut du décaissement : ${status.status}`);
+console.log(`Montant : ${status.amount} ${status.currency}`);
+console.log(`Destinataire : ${status.firstName} ${status.lastName}`);
+```
+
+## Transferts (Remittances)
+
+Les transferts vous permettent de créer des transactions de transfert d'argent.
+
+### Créer un Transfert
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const remittance = await yabetoo.remittances.create({
+  amount: 10000,
+  currency: 'XAF',
+  firstName: 'Marie',
+  lastName: 'Martin',
+  paymentMethodData: {
+    type: 'momo',
+    momo: {
+      country: 'cg',
+      msisdn: '+242987654321',
+      operatorName: 'airtel'
+    }
+  },
+  metadata: { reference: 'REM-2024-001' }
+});
+
+console.log(`ID du transfert : ${remittance.id}`);
+console.log(`Statut : ${remittance.status}`);
+```
+
+### Récupérer le Statut d'un Transfert
+
+```typescript
+// Vérifier le statut du transfert
+const status = await yabetoo.remittances.retrieve(remittance.id);
+
+console.log(`Statut du transfert : ${status.status}`);
+console.log(`Montant : ${status.amount} ${status.currency}`);
+
+if (status.failureMessage) {
+  console.log(`Raison de l'échec : ${status.failureMessage}`);
+}
+```
+
+## Gestion des Erreurs
+
+Le SDK fournit une hiérarchie d'exceptions spécifiques pour différents scénarios d'erreur :
+
+| Exception | Description |
+|-----------|-------------|
+| `YabetooError` | Exception de base pour toutes les erreurs du SDK |
+| `ValidationError` | Échecs de validation des requêtes |
+| `APIError` | L'API a retourné une réponse d'erreur |
+| `NetworkError` | Échecs de réseau ou de connexion |
+| `AuthenticationError` | Échecs d'authentification |
+| `RateLimitError` | Limite de taux dépassée |
+
+### Exemple Complet de Gestion des Erreurs
+
+```typescript
+import Yabetoo, {
+  YabetooError,
+  ValidationError,
+  APIError,
+  NetworkError,
+  AuthenticationError,
+  RateLimitError
+} from 'yabetoo';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+try {
+  const payment = await yabetoo.payments.retrieve('pi_invalid_id');
+} catch (error) {
+  if (error instanceof AuthenticationError) {
+    console.log(`Authentification échouée : ${error.message}`);
+    // Vérifiez votre clé API
+  } else if (error instanceof ValidationError) {
+    console.log('Erreurs de validation :');
+    if (error.errors) {
+      for (const err of error.errors) {
+        console.log(`  - ${err.field} : ${err.message}`);
+      }
+    }
+  } else if (error instanceof RateLimitError) {
+    console.log(`Limite de taux dépassée : ${error.message}`);
+    if (error.retryAfter) {
+      console.log(`Réessayez après ${error.retryAfter} secondes`);
+    }
+  } else if (error instanceof APIError) {
+    console.log(`Erreur API : ${error.message}`);
+    if (error.code) {
+      console.log(`Code d'erreur : ${error.code}`);
+    }
+    // Gérer des codes d'erreur spécifiques
+    if (error.code === 'payment_not_found') {
+      console.log('Le paiement n\'existe pas');
+    }
+  } else if (error instanceof NetworkError) {
+    console.log(`Erreur réseau : ${error.message}`);
+    // Réessayer la requête ou notifier l'utilisateur
+  } else if (error instanceof YabetooError) {
+    console.log(`Erreur inattendue : ${error}`);
+  }
+}
+```
+
+## Support TypeScript
+
+Ce SDK est écrit en TypeScript et inclut des définitions de types complètes. Tous les modèles et interfaces sont exportés pour être utilisés dans vos projets TypeScript.
+
+```typescript
+import type {
+  PaymentIntent,
+  CreateIntentRequest,
+  ConfirmIntentRequest,
+  CheckoutSession,
+  CreateCheckoutSessionRequest,
+  Disbursement,
+  CreateDisbursementRequest,
+  Remittance,
+  CreateRemittanceRequest,
+  MomoData,
+  PaymentMethodData,
+  PaginatedResponse,
+  Sorting
+} from 'yabetoo';
+```
+
+## Méthodes de Paiement Supportées
+
+| Méthode | Type | Pays | Opérateurs |
+|---------|------|------|------------|
+| Mobile Money | `momo` | `cg` (Congo), `fr` (France) | `mtn`, `airtel` |
+
+## Référence des Modèles de Données
+
+### Données de Méthode de Paiement
+
+```typescript
+import type { PaymentMethodData, MomoData } from 'yabetoo';
+
+const paymentMethod: PaymentMethodData = {
+  type: 'momo',  // Type de méthode de paiement
+  momo: {
+    country: 'cg',           // Code pays : 'cg' ou 'fr'
+    msisdn: '242123456789',  // Numéro de téléphone
+    operatorName: 'mtn'      // Opérateur : 'mtn' ou 'airtel'
+  }
+};
+```
+
+### Réponse Paginée
+
+```typescript
+// L'objet PaginatedResponse fournit ces propriétés :
+const response = await yabetoo.payments.getPage(1, 10);
+
+response.items;       // Tableau d'éléments (paiements)
+response.totalCount;  // Nombre total d'éléments
+response.page;        // Numéro de page actuel
+response.perPage;     // Éléments par page
+response.hasMore;     // S'il y a plus de pages
+```
+
+## Exemples avec Frameworks
+
+### Route API Next.js
+
+```typescript
+// pages/api/create-payment.ts
+import type { NextApiRequest, NextApiResponse } from 'next';
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Méthode non autorisée' });
+  }
+
+  try {
+    const { amount, currency } = req.body;
+
+    const intent = await yabetoo.payments.create({
+      amount,
+      currency,
+      description: 'Paiement depuis Next.js'
+    });
+
+    res.status(200).json({
+      id: intent.id,
+      clientSecret: intent.clientSecret
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Échec de la création du paiement' });
+  }
+}
+```
+
+### Express.js
+
+```typescript
+import express from 'express';
+import Yabetoo from 'yabetoo';
+
+const app = express();
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+app.use(express.json());
+
+app.post('/api/payments', async (req, res) => {
+  try {
+    const intent = await yabetoo.payments.create({
+      amount: req.body.amount,
+      currency: req.body.currency
+    });
+
+    res.json({ id: intent.id, clientSecret: intent.clientSecret });
+  } catch (error) {
+    res.status(500).json({ error: 'Échec de la création du paiement' });
+  }
+});
+
+app.listen(3000);
+```
+
+## Conclusion
+
+Le SDK JavaScript/TypeScript Yabetoo vous permet d'intégrer facilement le système de paiement sécurisé de Yabetoo dans vos applications. Avec sa facilité d'utilisation, son support TypeScript complet et ses fonctionnalités avancées, vous pouvez gérer les paiements en ligne de manière efficace et sécurisée.
+
+Que vous construisiez avec React, Vue, Angular, Next.js, Express ou tout autre framework JavaScript, ce SDK fournit tous les outils dont vous avez besoin pour créer une expérience de paiement fluide et sécurisée pour vos utilisateurs.
+
+## Ressources Supplémentaires
+
+- [Documentation de l'API Yabetoo](https://docs.yabetoo.com)
+- [SDK JavaScript sur GitHub](https://github.com/yabetoo/yabetoo-js)
+- [SDK JavaScript sur npm](https://www.npmjs.com/package/yabetoo)
