@@ -1,4 +1,86 @@
 ---
 title: "Get Payment Intent"
-openapi: "GET /v1/payment-intents/{id}"
+description: "Retrieve a payment intent by its ID."
 ---
+
+## Endpoint
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/payment-intents/{id}   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/payment-intents/{id}       # Production
+```
+
+## Authentication
+
+Use your secret key in the `Authorization` header:
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | The payment intent ID |
+
+## Example Request
+
+```javascript
+const paymentIntentId = "pi_XdLeavDjiiaEx2y5nRz0";
+
+const response = await fetch(
+  `https://pay.sandbox.yabetoopay.com/v1/payment-intents/${paymentIntentId}`,
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+  }
+);
+
+const data = await response.json();
+```
+
+## Response
+
+### 200 OK
+
+```json
+{
+  "amount": 2000,
+  "currency": "xaf",
+  "label": "payment_intent",
+  "id": "pi_XdLeavDjiiaEx2y5nRz0",
+  "status": "succeeded",
+  "client_secret": ""
+}
+```
+
+### Payment Intent Status
+
+| Status | Description |
+|--------|-------------|
+| `requires_payment_method` | Waiting for payment method |
+| `requires_confirmation` | Waiting for confirmation |
+| `processing` | Payment is being processed |
+| `succeeded` | Payment completed successfully |
+| `failed` | Payment failed |
+| `canceled` | Payment was canceled |
+
+### 404 Not Found
+
+```json
+{
+  "message": "Payment intent not found"
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Unauthorized"
+}
+```

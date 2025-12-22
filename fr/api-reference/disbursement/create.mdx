@@ -1,117 +1,149 @@
 ---
-title: Créer un versement
-description: Créez un nouveau versement vers un compte Mobile Money.
+title: "Créer un décaissement"
+description: "Créez un décaissement pour transférer des fonds de votre compte vers le compte d'un client."
 ---
 
 ## Endpoint
 
 ```bash
-POST /v1/disbursements
+POST https://pay.sandbox.yabetoopay.com/v1/disbursements   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/disbursements       # Production
 ```
 
-## Paramètres
+## Authentification
 
-### Corps de la requête
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
 
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `amount` | `integer` | **Obligatoire**. Montant en centimes |
-| `currency` | `string` | **Obligatoire**. Code devise (ex: XAF, XOF) |
-| `recipient` | `object` | **Obligatoire**. Informations du destinataire |
-| `description` | `string` | Description du versement |
-| `metadata` | `object` | Données personnalisées |
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
 
-### Structure recipient
+<Note>
+  Sécurité de la clé secrète : La clé secrète doit rester confidentielle et
+  ne doit jamais être exposée dans le frontend ou le code client. Elle doit uniquement être utilisée
+  côté serveur.
+</Note>
+
+## Corps de la requête
+
+| Paramètre | Type | Obligatoire | Description |
+|-----------|------|-------------|-------------|
+| `amount` | `number` | Oui | Le montant à transférer |
+| `currency` | `string` | Oui | Code devise (ex: `XAF`, `XOF`) |
+| `first_name` | `string` | Oui | Prénom du client |
+| `last_name` | `string` | Oui | Nom du client |
+| `payment_method_data` | `object` | Oui | Détails de la méthode de paiement |
+
+### Structure payment_method_data
 
 ```json
 {
   "type": "momo",
-  "momo_details": {
-    "msisdn": "242066594470",
+  "momo": {
+    "msisdn": "242066594471",
     "country": "CG",
-    "operator_name": "mtn",
-    "first_name": "Jean",
-    "last_name": "Dupont"
+    "operator_name": "mtn"
   }
 }
 ```
 
+| Champ | Description |
+|-------|-------------|
+| `type` | Type de méthode de paiement (`momo` pour Mobile Money) |
+| `momo.msisdn` | Numéro de téléphone du client |
+| `momo.country` | Code pays (ex: `CG`, `CM`) |
+| `momo.operator_name` | Nom de l'opérateur (`mtn`, `airtel`) |
+
 ## Exemple de requête
 
-```bash
-curl -X POST https://api.yabetoopay.com/v1/disbursements \
-  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": 50000,
-    "currency": "XAF",
-    "recipient": {
-      "type": "momo",
-      "momo_details": {
-        "msisdn": "242066594470",
-        "country": "CG",
-        "operator_name": "mtn",
-        "first_name": "Jean",
-        "last_name": "Dupont"
-      }
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/disbursements",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
     },
-    "description": "Paiement freelance",
-    "metadata": {
-      "invoice_id": "INV-2023-001"
-    }
-  }'
+    body: JSON.stringify({
+      amount: 10000,
+      currency: "XAF",
+      first_name: "Jean",
+      last_name: "Dupont",
+      payment_method_data: {
+        type: "momo",
+        momo: {
+          msisdn: "242066594471",
+          country: "CG",
+          operator_name: "mtn",
+        },
+      },
+    }),
+  }
+);
+
+const data = await response.json();
 ```
 
 ## Réponse
 
+### 200 OK
+
+Lorsque le décaissement a été créé avec succès, l'API renverra une réponse 200 OK.
+
+Le statut du décaissement est `processing` car le paiement est toujours en cours de traitement et n'a pas encore été exécuté.
+
 ```json
 {
-  "status": "success",
-  "data": {
-    "id": "disb_123456789",
-    "object": "disbursement",
-    "amount": 50000,
-    "currency": "XAF",
-    "status": "processing",
-    "recipient": {
-      "type": "momo",
-      "momo_details": {
-        "msisdn": "242066594470",
-        "country": "CG",
-        "operator_name": "mtn",
-        "first_name": "Jean",
-        "last_name": "Dupont"
-      }
-    },
-    "description": "Paiement freelance",
-    "metadata": {
-      "invoice_id": "INV-2023-001"
-    },
-    "created_at": "2023-05-12T10:12:32Z"
-  }
+  "amount": 10000,
+  "currency": "xaf",
+  "status": "processing",
+  "firstName": "Jean",
+  "lastName": "Dupont",
+  "operatorName": "mtn",
+  "country": "cg",
+  "phone": "242066594471",
+  "object": "disbursement",
+  "type": 1,
+  "shouldExecutedAt": "2025-03-18T09:24:57.555Z",
+  "id": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "createdAt": "2025-03-17T10:24:57.559+01:00",
+  "updatedAt": "2025-03-17T10:24:57.559+01:00"
 }
 ```
 
-### Statuts possibles
+### Statuts du décaissement
 
 | Statut | Description |
 |--------|-------------|
 | `processing` | En cours de traitement |
-| `succeeded` | Versement réussi |
-| `failed` | Versement échoué |
-| `canceled` | Versement annulé |
+| `succeeded` | Décaissement réussi |
+| `failed` | Décaissement échoué |
+| `canceled` | Décaissement annulé |
 
-## Codes d'erreur
+### 400 Mauvaise requête
 
-| Code | Description |
-|------|-------------|
-| `invalid_request` | Paramètres manquants ou invalides |
-| `insufficient_funds` | Solde insuffisant |
-| `recipient_not_eligible` | Destinataire non éligible |
-| `amount_too_small` | Montant inférieur au minimum |
-| `amount_too_large` | Montant supérieur au maximum |
+```json
+{
+  "errors": [
+    {
+      "rule": "required",
+      "field": "currency",
+      "message": "required validation failed"
+    }
+  ]
+}
+```
+
+### 401 Non autorisé
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
 
 <Note>
-  Les versements sont traités de manière asynchrone. Utilisez les webhooks
+  Les décaissements sont traités de manière asynchrone. Utilisez les webhooks
   pour suivre leur statut en temps réel.
 </Note>

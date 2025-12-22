@@ -1,4 +1,125 @@
 ---
 title: "Confirm Payment Intent"
-openapi: "POST /v1/payment-intents/{id}/confirm"
+description: "Confirm a payment intent to process the payment."
 ---
+
+## Endpoint
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/payment-intents   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
+```
+
+## Authentication
+
+Use your secret key in the `Authorization` header:
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `client_secret` | `string` | Yes | The client secret of the payment intent |
+| `first_name` | `string` | No | Customer's first name |
+| `last_name` | `string` | No | Customer's last name |
+| `receipt_email` | `string` | No | Customer's email address |
+| `payment_method_data` | `object` | Yes | Payment method details |
+
+### payment_method_data structure
+
+```json
+{
+  "type": "momo",
+  "momo": {
+    "country": "cg",
+    "msisdn": "+242123456789",
+    "operator_name": "mtn"
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | Payment method type (`momo` for Mobile Money) |
+| `momo.country` | Country code (e.g., `cg`, `cm`) |
+| `momo.msisdn` | Phone number in international format |
+| `momo.operator_name` | Operator name (`mtn`, `airtel`) |
+
+## Example Request
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+    body: JSON.stringify({
+      client_secret: "YOUR_CLIENT_SECRET",
+      first_name: "John",
+      last_name: "Doe",
+      receipt_email: "john.doe@example.com",
+      payment_method_data: {
+        type: "momo",
+        momo: {
+          country: "cg",
+          msisdn: "+242123456789",
+          operator_name: "mtn",
+        },
+      },
+    }),
+  }
+);
+
+const data = await response.json();
+```
+
+## Response
+
+### 200 OK
+
+```json
+{
+  "intent_id": "pi_9aATHBv8UXuD6H5qrSav",
+  "financial_transaction_id": "832546449",
+  "transaction_id": "3c043d55-e659-4a86-9fab-b377fea9ee6b",
+  "amount": 500,
+  "currency": "xaf",
+  "status": "succeeded",
+  "captured": true,
+  "external_id": "ext_3rxAagDtTSlN9XO96R1slJk14WENvxOlJbCu",
+  "id": "ch_1jro7CEishIEWadybzlm"
+}
+```
+
+### 422 Bad Request
+
+```json
+{
+  "error": {
+    "message": "E_CONFIRMED_INTENT_EXCEPTION: Intent already confirmed",
+    "code": "E_CONFIRMED_INTENT_EXCEPTION"
+  }
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": {
+    "message": "Unauthorized",
+    "code": "Unauthorized"
+  }
+}
+```
+
+<Warning>
+  Error handling is important, as confirmation can fail for various reasons
+  (insufficient funds, incorrect payment information, etc.).
+</Warning>

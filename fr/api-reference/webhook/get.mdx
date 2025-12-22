@@ -1,65 +1,78 @@
 ---
-title: Récupérer un webhook
-description: Récupérez les détails d'un webhook existant.
+title: "Récupérer un webhook"
+description: "Récupérez les détails d'un webhook existant."
 ---
 
 ## Endpoint
 
 ```bash
-GET /v1/webhooks/:id
+GET https://pay.sandbox.yabetoopay.com/v1/account/{accountId}/webhooks/{id}   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/account/{accountId}/webhooks/{id}       # Production
 ```
 
-## Paramètres
+## Authentification
 
-### Paramètres de chemin
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
 
-| Paramètre | Description |
-|-----------|-------------|
-| `id` | **Obligatoire**. ID du webhook |
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Paramètres de chemin
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `accountId` | `string` | Votre ID de compte |
+| `id` | `string` | L'ID du webhook |
 
 ## Exemple de requête
 
-```bash
-curl https://api.yabetoopay.com/v1/webhooks/whk_123456789 \
-  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX"
+```javascript
+const webhookId = "whk_123456789";
+
+const response = await fetch(
+  `https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks/${webhookId}`,
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+  }
+);
+
+const data = await response.json();
 ```
 
 ## Réponse
 
+### 200 OK
+
 ```json
 {
-  "status": "success",
-  "data": {
-    "id": "whk_123456789",
-    "object": "webhook",
-    "url": "https://example.com/webhooks",
-    "description": "Webhook de production",
-    "status": "active",
-    "enabled_events": [
-      "payment_intent.succeeded",
-      "payment_intent.failed",
-      "disbursement.succeeded",
-      "disbursement.failed"
-    ],
-    "metadata": {
-      "environment": "production"
-    },
-    "created_at": "2023-05-12T10:12:32Z",
-    "last_error": {
-      "type": "connection_error",
-      "message": "Impossible de se connecter à l'URL",
-      "occurred_at": "2023-05-12T15:30:00Z"
-    },
-    "stats": {
-      "successful_deliveries": 150,
-      "failed_deliveries": 2,
-      "average_response_time": 245
-    }
+  "id": "whk_123456789",
+  "object": "webhook",
+  "url": "https://example.com/webhooks",
+  "description": "Webhook de production",
+  "status": "active",
+  "enabled_events": [
+    "intent.completed",
+    "disbursement.completed"
+  ],
+  "metadata": {
+    "environment": "production"
+  },
+  "created_at": "2023-05-12T10:12:32Z",
+  "last_error": null,
+  "stats": {
+    "successful_deliveries": 150,
+    "failed_deliveries": 2,
+    "average_response_time": 245
   }
 }
 ```
 
-### Statuts possibles
+### Statuts du webhook
 
 | Statut | Description |
 |--------|-------------|
@@ -76,13 +89,18 @@ curl https://api.yabetoopay.com/v1/webhooks/whk_123456789 \
 | `invalid_response` | Réponse non valide (code != 200) |
 | `ssl_error` | Erreur de certificat SSL |
 
-## Codes d'erreur
+### 404 Not Found
 
-| Code | Description |
-|------|-------------|
-| `webhook_not_found` | Webhook introuvable |
-| `invalid_webhook_id` | Format d'ID de webhook invalide |
+```json
+{
+  "message": "Webhook not found"
+}
+```
 
-<Note>
-  Les statistiques sont calculées sur les 30 derniers jours d'activité.
-</Note>
+### 401 Non autorisé
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

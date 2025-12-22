@@ -1,106 +1,92 @@
 ---
-title: Récupérer un transfert
-description: Récupérez les détails d'un transfert d'argent existant.
+title: "Récupérer un transfert"
+description: "Récupérez un transfert par son ID pour vérifier son statut et ses détails."
 ---
 
 ## Endpoint
 
 ```bash
-GET /v1/remittances/:id
+GET https://pay.sandbox.yabetoopay.com/v1/remittance/{id}   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/remittance/{id}       # Production
 ```
 
-## Paramètres
+## Authentification
 
-### Paramètres de chemin
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
 
-| Paramètre | Description |
-|-----------|-------------|
-| `id` | **Obligatoire**. ID du transfert |
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Paramètres de chemin
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | L'ID unique du transfert |
 
 ## Exemple de requête
 
-```bash
-curl https://api.yabetoopay.com/v1/remittances/rem_123456789 \
-  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX"
+```javascript
+const remittanceId = "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ";
+
+const response = await fetch(
+  `https://pay.sandbox.yabetoopay.com/v1/remittance/${remittanceId}`,
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+  }
+);
+
+const data = await response.json();
 ```
 
 ## Réponse
 
+### 200 OK
+
 ```json
 {
-  "status": "success",
-  "data": {
-    "id": "rem_123456789",
-    "object": "remittance",
-    "amount": 100000,
-    "source_currency": "EUR",
-    "destination_currency": "XAF",
-    "exchange_rate": 655.957,
-    "destination_amount": 65595700,
-    "fees": {
-      "amount": 500,
-      "currency": "EUR"
-    },
-    "status": "succeeded",
-    "recipient": {
-      "type": "momo",
-      "momo_details": {
-        "msisdn": "242066594470",
-        "country": "CG",
-        "operator_name": "mtn",
-        "first_name": "Jean",
-        "last_name": "Dupont"
-      }
-    },
-    "sender": {
-      "first_name": "Marie",
-      "last_name": "Martin",
-      "email": "marie.martin@example.com",
-      "verification_status": "verified"
-    },
-    "purpose": "family_support",
-    "metadata": {
-      "customer_id": "cus_123"
-    },
-    "created_at": "2023-05-12T10:12:32Z",
-    "succeeded_at": "2023-05-12T10:15:45Z",
-    "error": null
-  }
+  "id": "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "object": "remittance",
+  "amount": 1000,
+  "currency": "xaf",
+  "status": "succeeded",
+  "firstName": "Jean",
+  "lastName": "Dupont",
+  "operatorName": "mtn",
+  "country": "cg",
+  "phone": "242066594470",
+  "type": 1,
+  "shouldExecutedAt": "2025-03-18T09:24:57.555Z",
+  "createdAt": "2025-03-17T10:24:57.559+01:00",
+  "updatedAt": "2025-03-17T10:24:57.559+01:00"
 }
 ```
 
-### Détails des statuts
+### Statuts du transfert
 
 | Statut | Description |
 |--------|-------------|
-| `processing` | En cours de traitement |
-| `pending_verification` | En attente de vérification |
-| `succeeded` | Transfert réussi |
-| `failed` | Transfert échoué |
-| `canceled` | Transfert annulé |
+| `pending` | Le transfert est en attente de traitement |
+| `processing` | Le transfert est en cours de traitement |
+| `succeeded` | Le transfert a réussi |
+| `failed` | Le transfert a échoué |
 
-### Structure d'erreur
-
-En cas d'échec, le champ `error` contient :
+### 404 Not Found
 
 ```json
 {
-  "code": "sender_verification_failed",
-  "message": "La vérification de l'expéditeur a échoué",
-  "details": {
-    "reason": "document_expired",
-    "document_type": "passport"
-  }
+  "message": "Remittance not found"
 }
 ```
 
-## Codes d'erreur
+### 401 Non autorisé
 
-| Code | Description |
-|------|-------------|
-| `remittance_not_found` | Transfert introuvable |
-| `invalid_remittance_id` | Format d'ID de transfert invalide |
-
-<Note>
-  Les transferts restent accessibles pendant 90 jours après leur création.
-</Note>
+```json
+{
+  "message": "Unauthorized"
+}
+```

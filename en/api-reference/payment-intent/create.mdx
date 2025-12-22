@@ -1,4 +1,87 @@
 ---
 title: "Create Payment Intent"
-openapi: "POST /v1/payment-intents"
+description: "Create a payment intent to process a payment."
 ---
+
+## Endpoint
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/payment-intents   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
+```
+
+## Authentication
+
+Use your secret key in the `Authorization` header:
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `amount` | `number` | Yes | The amount to be paid (in smallest currency unit) |
+| `currency` | `string` | Yes | Currency code (e.g., `xaf`, `xof`) |
+| `description` | `string` | No | Description of the payment |
+| `metadata` | `object` | No | Custom key-value data for your reference |
+
+## Example Request
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+    body: JSON.stringify({
+      amount: 2000,
+      currency: "xaf",
+      description: "Payment for product",
+      metadata: { orderId: "1234" },
+    }),
+  }
+);
+
+const data = await response.json();
+```
+
+## Response
+
+### 200 OK
+
+```json
+{
+  "amount": 2000,
+  "currency": "xaf",
+  "label": "payment_intent",
+  "id": "pi_XdLeavDjiiaEx2y5nRz0",
+  "client_secret": ""
+}
+```
+
+### 422 Bad Request
+
+```json
+{
+  "errors": [
+    {
+      "rule": "required",
+      "field": "currency",
+      "message": "required validation failed"
+    }
+  ]
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Unauthorized"
+}
+```

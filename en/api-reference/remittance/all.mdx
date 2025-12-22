@@ -1,4 +1,93 @@
 ---
 title: "Get All Remittances"
-openapi: "GET /v1/remittance"
+description: "Retrieve a list of all your remittances."
 ---
+
+## Endpoint
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/remittance   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/remittance       # Production
+```
+
+## Authentication
+
+Use your secret key in the `Authorization` header:
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `limit` | `integer` | Number of items per page (default: 10, max: 100) |
+| `page` | `integer` | Page number (starts at 1) |
+
+## Example Request
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/remittance?limit=10&page=1",
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+  }
+);
+
+const data = await response.json();
+```
+
+## Response
+
+### 200 OK
+
+```json
+{
+  "data": [
+    {
+      "id": "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+      "object": "remittance",
+      "amount": 1000,
+      "currency": "xaf",
+      "status": "succeeded",
+      "firstName": "John",
+      "lastName": "Doe",
+      "operatorName": "mtn",
+      "country": "cg",
+      "phone": "242066594470",
+      "type": 1,
+      "shouldExecutedAt": "2025-03-18T09:24:57.555Z",
+      "createdAt": "2025-03-17T10:24:57.559+01:00",
+      "updatedAt": "2025-03-17T10:24:57.559+01:00"
+    }
+  ],
+  "meta": {
+    "total": 45,
+    "page": 1,
+    "limit": 10,
+    "pages": 5
+  }
+}
+```
+
+### Remittance Status
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Remittance is waiting to be processed |
+| `processing` | Remittance is being processed |
+| `succeeded` | Remittance completed successfully |
+| `failed` | Remittance failed |
+
+### 401 Unauthorized
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

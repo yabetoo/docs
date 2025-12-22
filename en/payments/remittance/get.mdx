@@ -1,0 +1,100 @@
+---
+title: "Get a Remittance"
+description: "Retrieve a remittance by its ID to check its status and details."
+---
+
+## Prepare your request
+
+To retrieve a remittance, use the following endpoint:
+
+- **Sandbox**: `GET https://pay.sandbox.yabetoopay.com/v1/remittance/{id}`
+- **Production**: `GET https://pay.api.yabetoopay.com/v1/remittance/{id}`
+
+<Note>
+  <strong>Secret key security:</strong> Your secret key (<code>secret_key</code>)
+  must be kept confidential and should never be exposed in frontend or client-side
+  code. It must only be used on the server side.
+</Note>
+
+1. Authenticate your request using your secret key in the `Authorization` header.
+2. Include the remittance ID in the URL path.
+
+### Parameters
+
+| Parameter | Type     | Location | Description                    |
+| --------- | -------- | -------- | ------------------------------ |
+| `id`      | `string` | Path     | The unique ID of the remittance |
+
+## Make the request
+
+```javascript
+const remittanceId = "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ";
+
+const response = await fetch(
+  `https://pay.sandbox.yabetoopay.com/v1/remittance/${remittanceId}`,
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secret_key}`,
+    },
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+## Response
+
+### 200 OK
+
+When the remittance is successfully retrieved, the API returns:
+
+```json
+{
+  "id": "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "object": "remittance",
+  "amount": 1000,
+  "currency": "xaf",
+  "status": "succeeded",
+  "firstName": "John",
+  "lastName": "Doe",
+  "operatorName": "mtn",
+  "country": "cg",
+  "phone": "242066594470",
+  "type": 1,
+  "shouldExecutedAt": "2025-03-18T09:24:57.555Z",
+  "createdAt": "2025-03-17T10:24:57.559+01:00",
+  "updatedAt": "2025-03-17T10:24:57.559+01:00"
+}
+```
+
+### Remittance Status
+
+| Status       | Description                              |
+| ------------ | ---------------------------------------- |
+| `pending`    | Remittance is waiting to be processed    |
+| `processing` | Remittance is being processed            |
+| `succeeded`  | Remittance completed successfully        |
+| `failed`     | Remittance failed                        |
+
+### 404 Not Found
+
+When the remittance ID doesn't exist:
+
+```json
+{
+  "message": "Remittance not found"
+}
+```
+
+### 401 Unauthorized
+
+When the secret key is invalid:
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

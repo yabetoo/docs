@@ -61,7 +61,8 @@
                 "group": "Transferts",
                 "pages": [
                   "fr/payments/remittance/overview",
-                  "fr/payments/remittance/create"
+                  "fr/payments/remittance/create",
+                  "fr/payments/remittance/get"
                 ]
               },
               {
@@ -167,6 +168,14 @@
                 ]
               },
               {
+                "group": "Lien de paiement",
+                "pages": [
+                  "fr/api-reference/payment-link/create",
+                  "fr/api-reference/payment-link/get",
+                  "fr/api-reference/payment-link/all"
+                ]
+              },
+              {
                 "group": "Webhook",
                 "pages": [
                   "fr/api-reference/webhook/create",
@@ -229,7 +238,8 @@
                 "group": "Remittance",
                 "pages": [
                   "en/payments/remittance/overview",
-                  "en/payments/remittance/create"
+                  "en/payments/remittance/create",
+                  "en/payments/remittance/get"
                 ]
               },
               {
@@ -359,6 +369,14 @@
                   "en/api-reference/remittance/create",
                   "en/api-reference/remittance/get",
                   "en/api-reference/remittance/all"
+                ]
+              },
+              {
+                "group": "Payment Link",
+                "pages": [
+                  "en/api-reference/payment-link/create",
+                  "en/api-reference/payment-link/get",
+                  "en/api-reference/payment-link/all"
                 ]
               },
               {

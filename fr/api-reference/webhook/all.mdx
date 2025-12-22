@@ -1,17 +1,30 @@
 ---
-title: Lister les webhooks
-description: Récupérez la liste de tous vos webhooks.
+title: "Lister les webhooks"
+description: "Récupérez la liste de tous vos webhooks."
 ---
 
 ## Endpoint
 
 ```bash
-GET /v1/webhooks
+GET https://pay.sandbox.yabetoopay.com/v1/account/{accountId}/webhooks   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/account/{accountId}/webhooks       # Production
 ```
 
-## Paramètres
+## Authentification
 
-### Paramètres de requête
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Paramètres de chemin
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `accountId` | `string` | Votre ID de compte |
+
+## Paramètres de requête
 
 | Paramètre | Type | Description |
 |-----------|------|-------------|
@@ -21,46 +34,55 @@ GET /v1/webhooks
 
 ## Exemple de requête
 
-```bash
-curl "https://api.yabetoopay.com/v1/webhooks?limit=5&status=active" \
-  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX"
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks?limit=10&page=1",
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+  }
+);
+
+const data = await response.json();
 ```
 
 ## Réponse
 
+### 200 OK
+
 ```json
 {
-  "status": "success",
-  "data": {
-    "object": "list",
-    "data": [
-      {
-        "id": "whk_123456789",
-        "object": "webhook",
-        "url": "https://example.com/webhooks",
-        "description": "Webhook de production",
-        "status": "active",
-        "enabled_events": [
-          "payment_intent.succeeded",
-          "payment_intent.failed"
-        ],
-        "metadata": {
-          "environment": "production"
-        },
-        "created_at": "2023-05-12T10:12:32Z",
-        "last_error": null,
-        "stats": {
-          "successful_deliveries": 150,
-          "failed_deliveries": 2,
-          "average_response_time": 245
-        }
+  "data": [
+    {
+      "id": "whk_123456789",
+      "object": "webhook",
+      "url": "https://example.com/webhooks",
+      "description": "Webhook de production",
+      "status": "active",
+      "enabled_events": [
+        "intent.completed",
+        "disbursement.completed"
+      ],
+      "metadata": {
+        "environment": "production"
+      },
+      "created_at": "2023-05-12T10:12:32Z",
+      "last_error": null,
+      "stats": {
+        "successful_deliveries": 150,
+        "failed_deliveries": 2,
+        "average_response_time": 245
       }
-      // ... autres webhooks
-    ],
-    "has_more": true,
+    }
+  ],
+  "meta": {
     "total": 25,
     "page": 1,
-    "pages": 5
+    "limit": 10,
+    "pages": 3
   }
 }
 ```
@@ -73,55 +95,10 @@ curl "https://api.yabetoopay.com/v1/webhooks?limit=5&status=active" \
 | `disabled` | Webhooks désactivés manuellement |
 | `failed` | Webhooks désactivés après échecs |
 
-## Statistiques globales
-
-La réponse inclut également des statistiques globales :
+### 401 Non autorisé
 
 ```json
 {
-  "stats": {
-    "total_webhooks": {
-      "active": 15,
-      "disabled": 5,
-      "failed": 2
-    },
-    "delivery_stats": {
-      "last_24h": {
-        "successful": 1250,
-        "failed": 23,
-        "success_rate": 98.19
-      },
-      "last_7d": {
-        "successful": 8500,
-        "failed": 142,
-        "success_rate": 98.35
-      }
-    }
-  }
+  "message": "Unauthorized"
 }
 ```
-
-## Codes d'erreur
-
-| Code | Description |
-|------|-------------|
-| `invalid_request` | Paramètres invalides |
-
-### Exemples de filtrage
-
-#### Par statut
-
-```bash
-curl "https://api.yabetoopay.com/v1/webhooks?status=active"
-```
-
-#### Pagination
-
-```bash
-curl "https://api.yabetoopay.com/v1/webhooks?limit=20&page=2"
-```
-
-<Note>
-  Les webhooks sont essentiels pour maintenir la synchronisation entre Yabetoo
-  et vos systèmes. Surveillez régulièrement leurs performances.
-</Note>

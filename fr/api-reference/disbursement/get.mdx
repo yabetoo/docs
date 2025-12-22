@@ -1,92 +1,92 @@
 ---
-title: Récupérer un versement
-description: Récupérez les détails d'un versement existant.
+title: "Récupérer un décaissement"
+description: "Récupérez un décaissement par son ID."
 ---
 
 ## Endpoint
 
 ```bash
-GET /v1/disbursements/:id
+GET https://pay.sandbox.yabetoopay.com/v1/disbursement/{id}   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/disbursement/{id}       # Production
 ```
 
-## Paramètres
+## Authentification
 
-### Paramètres de chemin
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
 
-| Paramètre | Description |
-|-----------|-------------|
-| `id` | **Obligatoire**. ID du versement |
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Paramètres de chemin
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | L'ID du décaissement |
 
 ## Exemple de requête
 
-```bash
-curl https://api.yabetoopay.com/v1/disbursements/disb_123456789 \
-  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX"
+```javascript
+const disbursementId = "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ";
+
+const response = await fetch(
+  `https://pay.sandbox.yabetoopay.com/v1/disbursement/${disbursementId}`,
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_SECRET_KEY",
+    },
+  }
+);
+
+const data = await response.json();
 ```
 
 ## Réponse
 
+### 200 OK
+
 ```json
 {
-  "status": "success",
-  "data": {
-    "id": "disb_123456789",
-    "object": "disbursement",
-    "amount": 50000,
-    "currency": "XAF",
-    "status": "succeeded",
-    "recipient": {
-      "type": "momo",
-      "momo_details": {
-        "msisdn": "242066594470",
-        "country": "CG",
-        "operator_name": "mtn",
-        "first_name": "Jean",
-        "last_name": "Dupont"
-      }
-    },
-    "description": "Paiement freelance",
-    "metadata": {
-      "invoice_id": "INV-2023-001"
-    },
-    "created_at": "2023-05-12T10:12:32Z",
-    "succeeded_at": "2023-05-12T10:15:45Z",
-    "error": null
-  }
+  "amount": 10000,
+  "currency": "XAF",
+  "status": "processing",
+  "firstName": "Jean",
+  "lastName": "Dupont",
+  "operatorName": "mtn",
+  "country": "cg",
+  "phone": "242066594471",
+  "object": "disbursement",
+  "type": 1,
+  "shouldExecutedAt": "2025-03-18T09:24:57.555Z",
+  "id": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "createdAt": "2025-03-17T10:24:57.559+01:00",
+  "updatedAt": "2025-03-17T10:24:57.559+01:00"
 }
 ```
 
-### Détails des statuts
+### Statuts du décaissement
 
 | Statut | Description |
 |--------|-------------|
 | `processing` | En cours de traitement |
-| `succeeded` | Versement réussi |
-| `failed` | Versement échoué |
-| `canceled` | Versement annulé |
+| `succeeded` | Décaissement réussi |
+| `failed` | Décaissement échoué |
+| `canceled` | Décaissement annulé |
 
-### Structure d'erreur
-
-En cas d'échec, le champ `error` contient :
+### 404 Not Found
 
 ```json
 {
-  "code": "insufficient_funds",
-  "message": "Solde insuffisant pour effectuer le versement",
-  "details": {
-    "available_balance": 30000,
-    "required_amount": 50000
-  }
+  "message": "Disbursement not found"
 }
 ```
 
-## Codes d'erreur
+### 401 Non autorisé
 
-| Code | Description |
-|------|-------------|
-| `disbursement_not_found` | Versement introuvable |
-| `invalid_disbursement_id` | Format d'ID de versement invalide |
-
-<Note>
-  Les versements restent accessibles pendant 90 jours après leur création.
-</Note>
+```json
+{
+  "message": "Unauthorized"
+}
+```
