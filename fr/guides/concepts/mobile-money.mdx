@@ -1,0 +1,141 @@
+---
+title: Mobile Money
+description: Comprendre comment fonctionnent les paiements Mobile Money avec Yabetoo.
+icon: "mobile"
+---
+
+Le Mobile Money est le principal moyen de paiement pris en charge par Yabetoo. Ce guide explique comment il fonctionne et comment l'intégrer dans votre application.
+
+## Qu'est-ce que le Mobile Money ?
+
+Le Mobile Money est un service de paiement numérique qui permet aux utilisateurs de stocker, envoyer et recevoir de l'argent via leur téléphone mobile. Il est largement utilisé en Afrique où l'infrastructure bancaire traditionnelle est limitée.
+
+## Opérateurs supportés
+
+Yabetoo prend actuellement en charge les opérateurs Mobile Money suivants :
+
+| Opérateur | Code | Pays | Description |
+|-----------|------|------|-------------|
+| MTN MoMo | `mtn` | Congo-Brazzaville | MTN Mobile Money |
+| Airtel Money | `airtel` | Congo-Brazzaville | Airtel Money |
+
+## Comment fonctionnent les paiements Mobile Money
+
+### 1. Le client initie le paiement
+
+Le client fournit son numéro de téléphone et sélectionne son opérateur Mobile Money.
+
+### 2. Demande de paiement envoyée
+
+Yabetoo envoie une demande de paiement au fournisseur Mobile Money.
+
+### 3. Le client reçoit une notification
+
+Le client reçoit une notification push (invite USSD) sur son téléphone lui demandant de confirmer le paiement.
+
+### 4. Le client entre son PIN
+
+Le client entre son code PIN Mobile Money pour autoriser la transaction.
+
+### 5. Paiement confirmé
+
+Le fournisseur Mobile Money confirme le paiement et notifie Yabetoo.
+
+## Exemple d'intégration
+
+Lors de la confirmation d'une intention de paiement, vous devez fournir les détails Mobile Money :
+
+```javascript
+const confirmation = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
+    },
+    body: JSON.stringify({
+      client_secret: "pi_xxx_secret_xxx",
+      payment_method_data: {
+        type: "momo",
+        momo: {
+          country: "cg",
+          msisdn: "+242066594470",
+          operator_name: "mtn",
+        },
+      },
+    }),
+  }
+);
+```
+
+### Champs requis
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `type` | string | Toujours `"momo"` pour Mobile Money |
+| `momo.country` | string | Code pays (ex : `"cg"` pour Congo) |
+| `momo.msisdn` | string | Numéro de téléphone au format international |
+| `momo.operator_name` | string | Code opérateur (`"mtn"` ou `"airtel"`) |
+
+## Format du numéro de téléphone
+
+Les numéros de téléphone doivent être au format international :
+
+| Format | Exemple | Valide |
+|--------|---------|--------|
+| Avec indicatif pays | `+242066594470` | Oui |
+| Avec indicatif pays (sans +) | `242066594470` | Oui |
+| Format local | `066594470` | Non |
+
+## Codes pays
+
+| Pays | Code | Préfixe téléphone |
+|------|------|-------------------|
+| Congo-Brazzaville | `cg` | +242 |
+
+## Gérer les spécificités du Mobile Money
+
+### Considérations de délai
+
+Les transactions Mobile Money peuvent prendre plus de temps que les paiements par carte car :
+- Le client doit recevoir la notification push
+- Il doit entrer manuellement son PIN
+- Latence réseau avec les fournisseurs Mobile Money
+
+<Tip>
+  Définissez un délai raisonnable (60-90 secondes) lors de l'attente de la confirmation de paiement.
+</Tip>
+
+### Raisons d'échec courantes
+
+| Raison | Description | Action utilisateur |
+|--------|-------------|-------------------|
+| `PAYER_NOT_FOUND` | Numéro non enregistré chez l'opérateur | Vérifier le numéro de téléphone |
+| `LOW_BALANCE` | Fonds insuffisants | Recharger le compte Mobile Money |
+| `APPROVAL_REJECTED` | Le client a rejeté le paiement | Demander au client de réessayer |
+| `TIMEOUT` | Le client n'a pas répondu à temps | Relancer le paiement |
+
+## Tester le Mobile Money
+
+Dans l'environnement sandbox, utilisez ces numéros de test :
+
+### Paiements réussis
+- `242066000001` (Airtel Money) - Réussit toujours
+- Tout autre numéro (MTN MoMo) - Réussit toujours
+
+### Paiements échoués
+- `242050017890` (Airtel) - Erreur interne
+- `46733123451` (MTN) - Rejeté
+- `46733123455` (MTN) - Payeur non trouvé
+
+<Note>
+  Consultez le [guide de test](/fr/developer-tools/test/overview) pour la liste complète des numéros de test.
+</Note>
+
+## Bonnes pratiques
+
+1. **Validez les numéros de téléphone** - Assurez-vous que le format est correct avant l'envoi
+2. **Affichez des instructions claires** - Informez les utilisateurs qu'ils recevront une notification sur leur téléphone
+3. **Gérez les délais d'attente gracieusement** - Permettez aux utilisateurs de réessayer s'ils ont manqué l'invite
+4. **Stockez la préférence d'opérateur** - Mémorisez l'opérateur préféré de l'utilisateur pour les paiements futurs

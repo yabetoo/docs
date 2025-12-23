@@ -24,6 +24,24 @@
               {
                 "group": "Configuration du compte",
                 "pages": ["fr/account/overview", "fr/account/activate"]
+              },
+              {
+                "group": "Concepts clés",
+                "pages": [
+                  "fr/guides/concepts/payment-flow",
+                  "fr/guides/concepts/mobile-money",
+                  "fr/guides/concepts/statuses"
+                ],
+                "icon": "lightbulb"
+              },
+              {
+                "group": "Ressources",
+                "pages": [
+                  "fr/guides/troubleshooting",
+                  "fr/guides/faq",
+                  "fr/guides/glossary"
+                ],
+                "icon": "life-ring"
               }
             ]
           },
@@ -214,6 +232,24 @@
               {
                 "group": "Setup account",
                 "pages": ["en/account/overview", "en/account/activate"]
+              },
+              {
+                "group": "Key concepts",
+                "pages": [
+                  "en/guides/concepts/payment-flow",
+                  "en/guides/concepts/mobile-money",
+                  "en/guides/concepts/statuses"
+                ],
+                "icon": "lightbulb"
+              },
+              {
+                "group": "Resources",
+                "pages": [
+                  "en/guides/troubleshooting",
+                  "en/guides/faq",
+                  "en/guides/glossary"
+                ],
+                "icon": "life-ring"
               }
             ]
           },

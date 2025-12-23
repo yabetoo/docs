@@ -1,0 +1,141 @@
+---
+title: Mobile Money
+description: Understanding how Mobile Money payments work with Yabetoo.
+icon: "mobile"
+---
+
+Mobile Money is the primary payment method supported by Yabetoo. This guide explains how it works and how to integrate it into your application.
+
+## What is Mobile Money?
+
+Mobile Money is a digital payment service that allows users to store, send, and receive money using their mobile phone. It's widely used in Africa where traditional banking infrastructure is limited.
+
+## Supported Operators
+
+Yabetoo currently supports the following Mobile Money operators:
+
+| Operator | Code | Countries | Description |
+|----------|------|-----------|-------------|
+| MTN MoMo | `mtn` | Congo-Brazzaville | MTN Mobile Money |
+| Airtel Money | `airtel` | Congo-Brazzaville | Airtel Money |
+
+## How Mobile Money Payments Work
+
+### 1. Customer Initiates Payment
+
+The customer provides their phone number and selects their Mobile Money operator.
+
+### 2. Payment Request Sent
+
+Yabetoo sends a payment request to the Mobile Money provider.
+
+### 3. Customer Receives Notification
+
+The customer receives a push notification (USSD prompt) on their phone asking them to confirm the payment.
+
+### 4. Customer Enters PIN
+
+The customer enters their Mobile Money PIN to authorize the transaction.
+
+### 5. Payment Confirmed
+
+The Mobile Money provider confirms the payment and notifies Yabetoo.
+
+## Integration Example
+
+When confirming a payment intent, you must provide the Mobile Money details:
+
+```javascript
+const confirmation = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
+    },
+    body: JSON.stringify({
+      client_secret: "pi_xxx_secret_xxx",
+      payment_method_data: {
+        type: "momo",
+        momo: {
+          country: "cg",
+          msisdn: "+242066594470",
+          operator_name: "mtn",
+        },
+      },
+    }),
+  }
+);
+```
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | Always `"momo"` for Mobile Money |
+| `momo.country` | string | Country code (e.g., `"cg"` for Congo) |
+| `momo.msisdn` | string | Phone number in international format |
+| `momo.operator_name` | string | Operator code (`"mtn"` or `"airtel"`) |
+
+## Phone Number Format
+
+Phone numbers must be in international format:
+
+| Format | Example | Valid |
+|--------|---------|-------|
+| With country code | `+242066594470` | Yes |
+| With country code (no +) | `242066594470` | Yes |
+| Local format | `066594470` | No |
+
+## Country Codes
+
+| Country | Code | Phone Prefix |
+|---------|------|--------------|
+| Congo-Brazzaville | `cg` | +242 |
+
+## Handling Mobile Money Specifics
+
+### Timeout Considerations
+
+Mobile Money transactions can take longer than card payments because:
+- The customer needs to receive the push notification
+- They need to manually enter their PIN
+- Network latency with Mobile Money providers
+
+<Tip>
+  Set a reasonable timeout (60-90 seconds) when waiting for payment confirmation.
+</Tip>
+
+### Common Failure Reasons
+
+| Reason | Description | User Action |
+|--------|-------------|-------------|
+| `PAYER_NOT_FOUND` | Phone number not registered with operator | Verify the phone number |
+| `LOW_BALANCE` | Insufficient funds | Top up Mobile Money account |
+| `APPROVAL_REJECTED` | Customer rejected the payment | Ask customer to try again |
+| `TIMEOUT` | Customer didn't respond in time | Retry the payment |
+
+## Testing Mobile Money
+
+In the sandbox environment, use these test numbers:
+
+### Successful Payments
+- `242066000001` (Airtel Money) - Always succeeds
+- Any other number (MTN MoMo) - Always succeeds
+
+### Failed Payments
+- `242050017890` (Airtel) - Internal error
+- `46733123451` (MTN) - Rejected
+- `46733123455` (MTN) - Payer not found
+
+<Note>
+  See the [Testing guide](/en/developer-tools/test/overview) for the complete list of test numbers.
+</Note>
+
+## Best Practices
+
+1. **Validate phone numbers** - Ensure the format is correct before sending
+2. **Show clear instructions** - Tell users to expect a notification on their phone
+3. **Handle timeouts gracefully** - Allow users to retry if they missed the prompt
+4. **Store operator preference** - Remember the user's preferred operator for future payments

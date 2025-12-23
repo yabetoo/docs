@@ -1,0 +1,135 @@
+---
+title: FAQ
+description: Questions fréquemment posées sur Yabetoo.
+icon: "circle-question"
+---
+
+## Questions générales
+
+<AccordionGroup>
+  <Accordion title="Qu'est-ce que Yabetoo ?">
+    Yabetoo est une plateforme de paiement qui permet aux entreprises d'accepter les paiements Mobile Money en Afrique Centrale. Nous fournissons des APIs et des outils pour intégrer les paiements dans vos applications.
+  </Accordion>
+
+  <Accordion title="Quels pays Yabetoo supporte-t-il ?">
+    Actuellement, Yabetoo opère au Congo-Brazzaville. Nous supportons MTN Mobile Money et Airtel Money.
+  </Accordion>
+
+  <Accordion title="Quelles devises sont supportées ?">
+    Nous supportons actuellement le Franc CFA (XAF), la devise utilisée dans les pays de la CEMAC.
+  </Accordion>
+
+  <Accordion title="Comment démarrer ?">
+    1. Créez un compte sur [app.yabetoo.com](https://app.yabetoo.com)
+    2. Obtenez vos clés API depuis la [section Développeurs](https://app.yabetoo.com/developers)
+    3. Suivez notre [guide de démarrage rapide](/fr/quickstart) pour effectuer votre premier paiement
+  </Accordion>
+</AccordionGroup>
+
+## Questions techniques
+
+<AccordionGroup>
+  <Accordion title="Quelle est la différence entre Payment Intents et Checkout Sessions ?">
+    **Payment Intents** vous donnent un contrôle total sur l'interface de paiement. Vous collectez les informations du client et appelez l'API directement.
+
+    **Checkout Sessions** fournissent une page de paiement hébergée. Yabetoo gère l'interface, et vous redirigez les clients pour compléter le paiement.
+
+    Utilisez Checkout Sessions pour une intégration plus simple, et Payment Intents pour des flux de paiement personnalisés.
+  </Accordion>
+
+  <Accordion title="Comment tester les paiements sans argent réel ?">
+    Utilisez l'environnement sandbox avec les clés API de test (`sk_test_`). Nous fournissons des numéros de téléphone de test qui simulent différents résultats de paiement. Voir notre [guide de test](/fr/developer-tools/test/overview).
+  </Accordion>
+
+  <Accordion title="Combien de temps prend le traitement d'un paiement ?">
+    Les paiements Mobile Money se terminent généralement en 10-60 secondes. Le client doit :
+    1. Recevoir la notification sur son téléphone
+    2. Entrer son PIN pour confirmer
+
+    Si le client ne répond pas, le paiement expire après environ 90 secondes.
+  </Accordion>
+
+  <Accordion title="Que se passe-t-il si un paiement échoue ?">
+    Lorsqu'un paiement échoue, vous recevez un statut `failed` avec un `failure_message` expliquant la raison. Les raisons courantes incluent :
+    - Fonds insuffisants
+    - Le client a rejeté le paiement
+    - Numéro de téléphone invalide
+    - Délai dépassé (le client n'a pas répondu)
+
+    Vous pouvez permettre aux clients de réessayer les paiements échoués.
+  </Accordion>
+
+  <Accordion title="Dois-je vérifier les signatures des webhooks ?">
+    Oui, vous devriez toujours vérifier les signatures des webhooks pour vous assurer que les requêtes proviennent réellement de Yabetoo. Cela empêche les acteurs malveillants d'envoyer de fausses confirmations de paiement à votre serveur.
+  </Accordion>
+
+  <Accordion title="Puis-je rembourser un paiement ?">
+    Contactez notre équipe support à support@yabetoopay.com pour traiter les remboursements. Nous travaillerons avec vous pour retourner les fonds au client.
+  </Accordion>
+</AccordionGroup>
+
+## Compte & Sécurité
+
+<AccordionGroup>
+  <Accordion title="Comment garder mes clés API sécurisées ?">
+    - N'exposez jamais les clés secrètes dans le code côté client
+    - Stockez les clés dans des variables d'environnement
+    - Utilisez des clés différentes pour le développement et la production
+    - Régénérez les clés si vous suspectez qu'elles ont été compromises
+  </Accordion>
+
+  <Accordion title="Quelle est la différence entre les clés de test et de production ?">
+    **Les clés de test** (`sk_test_`, `pk_test_`) fonctionnent uniquement dans l'environnement sandbox. Aucun argent réel n'est transféré.
+
+    **Les clés de production** (`sk_live_`, `pk_live_`) traitent de vrais paiements en production. Gardez-les particulièrement sécurisées.
+  </Accordion>
+
+  <Accordion title="Comment passer du sandbox à la production ?">
+    1. Vérifiez que votre compte est activé pour les paiements en direct
+    2. Remplacez votre clé API de test par votre clé de production
+    3. Mettez à jour l'URL de l'API de `pay.sandbox.yabetoopay.com` à `pay.api.yabetoopay.com`
+    4. Testez avec un petit paiement réel avant de passer entièrement en production
+  </Accordion>
+
+  <Accordion title="Où trouver mon ID de compte ?">
+    Votre ID de compte est disponible dans votre [tableau de bord](https://app.yabetoo.com/developers). Il est requis pour certains appels API comme la création de sessions de paiement.
+  </Accordion>
+</AccordionGroup>
+
+## Décaissements & Transferts
+
+<AccordionGroup>
+  <Accordion title="Quelle est la différence entre décaissements et transferts ?">
+    **Les décaissements** sont des versements de votre compte Yabetoo vers le compte Mobile Money d'un client.
+
+    **Les transferts (remittances)** sont des virements, généralement utilisés pour les paiements transfrontaliers ou programmés.
+  </Accordion>
+
+  <Accordion title="Combien de temps faut-il pour traiter les décaissements ?">
+    Les décaissements sont généralement traités en quelques minutes. Le destinataire reçoit les fonds directement sur son compte Mobile Money.
+  </Accordion>
+
+  <Accordion title="Y a-t-il une limite sur les montants de décaissement ?">
+    Les limites dépendent de la configuration de votre compte et des limites du fournisseur Mobile Money. Contactez le support pour des détails sur vos limites spécifiques.
+  </Accordion>
+</AccordionGroup>
+
+## Tarification & Frais
+
+<AccordionGroup>
+  <Accordion title="Quels sont les frais de Yabetoo ?">
+    Contactez notre équipe commerciale ou visitez [yabetoo.com](https://yabetoo.com) pour les informations tarifaires actuelles. Les frais varient en fonction du volume et du type de transaction.
+  </Accordion>
+
+  <Accordion title="Quand suis-je payé ?">
+    Les versements sont traités selon votre calendrier de règlement. Vérifiez votre tableau de bord pour les détails des versements ou contactez le support.
+  </Accordion>
+</AccordionGroup>
+
+## Vous avez encore des questions ?
+
+Si votre question n'est pas répondue ici :
+
+- Consultez notre [guide de dépannage](/fr/guides/troubleshooting) pour les problèmes courants
+- Parcourez notre [Référence API](/fr/api-reference/introduction) pour les détails techniques
+- Contactez le support à support@yabetoopay.com

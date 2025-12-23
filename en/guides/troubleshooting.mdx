@@ -1,0 +1,193 @@
+---
+title: Troubleshooting
+description: Common problems and solutions when integrating Yabetoo.
+icon: "wrench"
+---
+
+This guide covers common issues you might encounter when integrating Yabetoo and how to resolve them.
+
+## Authentication Errors
+
+### 401 Unauthorized
+
+**Problem:** Your API request returns a `401 Unauthorized` error.
+
+**Causes:**
+- Invalid API key
+- Missing `Authorization` header
+- Using test key in production or vice versa
+
+**Solutions:**
+
+```javascript
+// Make sure to include the Authorization header
+const response = await fetch("https://pay.sandbox.yabetoopay.com/v1/payment-intents", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX", // Don't forget "Bearer "
+  },
+  body: JSON.stringify({ amount: 5000, currency: "xaf" }),
+});
+```
+
+<Warning>
+  Make sure you're using `sk_test_` keys for sandbox and `sk_live_` keys for production.
+</Warning>
+
+## Payment Errors
+
+### Payment Stuck in "Processing"
+
+**Problem:** Payment stays in `processing` status for a long time.
+
+**Causes:**
+- Customer didn't receive the notification
+- Customer didn't enter their PIN
+- Network issues with Mobile Money provider
+
+**Solutions:**
+1. Ask the customer to check their phone for notifications
+2. Ensure the phone number is correct
+3. Wait up to 90 seconds before timing out
+4. Allow the customer to retry
+
+### PAYER_NOT_FOUND
+
+**Problem:** Payment fails with `PAYER_NOT_FOUND` error.
+
+**Causes:**
+- The phone number is not registered with the Mobile Money operator
+- Wrong operator selected
+
+**Solutions:**
+1. Verify the phone number format (should be international: `+242XXXXXXXXX`)
+2. Confirm the customer is using the correct operator (MTN or Airtel)
+3. Ask the customer to verify their Mobile Money registration
+
+### LOW_BALANCE
+
+**Problem:** Payment fails with insufficient funds.
+
+**Solutions:**
+1. Display a clear message to the customer
+2. Suggest they top up their Mobile Money account
+3. Allow them to retry after topping up
+
+## Webhook Issues
+
+### Webhooks Not Received
+
+**Problem:** Your webhook endpoint is not receiving events.
+
+**Causes:**
+- Webhook URL not configured in dashboard
+- Endpoint not publicly accessible
+- Firewall blocking requests
+- Server returning non-200 status
+
+**Solutions:**
+
+1. **Verify webhook URL in dashboard:**
+   - Go to [app.yabetoo.com/developers](https://app.yabetoo.com/developers)
+   - Check the Webhooks tab
+   - Ensure URL is correct and uses HTTPS
+
+2. **Ensure endpoint is accessible:**
+   ```bash
+   curl -X POST https://your-domain.com/webhook/yabetoo \
+     -H "Content-Type: application/json" \
+     -d '{"test": true}'
+   ```
+
+3. **Return 200 status:**
+   ```javascript
+   app.post("/webhook", (req, res) => {
+     // Process webhook
+     res.status(200).send("OK"); // Always return 200
+   });
+   ```
+
+### Invalid Webhook Signature
+
+**Problem:** Webhook signature verification fails.
+
+**Solutions:**
+1. Make sure you're using the correct webhook secret
+2. Use the raw request body (not parsed JSON) for signature verification
+3. Check the timestamp isn't too old
+
+```javascript
+const crypto = require("crypto");
+
+function verifyWebhook(payload, signature, timestamp, secret) {
+  const signedPayload = `${timestamp}.${payload}`; // payload must be raw string
+  const expectedSig = crypto
+    .createHmac("sha256", secret)
+    .update(signedPayload)
+    .digest("hex");
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSig)
+  );
+}
+```
+
+## API Request Issues
+
+### 400 Bad Request
+
+**Problem:** API returns validation errors.
+
+**Common causes and fixes:**
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `currency required` | Missing currency field | Add `"currency": "xaf"` |
+| `amount required` | Missing amount | Add amount in smallest unit |
+| `invalid phone` | Wrong phone format | Use international format |
+
+### Request Timeout
+
+**Problem:** API requests are timing out.
+
+**Solutions:**
+1. Increase your client timeout (recommended: 30-60 seconds)
+2. Check your network connection
+3. Verify you're using the correct endpoint URL
+
+## Sandbox vs Production
+
+### Payments Work in Sandbox but Not in Production
+
+**Checklist:**
+- [ ] Using `sk_live_` key (not `sk_test_`)
+- [ ] Using production URL: `https://pay.api.yabetoopay.com`
+- [ ] Account is activated for live payments
+- [ ] Using real phone numbers (not test numbers)
+
+### Test Numbers Not Working
+
+**Problem:** Test numbers don't behave as expected.
+
+**Solutions:**
+1. Verify you're using the sandbox environment
+2. Check you're using the correct test number for the desired outcome
+3. See [Testing guide](/en/developer-tools/test/overview) for valid test numbers
+
+## Getting Help
+
+If you're still having issues:
+
+1. **Check the API response** - Error messages often contain helpful details
+2. **Review the logs** - Check your server logs for errors
+3. **Test in sandbox first** - Verify your integration works in sandbox
+4. **Contact support** - Email support@yabetoopay.com with:
+   - Your account ID
+   - The request/response details
+   - Steps to reproduce the issue
+
+<Note>
+  When contacting support, include the payment intent ID or transaction ID to help us investigate faster.
+</Note>
