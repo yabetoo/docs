@@ -1,0 +1,118 @@
+---
+title: Authentication
+description: Learn how to authenticate your API requests with Yabetoo.
+---
+
+The Yabetoo API uses API keys to authenticate requests. This guide explains how to obtain, use, and secure your API keys.
+
+## API Key Types
+
+Yabetoo provides two types of API keys:
+
+| Key Type | Prefix | Environment | Purpose |
+|----------|--------|-------------|---------|
+| Test Key | `sk_test_` | Sandbox | Development and testing |
+| Live Key | `sk_live_` | Production | Real transactions |
+
+<Warning>
+  Never use your live API key in test environments or expose it in client-side code.
+</Warning>
+
+## Obtaining Your API Keys
+
+1. Log in to your [Yabetoo Dashboard](https://app.yabetoo.com)
+2. Navigate to **Developers** or go directly to [app.yabetoo.com/developers](https://app.yabetoo.com/developers)
+3. Copy your test or live API key
+
+## Using API Keys
+
+Include your API key in the `Authorization` header of every request:
+
+```bash
+curl -X POST https://api.yabetoopay.com/v1/payment-intents \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 5000, "currency": "XAF"}'
+```
+
+### SDK Examples
+
+<CodeGroup>
+```javascript JavaScript
+import Yabetoo from '@yabetoo/sdk';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+```
+
+```python Python
+import yabetoo
+
+yabetoo.api_key = 'sk_test_XXXXXXXXXXXXXXXXXXXXXXXX'
+```
+
+```php PHP
+<?php
+\Yabetoo\Yabetoo::setApiKey('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+
+Yabetoo.apiKey = "sk_test_XXXXXXXXXXXXXXXXXXXXXXXX";
+```
+</CodeGroup>
+
+## Security Best Practices
+
+### Store Keys Securely
+
+- Use environment variables to store API keys
+- Never commit API keys to version control
+- Use a secrets manager in production (AWS Secrets Manager, HashiCorp Vault, etc.)
+
+```bash
+# .env file (never commit this file)
+YABETOO_API_KEY=sk_test_XXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+```javascript
+// Access from environment
+const yabetoo = new Yabetoo(process.env.YABETOO_API_KEY);
+```
+
+### Restrict Key Access
+
+- Only give API keys to team members who need them
+- Use different keys for different environments
+- Rotate keys periodically
+
+## Regenerating API Keys
+
+If you suspect your API key has been compromised:
+
+1. Go to **Developers** in your [dashboard](https://app.yabetoo.com/developers)
+2. Click **Regenerate** next to the compromised key
+3. Update your application with the new key
+4. The old key will be immediately invalidated
+
+<Warning>
+  Regenerating a key immediately invalidates the old key. Ensure your application is updated before regenerating.
+</Warning>
+
+## Account ID
+
+Some endpoints require an `accountId` parameter. This is your merchant account identifier, found in your [dashboard](https://app.yabetoo.com/developers).
+
+```javascript
+const session = await yabetoo.sessions.create({
+  total: 5000,
+  currency: 'XAF',
+  accountId: 'acct_XXXXXXXXXXXXXXXX', // Your account ID
+  successUrl: 'https://example.com/success',
+  cancelUrl: 'https://example.com/cancel'
+});
+```
+
+<Note>
+  For questions about authentication, contact our support team at support@yabetoopay.com
+</Note>

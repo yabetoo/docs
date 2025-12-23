@@ -143,7 +143,11 @@
             "groups": [
               {
                 "group": "Documentation API",
-                "pages": ["fr/api-reference/introduction"]
+                "pages": [
+                  "fr/api-reference/introduction",
+                  "fr/api-reference/authentication",
+                  "fr/api-reference/errors"
+                ]
               },
               {
                 "group": "Session de paiement",
@@ -329,7 +333,11 @@
             "groups": [
               {
                 "group": "API Documentation",
-                "pages": ["en/api-reference/introduction"]
+                "pages": [
+                  "en/api-reference/introduction",
+                  "en/api-reference/authentication",
+                  "en/api-reference/errors"
+                ]
               },
               {
                 "group": "Checkout Session",

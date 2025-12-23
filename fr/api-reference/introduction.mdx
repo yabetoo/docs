@@ -18,7 +18,7 @@ https://api.sandbox.yabetoopay.com
 
 ## Authentication
 
-L'API Yabetoo utilise des clés API pour authentifier les requêtes. Vous pouvez gérer vos clés API dans le [tableau de bord](https://dashboard.yabetoopay.com/settings/api-keys).
+L'API Yabetoo utilise des clés API pour authentifier les requêtes. Vous pouvez gérer vos clés API dans le [tableau de bord](https://app.yabetoo.com/developers).
 
 Toutes les requêtes API doivent être effectuées via HTTPS et doivent inclure votre clé API dans l'en-tête Authorization :
 
@@ -92,19 +92,6 @@ En cas d'erreur, vous recevrez :
 Les requêtes sont limitées à :
 - 100 requêtes par minute en mode test
 - 1000 requêtes par minute en production
-
-## Versions
-
-- Spécifiez la version dans l'URL : `/v1/payments`
-- Ou via l'en-tête : `Yabetoo-Version: 2023-01-01`
-
-## Idempotence
-
-Pour les requêtes POST, utilisez un ID unique dans l'en-tête :
-
-```bash
-Idempotency-Key: a026169c-8558-4f58-94c4-c45b0b77647f
-```
 
 <Note>
   Conservez vos clés API en sécurité. Ne les partagez jamais publiquement ou dans

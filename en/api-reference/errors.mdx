@@ -1,0 +1,30 @@
+---
+title: Error Handling
+description: Understand and handle API errors effectively.
+---
+
+The Yabetoo API uses conventional HTTP response codes to indicate the success or failure of an API request.
+
+## HTTP Status Codes
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `200` | OK | Request succeeded |
+| `201` | Created | Resource created successfully |
+| `400` | Bad Request | Invalid request parameters |
+| `401` | Unauthorized | Invalid or missing API key |
+| `403` | Forbidden | Insufficient permissions |
+| `404` | Not Found | Resource does not exist |
+| `429` | Too Many Requests | Rate limit exceeded |
+| `500` | Internal Server Error | Server-side error |
+
+## Best Practices
+
+1. **Always handle errors gracefully** - Never expose raw error messages to end users
+2. **Log errors for debugging** - Store error details for troubleshooting
+3. **Implement retry logic** - For rate limits and temporary failures
+4. **Validate before sending** - Check parameters client-side to reduce errors
+
+<Note>
+  If you encounter persistent errors, contact support@yabetoopay.com with the error details.
+</Note>

@@ -1,33 +1,99 @@
 ---
-title: "Overview"
-description: "Example section for showcasing API endpoints"
+title: Introduction
+description: Getting started guide for the Yabetoo API.
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+The Yabetoo API is organized around REST principles. Our API uses predictable endpoints with URL-oriented resources, accepts JSON-encoded requests, returns JSON-encoded responses, and uses standard HTTP status codes.
 
-## Welcome
+## Base URL
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+```bash
+https://api.yabetoopay.com
+```
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+For test mode, use:
+```bash
+https://api.sandbox.yabetoopay.com
+```
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+The Yabetoo API uses API keys to authenticate requests. You can manage your API keys in the [dashboard](https://app.yabetoo.com/developers).
+
+All API requests must be made over HTTPS and must include your API key in the Authorization header:
+
+```bash
+Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+## Request Formats
+
+### Content-Type
+
+For POST and PUT requests, the body must be JSON-encoded with the header:
+
+```bash
+Content-Type: application/json
+```
+
+### Pagination Parameters
+
+For endpoints that return lists, use these parameters:
+
+- `limit`: Number of items per page (default: 10, max: 100)
+- `page`: Page number (starts at 1)
+
+## Responses
+
+### Structure
+
+All responses are in JSON with this structure:
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+{
+  "status": "success",
+  "data": {
+    // Response data
+  },
+  "message": "Optional description"
+}
 ```
+
+### HTTP Codes
+
+- `200`: Success
+- `201`: Resource created
+- `400`: Invalid request
+- `401`: Not authenticated
+- `403`: Not authorized
+- `404`: Resource not found
+- `429`: Too many requests
+- `500`: Server error
+
+## Error Handling
+
+In case of an error, you will receive:
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "invalid_request",
+    "message": "Error description",
+    "details": {
+      // Additional details if available
+    }
+  }
+}
+```
+
+## Rate Limits
+
+Requests are limited to:
+- 100 requests per minute in test mode
+- 1000 requests per minute in production
+
+<Note>
+  Keep your API keys secure. Never share them publicly or in
+  client-side code.
+</Note>
