@@ -468,5 +468,15 @@
     "isHidden": false
   },
   "backgroundImage": "/images/background.png",
-  "rounded": "default"
+  "rounded": "default",
+  "fonts": {
+    "heading": {
+      "family": "Inter",
+      "weight": 600
+    },
+    "body": {
+      "family": "Inter",
+      "weight": 400
+    }
+  }
 }
