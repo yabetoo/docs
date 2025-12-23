@@ -27,12 +27,12 @@ pip install yabetoo
 
 ### SDK Initialization
 
-Before using the SDK, you must initialize an instance of the `YabetooSDK` class. Simply provide your API key during initialization. The SDK automatically detects whether you are in test or production mode based on your key prefix.
+Before using the SDK, you must initialize an instance of the `Yabetoo` class. Simply provide your API key during initialization. The SDK automatically detects whether you are in test or production mode based on your key prefix.
 
 ```python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")  # Use your API key
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")  # Use your API key
 ```
 
 ### Advanced Configuration
@@ -40,10 +40,10 @@ sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")  # Use your API key
 You can customize the SDK behavior with additional options:
 
 ```python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.common import HttpClientOptions
 
-sdk = YabetooSDK(
+yabetoo = Yabetoo(
     secret_key="sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
     options=HttpClientOptions(
         timeout=30,              # Request timeout in seconds (default: 30)
@@ -73,12 +73,12 @@ This approach offers increased flexibility, allowing you, for example, to verify
 A payment intent is a resource that represents your wish to receive a payment for a specific amount. When you create a payment intent, you don't immediately capture the amount; it's a preparatory step.
 
 ```python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.payment import CreateIntentRequest
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
-payment = sdk.payments.create(CreateIntentRequest(
+payment = yabetoo.payments.create(CreateIntentRequest(
     amount=5000,
     currency="xaf",
     description="Purchase of Yabetoo services",
@@ -99,16 +99,16 @@ This code creates a payment intent for 5000 XAF. The API response contains a uni
 After creating the payment intent, you must confirm it to capture the amount. This typically occurs when the end user has completed all necessary steps (such as providing payment information or accepting terms and conditions).
 
 ```python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.payment import (
     ConfirmIntentRequest,
     PaymentMethodData,
     MomoData
 )
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
-payment_confirmation = sdk.payments.confirm(
+payment_confirmation = yabetoo.payments.confirm(
     payment_id=payment.id,
     data=ConfirmIntentRequest(
         client_secret=payment.client_secret,
@@ -143,13 +143,13 @@ With this two-step model, developers can have better control over the payment pr
 Here's an example of error handling during confirmation:
 
 ```python
-from yabetoo import YabetooSDK, YabetooError
+from yabetoo import Yabetoo, YabetooError
 from yabetoo.errors import ValidationError, APIError, NetworkError
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
 try:
-    payment_confirmation = sdk.payments.confirm(payment.id, confirm_data)
+    payment_confirmation = yabetoo.payments.confirm(payment.id, confirm_data)
     print(f"Payment confirmed: {payment_confirmation.charge_id}")
 except ValidationError as e:
     print("Validation error:")
@@ -172,11 +172,11 @@ In this example, if the confirmation fails, an error message will be displayed i
 To retrieve information about an existing payment, use the payment ID as a parameter:
 
 ```python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
-payment_details = sdk.payments.retrieve("pi_XXXXXXXXXXXX")
+payment_details = yabetoo.payments.retrieve("pi_XXXXXXXXXXXX")
 
 print(f"Payment ID: {payment_details.id}")
 print(f"Amount: {payment_details.amount}")
@@ -190,13 +190,13 @@ This code allows you to obtain detailed information about a specific payment, in
 To retrieve a list of all your payments, use the `all` method. You can also filter payments by status or other criteria if needed.
 
 ```python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.payment import PaymentFiltersRequest, Sorting
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
 # Simple pagination
-payments = sdk.payments.get_page(page=1, per_page=10)
+payments = yabetoo.payments.get_page(page=1, per_page=10)
 
 print(f"Total payments: {payments.total_count}")
 print(f"Current page items: {len(payments.items)}")
@@ -212,7 +212,7 @@ for payment in payments.items:
 from yabetoo.models.payment import PaymentFiltersRequest, Sorting
 
 # With sorting
-sorted_payments = sdk.payments.get_page(
+sorted_payments = yabetoo.payments.get_page(
     page=1,
     per_page=10,
     sorting=[{"id": "createdAt", "desc": True}]  # Most recent first
@@ -227,7 +227,7 @@ filters = PaymentFiltersRequest(
         Sorting(id="createdAt", desc=False)   # Then oldest first
     ]
 )
-filtered_payments = sdk.payments.all(filters)
+filtered_payments = yabetoo.payments.all(filters)
 ```
 
 ## Using Payment Sessions with Yabetoo
@@ -252,10 +252,10 @@ Using a hosted payment page offers several advantages for you as a developer or 
 Payment sessions allow you to create a secure and smooth payment process for your users. This session redirects the user to a hosted payment page to finalize the transaction.
 
 ```python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
 # Create checkout items
 items = [
@@ -274,7 +274,7 @@ items = [
 ]
 
 # Create the checkout session
-session = sdk.sessions.create(CreateCheckoutSession(
+session = yabetoo.sessions.create(CreateCheckoutSession(
     account_id="acct_xxxxxxxx",           # Your account ID
     total=270000,                          # Total amount
     currency="xaf",
@@ -309,16 +309,16 @@ When the payment is made via the payment page hosted by Yabetoo, you will be red
 
 ```python
 # In your success URL handler (e.g., Flask or Django)
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
 def checkout_success(request):
     payment_id = request.GET.get('payment_id')
 
     if payment_id:
         # Retrieve payment details
-        payment_details = sdk.payments.retrieve(payment_id)
+        payment_details = yabetoo.payments.retrieve(payment_id)
 
         # Double verification of payment status
         if payment_details.status == 'succeeded':
@@ -344,13 +344,13 @@ Disbursements allow you to send money to recipients (customers, partners, etc.) 
 ### Create a Disbursement
 
 ```python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.disbursement import CreateDisbursementRequest
 from yabetoo.models.payment import PaymentMethodData, MomoData
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
-disbursement = sdk.disbursements.create(CreateDisbursementRequest(
+disbursement = yabetoo.disbursements.create(CreateDisbursementRequest(
     amount=5000,
     currency="xaf",
     first_name="John",
@@ -373,7 +373,7 @@ print(f"Status: {disbursement.status}")
 
 ```python
 # Check disbursement status
-status = sdk.disbursements.retrieve(disbursement.id)
+status = yabetoo.disbursements.retrieve(disbursement.id)
 
 print(f"Disbursement Status: {status.status}")
 print(f"Amount: {status.amount} {status.currency}")
@@ -387,13 +387,13 @@ Remittances allow you to create transfer transactions.
 ### Create a Remittance
 
 ```python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.remittance import CreateRemittanceRequest
 from yabetoo.models.payment import PaymentMethodData, MomoData
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
-remittance = sdk.remittances.create(CreateRemittanceRequest(
+remittance = yabetoo.remittances.create(CreateRemittanceRequest(
     amount=10000,
     currency="xaf",
     first_name="Jane",
@@ -417,7 +417,7 @@ print(f"Status: {remittance.status}")
 
 ```python
 # Check remittance status
-status = sdk.remittances.retrieve(remittance.id)
+status = yabetoo.remittances.retrieve(remittance.id)
 
 print(f"Remittance Status: {status.status}")
 print(f"Amount: {status.amount} {status.currency}")
@@ -438,13 +438,13 @@ The SDK provides a hierarchy of specific exceptions for different error scenario
 ### Complete Error Handling Example
 
 ```python
-from yabetoo import YabetooSDK, YabetooError
+from yabetoo import Yabetoo, YabetooError
 from yabetoo.errors import ValidationError, APIError, NetworkError, AuthenticationError
 
-sdk = YabetooSDK("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
 try:
-    payment = sdk.payments.retrieve("pi_invalid_id")
+    payment = yabetoo.payments.retrieve("pi_invalid_id")
 except AuthenticationError as e:
     print(f"Authentication failed: {e.message}")
     # Check your API key
@@ -495,7 +495,7 @@ payment_method = PaymentMethodData(
 
 ```python
 # The PaginatedResponse object provides these properties:
-response = sdk.payments.get_page(page=1, per_page=10)
+response = yabetoo.payments.get_page(page=1, per_page=10)
 
 response.items        # List of items (payments)
 response.total_count  # Total number of items

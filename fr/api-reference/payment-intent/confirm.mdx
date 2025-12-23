@@ -93,12 +93,12 @@ const confirmation = await yabetoo.payments.confirm("PAYMENT_INTENT_ID", {
 ```
 
 ```python Python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.payment import ConfirmIntentRequest, PaymentMethodData, MomoData
 
-sdk = YabetooSDK("YOUR_SECRET_KEY")
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
 
-confirmation = sdk.payments.confirm(
+confirmation = yabetoo.payments.confirm(
     payment_id="PAYMENT_INTENT_ID",
     data=ConfirmIntentRequest(
         client_secret="YOUR_CLIENT_SECRET",

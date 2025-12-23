@@ -45,11 +45,11 @@ const remittances = await yabetoo.remittances.list({
 ```
 
 ```python Python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 
-sdk = YabetooSDK("YOUR_SECRET_KEY")
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
 
-remittances = sdk.remittances.list(limit=10, page=1)
+remittances = yabetoo.remittances.list(limit=10, page=1)
 ```
 
 ```php PHP

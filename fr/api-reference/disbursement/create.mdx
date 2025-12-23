@@ -99,13 +99,13 @@ const disbursement = await yabetoo.disbursements.create({
 ```
 
 ```python Python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.disbursement import CreateDisbursementRequest
 from yabetoo.models.payment import PaymentMethodData, MomoData
 
-sdk = YabetooSDK("YOUR_SECRET_KEY")
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
 
-disbursement = sdk.disbursements.create(CreateDisbursementRequest(
+disbursement = yabetoo.disbursements.create(CreateDisbursementRequest(
     amount=10000,
     currency="XAF",
     first_name="Jean",

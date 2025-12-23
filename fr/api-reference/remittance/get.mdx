@@ -41,11 +41,11 @@ const remittance = await yabetoo.remittances.retrieve("rem_RMqehxy8NNi1ocJFG2SSA
 ```
 
 ```python Python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 
-sdk = YabetooSDK("YOUR_SECRET_KEY")
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
 
-remittance = sdk.remittances.retrieve("rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ")
+remittance = yabetoo.remittances.retrieve("rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ")
 ```
 
 ```php PHP

@@ -104,13 +104,13 @@ const remittance = await yabetoo.remittances.create({
 ```
 
 ```python Python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.remittance import CreateRemittanceRequest
 from yabetoo.models.payment import PaymentMethodData, MomoData
 
-sdk = YabetooSDK("YOUR_SECRET_KEY")
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
 
-remittance = sdk.remittances.create(CreateRemittanceRequest(
+remittance = yabetoo.remittances.create(CreateRemittanceRequest(
     amount=100,
     currency="XAF",
     first_name="John",

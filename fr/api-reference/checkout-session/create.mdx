@@ -89,10 +89,10 @@ const session = await yabetoo.sessions.create({
 ```
 
 ```python Python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
 
-sdk = YabetooSDK("YOUR_SECRET_KEY")
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
 
 items = [
     CheckoutItem(
@@ -103,7 +103,7 @@ items = [
     )
 ]
 
-session = sdk.sessions.create(CreateCheckoutSession(
+session = yabetoo.sessions.create(CreateCheckoutSession(
     account_id="acct_xxxxxxxx",
     total=200000,
     currency="xaf",

@@ -56,12 +56,12 @@ const paymentIntent = await yabetoo.payments.create({
 ```
 
 ```python Python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 from yabetoo.models.payment import CreateIntentRequest
 
-sdk = YabetooSDK("YOUR_SECRET_KEY")
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
 
-payment_intent = sdk.payments.create(CreateIntentRequest(
+payment_intent = yabetoo.payments.create(CreateIntentRequest(
     amount=2000,
     currency="xaf",
     description="Payment for product",

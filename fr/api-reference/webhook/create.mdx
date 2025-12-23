@@ -72,11 +72,11 @@ const webhook = await yabetoo.webhooks.create({
 ```
 
 ```python Python
-from yabetoo import YabetooSDK
+from yabetoo import Yabetoo
 
-sdk = YabetooSDK("YOUR_SECRET_KEY")
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
 
-webhook = sdk.webhooks.create(
+webhook = yabetoo.webhooks.create(
     url="https://example.com/webhooks",
     description="Webhook de production",
     enabled_events=[
