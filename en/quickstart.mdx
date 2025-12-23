@@ -1,97 +1,263 @@
 ---
 title: 'Quickstart'
-description: 'Start building awesome documentation in under 5 minutes'
+description: 'Accept your first payment in under 5 minutes'
 ---
 
-## Setup your development
+## Prerequisites
 
-Learn how to update your docs locally and deploy them to the public.
+Before you start, make sure you have:
 
-### Edit and preview
+<CardGroup cols={2}>
+  <Card title="Yabetoo Account" icon="user">
+    [Create an account](https://app.yabetoo.com) if you haven't already
+  </Card>
+  <Card title="API Keys" icon="key">
+    Get your test API keys from the Dashboard
+  </Card>
+</CardGroup>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Clone your docs locally">
-    During the onboarding process, we created a repository on your Github with
-    your docs content. You can find this repository on our
-    [dashboard](https://dashboard.mintlify.com). To clone the repository
-    locally, follow these
-    [instructions](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
-    in your terminal.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Preview changes">
-    Previewing helps you make sure your changes look as intended. We built a
-    command line interface to render these changes locally. 
-    1. Install the
-    [Mintlify CLI](https://www.npmjs.com/package/mintlify) to preview the
-    documentation changes locally with this command: ``` npm i -g mintlify ```
-    2. Run the following command at the root of your documentation (where
-    `docs.json` is): ``` mintlify dev ```
-    <Note>
-      If you’re currently using the legacy ```mint.json``` configuration file, please update the Mintlify CLI:
+<Warning>
+  Never share your secret API key publicly. Use environment variables to store them securely.
+</Warning>
 
+## Step 1: Get your API keys
 
-      ```npm i -g mintlify@latest```
-      And run the new upgrade command in your docs repository:
+<Steps>
+  <Step title="Log in to your Dashboard">
+    Go to [app.yabetoo.com](https://app.yabetoo.com) and log in to your account
+  </Step>
+  <Step title="Navigate to API Keys">
+    Click on **Settings** > **API Keys** in the sidebar
+  </Step>
+  <Step title="Copy your test keys">
+    Copy your test secret key (starts with `sk_test_`)
+  </Step>
+</Steps>
 
-      ```mintlify upgrade```
-      You should now be using the new ```docs.json``` configuration file. Feel free to delete the ```mint.json``` file from your repository.
-    </Note>
-  </Accordion>
-</AccordionGroup>
+<Info>
+  Test keys allow you to simulate payments without real money. Use them during development.
+</Info>
 
-### Deploy your changes
+## Step 2: Install an SDK (optional)
 
-<AccordionGroup>
+Choose your preferred language:
 
-<Accordion icon="message-bot" title="Install our Github app">
-  Our Github app automatically deploys your changes to your docs site, so you
-  don't need to manage deployments yourself. You can find the link to install on
-  your [dashboard](https://dashboard.mintlify.com). Once the bot has been
-  successfully installed, there should be a check mark next to the commit hash
-  of the repo.
-</Accordion>
-<Accordion icon="rocket" title="Push your changes">
-  [Commit and push your changes to
-  Git](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository#about-git-push)
-  for your changes to update in your docs site. If you push and don't see that
-  the Github app successfully deployed your changes, you can also manually
-  update your docs through our [dashboard](https://dashboard.mintlify.com).
-</Accordion>
+<CodeGroup>
+```bash npm
+npm install yabetoo
+```
 
-</AccordionGroup>
+```bash pip
+pip install yabetoo
+```
 
-## Update your docs
+```bash composer
+composer require yabetoo/yabetoo-php
+```
+</CodeGroup>
 
-Add content directly in your files with MDX syntax and React components. You can use any of our components, or even build your own.
+## Step 3: Create your first payment
 
-<CardGroup>
+### Option A: Hosted Checkout (Recommended)
 
-<Card title="Add Content With MDX" icon="file" href="/essentials/markdown">
-  Add content to your docs with MDX syntax.
-</Card>
+The fastest way to accept payments. Redirect your customers to a Yabetoo-hosted page.
 
-<Card
-  title="Add Code Blocks"
-  icon="square-code"
-  href="/essentials/code"
->
-  Add code directly to your docs with syntax highlighting.
-</Card>
+<CodeGroup>
+```javascript JavaScript
+import Yabetoo from "yabetoo";
 
-<Card
-  title="Add Images"
-  icon="image"
-  href="/essentials/images"
->
-  Add images to your docs to make them more engaging.
-</Card>
+const yabetoo = new Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
 
-<Card
-  title="Add Custom Components"
-  icon="puzzle-piece"
-  href="/essentials/reusable-snippets"
->
-  Add templates to your docs to make them more reusable.
-</Card>
+const session = await yabetoo.sessions.create({
+  accountId: "acct_xxxxxxxx",
+  total: 5000,
+  currency: "xaf",
+  successUrl: "https://your-site.com/success",
+  cancelUrl: "https://your-site.com/cancel",
+  items: [
+    {
+      productId: "prod_123",
+      productName: "Premium Plan",
+      quantity: 1,
+      price: 5000,
+    },
+  ],
+});
 
+// Redirect customer to session.url
+console.log(session.url);
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+session = yabetoo.sessions.create(CreateCheckoutSession(
+    account_id="acct_xxxxxxxx",
+    total=5000,
+    currency="xaf",
+    success_url="https://your-site.com/success",
+    cancel_url="https://your-site.com/cancel",
+    items=[
+        CheckoutItem(
+            product_id="prod_123",
+            product_name="Premium Plan",
+            quantity=1,
+            price=5000
+        )
+    ]
+))
+
+# Redirect customer to session.url
+print(session.url)
+```
+
+```bash cURL
+curl -X POST https://buy.api.yabetoopay.com/v1/sessions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -d '{
+    "total": 5000,
+    "currency": "xaf",
+    "accountId": "acct_xxxxxxxx",
+    "successUrl": "https://your-site.com/success",
+    "cancelUrl": "https://your-site.com/cancel",
+    "items": [{
+      "productId": "prod_123",
+      "productName": "Premium Plan",
+      "quantity": 1,
+      "price": 5000
+    }]
+  }'
+```
+</CodeGroup>
+
+### Option B: Custom Integration
+
+For full control over the payment experience, use the Payment Intent API.
+
+<CodeGroup>
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+// Step 1: Create payment intent
+const intent = await yabetoo.payments.create({
+  amount: 5000,
+  currency: "xaf",
+  description: "Premium Plan subscription",
+});
+
+// Step 2: Confirm with customer's payment method
+const payment = await yabetoo.payments.confirm(intent.id, {
+  clientSecret: intent.clientSecret,
+  firstName: "John",
+  lastName: "Doe",
+  receiptEmail: "john@example.com",
+  paymentMethodData: {
+    type: "momo",
+    momo: {
+      country: "cg",
+      msisdn: "242123456789",
+      operatorName: "mtn",
+    },
+  },
+});
+
+console.log(payment.status); // "succeeded"
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.payment import (
+    CreateIntentRequest,
+    ConfirmIntentRequest,
+    PaymentMethodData,
+    MomoData
+)
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+# Step 1: Create payment intent
+intent = yabetoo.payments.create(CreateIntentRequest(
+    amount=5000,
+    currency="xaf",
+    description="Premium Plan subscription"
+))
+
+# Step 2: Confirm with customer's payment method
+payment = yabetoo.payments.confirm(
+    payment_id=intent.id,
+    data=ConfirmIntentRequest(
+        client_secret=intent.client_secret,
+        first_name="John",
+        last_name="Doe",
+        receipt_email="john@example.com",
+        payment_method_data=PaymentMethodData(
+            type="momo",
+            momo=MomoData(
+                country="cg",
+                msisdn="242123456789",
+                operator_name="mtn"
+            )
+        )
+    )
+)
+
+print(payment.status)  # "succeeded"
+```
+</CodeGroup>
+
+## Step 4: Test your integration
+
+Use these test phone numbers in sandbox mode:
+
+| Phone Number | Behavior |
+|--------------|----------|
+| `242000000001` | Always succeeds |
+| `242000000002` | Always fails (insufficient funds) |
+| `242000000003` | Pending for 30 seconds, then succeeds |
+
+<Tip>
+  Check your Dashboard to see all test transactions in real-time.
+</Tip>
+
+## Step 5: Go live
+
+When you're ready to accept real payments:
+
+<Steps>
+  <Step title="Complete account verification">
+    Submit your business documents in the Dashboard
+  </Step>
+  <Step title="Switch to production keys">
+    Replace `sk_test_` with `sk_live_` in your code
+  </Step>
+  <Step title="Update webhook endpoints">
+    Point webhooks to your production server
+  </Step>
+</Steps>
+
+<Check>
+  Congratulations! You're now ready to accept payments with Yabetoo.
+</Check>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Handle Webhooks" icon="bell" href="/en/developer-tools/webhook/overview">
+    Get notified when payments complete
+  </Card>
+  <Card title="Explore SDKs" icon="cubes" href="/en/developer-tools/sdk/javascript">
+    Discover all SDK features
+  </Card>
+  <Card title="API Reference" icon="book" href="/en/api-reference/introduction">
+    Full API documentation
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/en/api-reference/errors">
+    Handle errors gracefully
+  </Card>
 </CardGroup>

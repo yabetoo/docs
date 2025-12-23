@@ -1,77 +1,127 @@
 ---
-title: Démarrer
-description: "Créez un compte et découvrez comment commencer à utiliser Yabetoo."
+title: Welcome to Yabetoo
+description: "The simplest way to accept Mobile Money payments in Africa"
 ---
 
-## Commencer à utiliser Yabetoo
-
-Si vous êtes prêt à lancer la phase de développement, consultez notre [guide de démarrage checkout rapide](/quickstart).
-
-[Activer votre compte](/quickstart)<Icon icon="arrow-right" iconType="solid" />
-
 <img
-  className="block dark:hidden"
+  className="block dark:hidden rounded-lg"
   src="/images/hero-light.png"
-  alt="Hero Light"
+  alt="Yabetoo Payment Platform"
 />
 
 <img
-  className="hidden dark:block"
+  className="hidden dark:block rounded-lg"
   src="/images/hero-dark.png"
-  alt="Hero Dark"
+  alt="Yabetoo Payment Platform"
 />
 
-## Accepter des paiements
+## Start accepting payments in minutes
 
-<CardGroup cols={2}>
-  <Card
-    title="Page de paiement hébergeée"
-    icon="globe"
-    href="https://mintlify.com/docs/quickstart"
-  >
-    Page de paiement hébergeée sécurisée, prête à l'emploi et facile à intégrer
+Yabetoo provides a complete payment infrastructure for businesses in Africa. Accept Mobile Money payments from MTN, Airtel, and more operators across multiple countries.
+
+<CardGroup cols={3}>
+  <Card title="Quick Setup" icon="bolt">
+    Get started in less than 10 minutes with our hosted checkout page
   </Card>
-  <Card
-    title="API REST"
-    icon="code"
-    href="https://mintlify.com/docs/development"
-  >
-    Intégrez le paiement directement dans votre app via une API simple et
-    flexible.
+  <Card title="Secure" icon="shield-check">
+    PCI-DSS compliant with end-to-end encryption
+  </Card>
+  <Card title="Multi-country" icon="globe-africa">
+    Accept payments from Congo and more countries coming soon
   </Card>
 </CardGroup>
 
-## Make it yours
+## Quick Start
 
-Update your docs to your brand and add valuable content for the best user conversion.
+<Steps>
+  <Step title="Create your account" icon="user-plus">
+    Sign up on [Yabetoo Dashboard](https://app.yabetoo.com) and get your API keys
+  </Step>
+  <Step title="Integrate" icon="code">
+    Use our SDKs or REST API to add payments to your app
+  </Step>
+  <Step title="Go live" icon="rocket">
+    Switch to production keys and start accepting real payments
+  </Step>
+</Steps>
+
+<Card title="Get Started" icon="arrow-right" href="/en/quickstart">
+  Follow our step-by-step guide to integrate Yabetoo
+</Card>
+
+## Choose your integration
 
 <CardGroup cols={2}>
   <Card
-    title="Customize Style"
-    icon="palette"
-    href="https://mintlify.com/docs/settings/global"
+    title="Hosted Checkout"
+    icon="browser"
+    href="/en/payments/checkout-page/intro"
   >
-    Customize your docs to your company's colors and brands
+    **Recommended for most users**
+
+    Redirect customers to a Yabetoo-hosted payment page. No frontend code needed, fully PCI compliant.
   </Card>
   <Card
-    title="Reference APIs"
+    title="Custom Integration"
     icon="code"
-    href="https://mintlify.com/docs/api-playground/openapi"
+    href="/en/payments/api/overview"
   >
-    Automatically generate endpoints from an OpenAPI spec
+    **For advanced use cases**
+
+    Build a fully custom payment flow using our REST API. Full control over the user experience.
+  </Card>
+</CardGroup>
+
+## More features
+
+<CardGroup cols={2}>
+  <Card
+    title="Disbursements"
+    icon="money-bill-transfer"
+    href="/en/payments/disbursement/overview"
+  >
+    Send money to your customers, partners, or employees via Mobile Money
   </Card>
   <Card
-    title="Add Components"
-    icon="screwdriver-wrench"
-    href="https://mintlify.com/docs/content/components/accordions"
+    title="Payment Links"
+    icon="link"
+    href="/en/payments/payment-link/intro"
   >
-    Build interactive features and designs to guide your users
+    Create shareable payment links without writing any code
   </Card>
   <Card
-    title="Get Inspiration"
-    icon="stars"
-    href="https://mintlify.com/customers"
+    title="Webhooks"
+    icon="bell"
+    href="/en/developer-tools/webhook/overview"
   >
-    Check out our showcase of our favorite documentation
+    Get real-time notifications when payments are completed
+  </Card>
+  <Card
+    title="SDKs"
+    icon="cubes"
+    href="/en/developer-tools/sdk/javascript"
+  >
+    Official libraries for JavaScript, Python, PHP, and Java
+  </Card>
+</CardGroup>
+
+## Supported payment methods
+
+| Method | Operators | Countries |
+|--------|-----------|-----------|
+| Mobile Money | MTN, Airtel | Congo (CG) |
+
+<Tip>
+  **Test for free** - Use our sandbox environment with test credentials to develop and test your integration before going live.
+</Tip>
+
+## Need help?
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="book" href="/en/api-reference/introduction">
+    Explore the complete API documentation
+  </Card>
+  <Card title="Contact Support" icon="headset" href="mailto:support@yabetoopay.com">
+    Get help from our team
   </Card>
 </CardGroup>

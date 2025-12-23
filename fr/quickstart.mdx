@@ -1,96 +1,263 @@
 ---
 title: 'Démarrage rapide'
-description: 'Commencez à créer une documentation impressionnante en moins de 5 minutes'
+description: 'Acceptez votre premier paiement en moins de 5 minutes'
 ---
 
-## Configuration de votre environnement
+## Prérequis
 
-Apprenez à mettre à jour votre documentation localement et à la déployer publiquement.
+Avant de commencer, assurez-vous d'avoir :
 
-### Édition et prévisualisation
+<CardGroup cols={2}>
+  <Card title="Compte Yabetoo" icon="user">
+    [Créez un compte](https://app.yabetoo.com) si ce n'est pas déjà fait
+  </Card>
+  <Card title="Clés API" icon="key">
+    Obtenez vos clés API de test depuis le Dashboard
+  </Card>
+</CardGroup>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Cloner votre documentation en local">
-    Pendant le processus d'intégration, nous avons créé un dépôt sur votre Github avec
-    le contenu de votre documentation. Vous pouvez trouver ce dépôt sur notre
-    [tableau de bord](https://dashboard.mintlify.com). Pour cloner le dépôt
-    localement, suivez ces
-    [instructions](https://docs.github.com/fr/repositories/creating-and-managing-repositories/cloning-a-repository)
-    dans votre terminal.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Prévisualiser les changements">
-    La prévisualisation vous aide à vous assurer que vos modifications apparaissent comme prévu. Nous avons créé une
-    interface en ligne de commande pour afficher ces changements localement.
-    1. Installez le
-    [CLI Mintlify](https://www.npmjs.com/package/mintlify) pour prévisualiser les
-    changements de documentation localement avec cette commande : ``` npm i -g mintlify ```
-    2. Exécutez la commande suivante à la racine de votre documentation (où se trouve
-    `docs.json`) : ``` mintlify dev ```
-    <Note>
-      Si vous utilisez actuellement le fichier de configuration legacy ```mint.json```, veuillez mettre à jour le CLI Mintlify :
+<Warning>
+  Ne partagez jamais votre clé API secrète publiquement. Utilisez des variables d'environnement pour les stocker en toute sécurité.
+</Warning>
 
-      ```npm i -g mintlify@latest```
-      Et exécutez la nouvelle commande de mise à niveau dans votre dépôt de documentation :
+## Étape 1 : Obtenez vos clés API
 
-      ```mintlify upgrade```
-      Vous devriez maintenant utiliser le nouveau fichier de configuration ```docs.json```. N'hésitez pas à supprimer le fichier ```mint.json``` de votre dépôt.
-    </Note>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Connectez-vous à votre Dashboard">
+    Allez sur [app.yabetoo.com](https://app.yabetoo.com) et connectez-vous à votre compte
+  </Step>
+  <Step title="Accédez aux clés API">
+    Cliquez sur **Paramètres** > **Clés API** dans la barre latérale
+  </Step>
+  <Step title="Copiez vos clés de test">
+    Copiez votre clé secrète de test (commence par `sk_test_`)
+  </Step>
+</Steps>
 
-### Déployer vos changements
+<Info>
+  Les clés de test vous permettent de simuler des paiements sans argent réel. Utilisez-les pendant le développement.
+</Info>
 
-<AccordionGroup>
+## Étape 2 : Installez un SDK (optionnel)
 
-<Accordion icon="message-bot" title="Installer notre application Github">
-  Notre application Github déploie automatiquement vos modifications sur votre site de documentation,
-  vous n'avez donc pas besoin de gérer les déploiements vous-même. Vous pouvez trouver le lien d'installation sur
-  votre [tableau de bord](https://dashboard.mintlify.com). Une fois que le bot a été
-  installé avec succès, il devrait y avoir une coche à côté du hash du commit
-  du dépôt.
-</Accordion>
-<Accordion icon="rocket" title="Pousser vos changements">
-  [Committez et poussez vos changements sur
-  Git](https://docs.github.com/fr/get-started/using-git/pushing-commits-to-a-remote-repository#about-git-push)
-  pour que vos modifications soient mises à jour sur votre site de documentation. Si vous poussez et ne voyez pas que
-  l'application Github a déployé vos changements avec succès, vous pouvez également
-  mettre à jour manuellement votre documentation via notre [tableau de bord](https://dashboard.mintlify.com).
-</Accordion>
+Choisissez votre langage préféré :
 
-</AccordionGroup>
+<CodeGroup>
+```bash npm
+npm install yabetoo
+```
 
-## Mettre à jour votre documentation
+```bash pip
+pip install yabetoo
+```
 
-Ajoutez du contenu directement dans vos fichiers avec la syntaxe MDX et les composants React. Vous pouvez utiliser n'importe lequel de nos composants, ou même créer les vôtres.
+```bash composer
+composer require yabetoo/yabetoo-php
+```
+</CodeGroup>
 
-<CardGroup>
+## Étape 3 : Créez votre premier paiement
 
-<Card title="Ajouter du contenu avec MDX" icon="file" href="/fr/essentials/markdown">
-  Ajoutez du contenu à votre documentation avec la syntaxe MDX.
-</Card>
+### Option A : Page de paiement hébergée (Recommandé)
 
-<Card
-  title="Ajouter des blocs de code"
-  icon="square-code"
-  href="/fr/essentials/code"
->
-  Ajoutez du code directement à votre documentation avec la coloration syntaxique.
-</Card>
+Le moyen le plus rapide d'accepter des paiements. Redirigez vos clients vers une page hébergée par Yabetoo.
 
-<Card
-  title="Ajouter des images"
-  icon="image"
-  href="/fr/essentials/images"
->
-  Ajoutez des images à votre documentation pour la rendre plus attrayante.
-</Card>
+<CodeGroup>
+```javascript JavaScript
+import Yabetoo from "yabetoo";
 
-<Card
-  title="Ajouter des composants personnalisés"
-  icon="puzzle-piece"
-  href="/fr/essentials/reusable-snippets"
->
-  Ajoutez des modèles à votre documentation pour la rendre plus réutilisable.
-</Card>
+const yabetoo = new Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
 
+const session = await yabetoo.sessions.create({
+  accountId: "acct_xxxxxxxx",
+  total: 5000,
+  currency: "xaf",
+  successUrl: "https://votre-site.com/succes",
+  cancelUrl: "https://votre-site.com/annuler",
+  items: [
+    {
+      productId: "prod_123",
+      productName: "Plan Premium",
+      quantity: 1,
+      price: 5000,
+    },
+  ],
+});
+
+// Redirigez le client vers session.url
+console.log(session.url);
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+session = yabetoo.sessions.create(CreateCheckoutSession(
+    account_id="acct_xxxxxxxx",
+    total=5000,
+    currency="xaf",
+    success_url="https://votre-site.com/succes",
+    cancel_url="https://votre-site.com/annuler",
+    items=[
+        CheckoutItem(
+            product_id="prod_123",
+            product_name="Plan Premium",
+            quantity=1,
+            price=5000
+        )
+    ]
+))
+
+# Redirigez le client vers session.url
+print(session.url)
+```
+
+```bash cURL
+curl -X POST https://buy.api.yabetoopay.com/v1/sessions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -d '{
+    "total": 5000,
+    "currency": "xaf",
+    "accountId": "acct_xxxxxxxx",
+    "successUrl": "https://votre-site.com/succes",
+    "cancelUrl": "https://votre-site.com/annuler",
+    "items": [{
+      "productId": "prod_123",
+      "productName": "Plan Premium",
+      "quantity": 1,
+      "price": 5000
+    }]
+  }'
+```
+</CodeGroup>
+
+### Option B : Intégration personnalisée
+
+Pour un contrôle total sur l'expérience de paiement, utilisez l'API Payment Intent.
+
+<CodeGroup>
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+// Étape 1 : Créer l'intention de paiement
+const intent = await yabetoo.payments.create({
+  amount: 5000,
+  currency: "xaf",
+  description: "Abonnement Plan Premium",
+});
+
+// Étape 2 : Confirmer avec le moyen de paiement du client
+const payment = await yabetoo.payments.confirm(intent.id, {
+  clientSecret: intent.clientSecret,
+  firstName: "Jean",
+  lastName: "Dupont",
+  receiptEmail: "jean@example.com",
+  paymentMethodData: {
+    type: "momo",
+    momo: {
+      country: "cg",
+      msisdn: "242123456789",
+      operatorName: "mtn",
+    },
+  },
+});
+
+console.log(payment.status); // "succeeded"
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.payment import (
+    CreateIntentRequest,
+    ConfirmIntentRequest,
+    PaymentMethodData,
+    MomoData
+)
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+# Étape 1 : Créer l'intention de paiement
+intent = yabetoo.payments.create(CreateIntentRequest(
+    amount=5000,
+    currency="xaf",
+    description="Abonnement Plan Premium"
+))
+
+# Étape 2 : Confirmer avec le moyen de paiement du client
+payment = yabetoo.payments.confirm(
+    payment_id=intent.id,
+    data=ConfirmIntentRequest(
+        client_secret=intent.client_secret,
+        first_name="Jean",
+        last_name="Dupont",
+        receipt_email="jean@example.com",
+        payment_method_data=PaymentMethodData(
+            type="momo",
+            momo=MomoData(
+                country="cg",
+                msisdn="242123456789",
+                operator_name="mtn"
+            )
+        )
+    )
+)
+
+print(payment.status)  # "succeeded"
+```
+</CodeGroup>
+
+## Étape 4 : Testez votre intégration
+
+Utilisez ces numéros de téléphone de test en mode sandbox :
+
+| Numéro de téléphone | Comportement |
+|---------------------|--------------|
+| `242000000001` | Réussit toujours |
+| `242000000002` | Échoue toujours (fonds insuffisants) |
+| `242000000003` | En attente 30 secondes, puis réussit |
+
+<Tip>
+  Consultez votre Dashboard pour voir toutes les transactions de test en temps réel.
+</Tip>
+
+## Étape 5 : Passez en production
+
+Quand vous êtes prêt à accepter de vrais paiements :
+
+<Steps>
+  <Step title="Complétez la vérification du compte">
+    Soumettez vos documents d'entreprise dans le Dashboard
+  </Step>
+  <Step title="Passez aux clés de production">
+    Remplacez `sk_test_` par `sk_live_` dans votre code
+  </Step>
+  <Step title="Mettez à jour les endpoints webhook">
+    Pointez les webhooks vers votre serveur de production
+  </Step>
+</Steps>
+
+<Check>
+  Félicitations ! Vous êtes maintenant prêt à accepter des paiements avec Yabetoo.
+</Check>
+
+## Prochaines étapes
+
+<CardGroup cols={2}>
+  <Card title="Gérer les Webhooks" icon="bell" href="/fr/developer-tools/webhook/overview">
+    Soyez notifié quand les paiements sont complétés
+  </Card>
+  <Card title="Explorer les SDKs" icon="cubes" href="/fr/developer-tools/sdk/javascript">
+    Découvrez toutes les fonctionnalités des SDKs
+  </Card>
+  <Card title="Référence API" icon="book" href="/fr/api-reference/introduction">
+    Documentation API complète
+  </Card>
+  <Card title="Gestion des erreurs" icon="triangle-exclamation" href="/fr/api-reference/errors">
+    Gérez les erreurs avec élégance
+  </Card>
 </CardGroup>

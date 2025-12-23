@@ -1,77 +1,127 @@
 ---
-title: Démarrer
-description: "Créez un compte et découvrez comment commencer à utiliser Yabetoo."
+title: Bienvenue sur Yabetoo
+description: "La solution la plus simple pour accepter les paiements Mobile Money en Afrique"
 ---
 
-## Commencer à utiliser Yabetoo
-
-Si vous êtes prêt à lancer la phase de développement, consultez notre [guide de démarrage rapide](/fr/quickstart).
-
-[Activer votre compte](/fr/quickstart)<Icon icon="arrow-right" iconType="solid" />
-
 <img
-  className="block dark:hidden"
+  className="block dark:hidden rounded-lg"
   src="/images/hero-light.png"
-  alt="Hero Light"
+  alt="Plateforme de paiement Yabetoo"
 />
 
 <img
-  className="hidden dark:block"
+  className="hidden dark:block rounded-lg"
   src="/images/hero-dark.png"
-  alt="Hero Dark"
+  alt="Plateforme de paiement Yabetoo"
 />
 
-## Accepter des paiements
+## Commencez à accepter des paiements en quelques minutes
+
+Yabetoo fournit une infrastructure de paiement complète pour les entreprises en Afrique. Acceptez les paiements Mobile Money de MTN, Airtel et d'autres opérateurs dans plusieurs pays.
+
+<CardGroup cols={3}>
+  <Card title="Configuration rapide" icon="bolt">
+    Démarrez en moins de 10 minutes avec notre page de paiement hébergée
+  </Card>
+  <Card title="Sécurisé" icon="shield-check">
+    Conforme PCI-DSS avec chiffrement de bout en bout
+  </Card>
+  <Card title="Multi-pays" icon="globe-africa">
+    Acceptez les paiements du Congo et d'autres pays bientôt
+  </Card>
+</CardGroup>
+
+## Démarrage rapide
+
+<Steps>
+  <Step title="Créez votre compte" icon="user-plus">
+    Inscrivez-vous sur le [Dashboard Yabetoo](https://app.yabetoo.com) et obtenez vos clés API
+  </Step>
+  <Step title="Intégrez" icon="code">
+    Utilisez nos SDKs ou l'API REST pour ajouter les paiements à votre application
+  </Step>
+  <Step title="Passez en production" icon="rocket">
+    Basculez vers les clés de production et commencez à accepter de vrais paiements
+  </Step>
+</Steps>
+
+<Card title="Commencer" icon="arrow-right" href="/fr/quickstart">
+  Suivez notre guide étape par étape pour intégrer Yabetoo
+</Card>
+
+## Choisissez votre intégration
 
 <CardGroup cols={2}>
   <Card
     title="Page de paiement hébergée"
-    icon="globe"
+    icon="browser"
     href="/fr/payments/checkout-page/intro"
   >
-    Page de paiement hébergée sécurisée, prête à l'emploi et facile à intégrer
+    **Recommandé pour la plupart des utilisateurs**
+
+    Redirigez vos clients vers une page de paiement hébergée par Yabetoo. Aucun code frontend nécessaire, entièrement conforme PCI.
   </Card>
   <Card
-    title="API REST"
+    title="Intégration personnalisée"
     icon="code"
     href="/fr/payments/api/overview"
   >
-    Intégrez le paiement directement dans votre application via une API simple et
-    flexible.
+    **Pour les cas d'usage avancés**
+
+    Construisez un flux de paiement entièrement personnalisé avec notre API REST. Contrôle total sur l'expérience utilisateur.
   </Card>
 </CardGroup>
 
-## Personnalisation
-
-Personnalisez la documentation selon votre marque et ajoutez du contenu pertinent pour une meilleure conversion des utilisateurs.
+## Plus de fonctionnalités
 
 <CardGroup cols={2}>
   <Card
-    title="Personnaliser le style"
-    icon="palette"
-    href="https://mintlify.com/docs/settings/global"
+    title="Décaissements"
+    icon="money-bill-transfer"
+    href="/fr/payments/disbursement/overview"
   >
-    Adaptez la documentation aux couleurs et à l'identité de votre entreprise
+    Envoyez de l'argent à vos clients, partenaires ou employés via Mobile Money
   </Card>
   <Card
-    title="Référence API"
-    icon="code"
-    href="https://mintlify.com/docs/api-playground/openapi"
+    title="Liens de paiement"
+    icon="link"
+    href="/fr/payments/payment-link/intro"
   >
-    Générez automatiquement les points d'accès depuis une spécification OpenAPI
+    Créez des liens de paiement partageables sans écrire de code
   </Card>
   <Card
-    title="Ajouter des composants"
-    icon="screwdriver-wrench"
-    href="https://mintlify.com/docs/content/components/accordions"
+    title="Webhooks"
+    icon="bell"
+    href="/fr/developer-tools/webhook/overview"
   >
-    Créez des fonctionnalités et des designs interactifs pour guider vos utilisateurs
+    Recevez des notifications en temps réel quand les paiements sont effectués
   </Card>
   <Card
-    title="Inspiration"
-    icon="stars"
-    href="https://mintlify.com/customers"
+    title="SDKs"
+    icon="cubes"
+    href="/fr/developer-tools/sdk/javascript"
   >
-    Découvrez notre sélection de documentations préférées
+    Bibliothèques officielles pour JavaScript, Python, PHP et Java
+  </Card>
+</CardGroup>
+
+## Méthodes de paiement supportées
+
+| Méthode | Opérateurs | Pays |
+|---------|------------|------|
+| Mobile Money | MTN, Airtel | Congo (CG) |
+
+<Tip>
+  **Testez gratuitement** - Utilisez notre environnement sandbox avec des identifiants de test pour développer et tester votre intégration avant de passer en production.
+</Tip>
+
+## Besoin d'aide ?
+
+<CardGroup cols={2}>
+  <Card title="Référence API" icon="book" href="/fr/api-reference/introduction">
+    Explorez la documentation complète de l'API
+  </Card>
+  <Card title="Contacter le support" icon="headset" href="mailto:support@yabetoopay.com">
+    Obtenez de l'aide de notre équipe
   </Card>
 </CardGroup>
