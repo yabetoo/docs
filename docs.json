@@ -146,7 +146,8 @@
                 "pages": [
                   "fr/api-reference/introduction",
                   "fr/api-reference/authentication",
-                  "fr/api-reference/errors"
+                  "fr/api-reference/errors",
+                  "fr/api-reference/currencies"
                 ]
               },
               {
@@ -336,7 +337,8 @@
                 "pages": [
                   "en/api-reference/introduction",
                   "en/api-reference/authentication",
-                  "en/api-reference/errors"
+                  "en/api-reference/errors",
+                  "en/api-reference/currencies"
                 ]
               },
               {

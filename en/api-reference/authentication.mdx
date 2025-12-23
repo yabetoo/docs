@@ -29,10 +29,10 @@ Yabetoo provides two types of API keys:
 Include your API key in the `Authorization` header of every request:
 
 ```bash
-curl -X POST https://api.yabetoopay.com/v1/payment-intents \
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
   -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
   -H "Content-Type: application/json" \
-  -d '{"amount": 5000, "currency": "XAF"}'
+  -d '{"amount": 5000, "currency": "xaf"}'
 ```
 
 ### SDK Examples

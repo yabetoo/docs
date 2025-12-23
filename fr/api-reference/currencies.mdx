@@ -1,0 +1,58 @@
+---
+title: Devise
+description: Comprendre le support des devises dans l'API Yabetoo.
+---
+
+L'API Yabetoo supporte actuellement le Franc CFA (XAF) pour traiter les paiements en Afrique Centrale.
+
+## Devise supportée
+
+| Devise | Code | Région | Description |
+|--------|------|--------|-------------|
+| Franc CFA | `XAF` | Afrique Centrale | Devise pour les pays de la CEMAC |
+
+## Spécifier la devise
+
+Incluez le paramètre `currency` lors de la création d'une intention de paiement :
+
+```bash
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 5000,
+    "currency": "xaf"
+  }'
+```
+
+## Exemples avec les SDKs
+
+<CodeGroup>
+```javascript JavaScript
+// Créer une intention de paiement
+const paymentIntent = await yabetoo.paymentIntents.create({
+  amount: 5000,
+  currency: 'xaf'
+});
+```
+
+```python Python
+# Créer une intention de paiement
+payment_intent = yabetoo.PaymentIntent.create(
+    amount=5000,
+    currency='xaf'
+)
+```
+</CodeGroup>
+
+## Format des montants
+
+Les montants sont spécifiés en Francs (la plus petite unité) :
+
+| Devise | Unité | Exemple |
+|--------|-------|---------|
+| `XAF` | Franc | 5000 = 5 000 XAF |
+
+<Note>
+  Pour toute question sur le support des devises, contactez notre équipe support à support@yabetoopay.com
+</Note>

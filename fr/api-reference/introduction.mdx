@@ -8,12 +8,8 @@ L'API Yabetoo est organisée autour des principes REST. Notre API utilise des en
 ## Base URL
 
 ```bash
-https://api.yabetoopay.com
-```
-
-Pour le mode test, utilisez :
-```bash
-https://api.sandbox.yabetoopay.com
+https://pay.api.yabetoopay.com    # Production
+https://pay.sandbox.yabetoopay.com # Sandbox
 ```
 
 ## Authentication
@@ -86,12 +82,6 @@ En cas d'erreur, vous recevrez :
   }
 }
 ```
-
-## Limites de taux
-
-Les requêtes sont limitées à :
-- 100 requêtes par minute en mode test
-- 1000 requêtes par minute en production
 
 <Note>
   Conservez vos clés API en sécurité. Ne les partagez jamais publiquement ou dans
