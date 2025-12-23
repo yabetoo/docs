@@ -26,22 +26,52 @@ Authorization: Bearer YOUR_SECRET_KEY
 
 ## Example Request
 
-```javascript
-const remittanceId = "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ";
-
-const response = await fetch(
-  `https://pay.sandbox.yabetoopay.com/v1/remittance/${remittanceId}`,
-  {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer YOUR_SECRET_KEY",
-    },
-  }
-);
-
-const data = await response.json();
+<CodeGroup>
+```bash cURL
+curl https://pay.sandbox.yabetoopay.com/v1/remittance/rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
 ```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const remittance = await yabetoo.remittances.retrieve("rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ");
+```
+
+```python Python
+from yabetoo import YabetooSDK
+
+sdk = YabetooSDK("YOUR_SECRET_KEY")
+
+remittance = sdk.remittances.retrieve("rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ")
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$remittance = $yabetoo->remittances->retrieve("rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ");
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Remittance;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+Remittance remittance = yabetoo.remittances().retrieve("rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ");
+```
+</CodeGroup>
 
 ## Response
 

@@ -19,10 +19,43 @@ GET /v1/checkout/sessions/:id
 
 ## Exemple de requête
 
-```bash
-curl https://api.yabetoopay.com/v1/checkout/sessions/cs_test_123456789 \
-  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX"
+<CodeGroup>
+```bash cURL
+curl https://pay.sandbox.yabetoopay.com/v1/checkout/sessions/cs_test_123456789 \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
 ```
+
+```javascript JavaScript
+const Yabetoo = require("yabetoo-sdk");
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const session = await yabetoo.checkoutSessions.retrieve("cs_test_123456789");
+```
+
+```python Python
+import yabetoo
+
+yabetoo.api_key = "YOUR_SECRET_KEY"
+
+session = yabetoo.CheckoutSession.retrieve("cs_test_123456789")
+```
+
+```php PHP
+<?php
+$yabetoo = new \Yabetoo\YabetooClient("YOUR_SECRET_KEY");
+
+$session = $yabetoo->checkoutSessions->retrieve("cs_test_123456789");
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.model.CheckoutSession;
+
+Yabetoo.apiKey = "YOUR_SECRET_KEY";
+
+CheckoutSession session = CheckoutSession.retrieve("cs_test_123456789");
+```
+</CodeGroup>
 
 ## Réponse
 

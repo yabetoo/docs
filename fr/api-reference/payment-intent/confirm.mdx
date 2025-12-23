@@ -50,34 +50,132 @@ Authorization: Bearer YOUR_SECRET_KEY
 
 ## Exemple de requête
 
-```javascript
-const response = await fetch(
-  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer YOUR_SECRET_KEY",
-    },
-    body: JSON.stringify({
-      client_secret: "YOUR_CLIENT_SECRET",
-      first_name: "Jean",
-      last_name: "Dupont",
-      receipt_email: "jean.dupont@example.com",
-      payment_method_data: {
-        type: "momo",
-        momo: {
-          country: "cg",
-          msisdn: "+242123456789",
-          operator_name: "mtn",
-        },
-      },
-    }),
-  }
-);
-
-const data = await response.json();
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "client_secret": "YOUR_CLIENT_SECRET",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "receipt_email": "jean.dupont@example.com",
+    "payment_method_data": {
+      "type": "momo",
+      "momo": {
+        "country": "cg",
+        "msisdn": "+242123456789",
+        "operator_name": "mtn"
+      }
+    }
+  }'
 ```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const confirmation = await yabetoo.payments.confirm("PAYMENT_INTENT_ID", {
+  clientSecret: "YOUR_CLIENT_SECRET",
+  firstName: "Jean",
+  lastName: "Dupont",
+  receiptEmail: "jean.dupont@example.com",
+  paymentMethodData: {
+    type: "momo",
+    momo: {
+      country: "cg",
+      msisdn: "+242123456789",
+      operatorName: "mtn",
+    },
+  },
+});
+```
+
+```python Python
+from yabetoo import YabetooSDK
+from yabetoo.models.payment import ConfirmIntentRequest, PaymentMethodData, MomoData
+
+sdk = YabetooSDK("YOUR_SECRET_KEY")
+
+confirmation = sdk.payments.confirm(
+    payment_id="PAYMENT_INTENT_ID",
+    data=ConfirmIntentRequest(
+        client_secret="YOUR_CLIENT_SECRET",
+        first_name="Jean",
+        last_name="Dupont",
+        receipt_email="jean.dupont@example.com",
+        payment_method_data=PaymentMethodData(
+            type="momo",
+            momo=MomoData(
+                country="cg",
+                msisdn="+242123456789",
+                operator_name="mtn"
+            )
+        )
+    )
+)
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$confirmation = $yabetoo->payments->confirm("PAYMENT_INTENT_ID", [
+    "client_secret" => "YOUR_CLIENT_SECRET",
+    "first_name" => "Jean",
+    "last_name" => "Dupont",
+    "receipt_email" => "jean.dupont@example.com",
+    "payment_method_data" => [
+        "type" => "momo",
+        "momo" => [
+            "country" => "cg",
+            "msisdn" => "+242123456789",
+            "operator_name" => "mtn",
+        ],
+    ],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.model.PaymentMethod;
+import com.yabetoo.request.PaymentIntentConfirmRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+PaymentMethod.MomoDetails momoDetails = PaymentMethod.MomoDetails.builder()
+    .msisdn("+242123456789")
+    .country("cg")
+    .operatorName("mtn")
+    .build();
+
+PaymentMethod paymentMethod = PaymentMethod.builder()
+    .type("momo")
+    .momoDetails(momoDetails)
+    .build();
+
+PaymentIntent confirmation = yabetoo.paymentIntents().confirm(
+    "PAYMENT_INTENT_ID",
+    PaymentIntentConfirmRequest.builder()
+        .clientSecret("YOUR_CLIENT_SECRET")
+        .firstName("Jean")
+        .lastName("Dupont")
+        .email("jean.dupont@example.com")
+        .paymentMethod(paymentMethod)
+        .build()
+);
+```
+</CodeGroup>
 
 ## Réponse
 
@@ -107,6 +205,35 @@ const data = await response.json();
   }
 }
 ```
+
+### Paiement échoué - Solde insuffisant
+
+```json
+{
+  "error": {
+    "message": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED",
+    "code": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED"
+  }
+}
+```
+
+Cette erreur survient quand :
+- Le client n'a pas assez de fonds sur son compte Mobile Money
+- Le client a atteint sa limite de transaction
+- La transaction n'est pas autorisée par l'opérateur
+
+### Paiement échoué - Délai dépassé
+
+```json
+{
+  "error": {
+    "message": "TIMEOUT",
+    "code": "TIMEOUT"
+  }
+}
+```
+
+Cette erreur survient quand le client n'a pas confirmé le paiement à temps (n'a pas entré son code PIN sur l'invite Mobile Money).
 
 ### 401 Unauthorized
 

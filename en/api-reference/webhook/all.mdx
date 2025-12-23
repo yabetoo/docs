@@ -34,20 +34,65 @@ Authorization: Bearer YOUR_SECRET_KEY
 
 ## Example Request
 
-```javascript
-const response = await fetch(
-  "https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks?limit=10&page=1",
-  {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer YOUR_SECRET_KEY",
-    },
-  }
-);
-
-const data = await response.json();
+<CodeGroup>
+```bash cURL
+curl "https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks?limit=10&page=1" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
 ```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const webhooks = await yabetoo.webhooks.list({
+  limit: 10,
+  page: 1,
+});
+```
+
+```python Python
+from yabetoo import YabetooSDK
+
+sdk = YabetooSDK("YOUR_SECRET_KEY")
+
+webhooks = sdk.webhooks.list(limit=10, page=1)
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$webhooks = $yabetoo->webhooks->all([
+    "limit" => 10,
+    "page" => 1,
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Webhook;
+import com.yabetoo.model.WebhookCollection;
+import com.yabetoo.request.WebhookListRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+WebhookListRequest request = WebhookListRequest.builder()
+    .setLimit(10L)
+    .setPage(1L)
+    .build();
+
+WebhookCollection webhooks = yabetoo.webhooks().list(request);
+```
+</CodeGroup>
 
 ## Response
 

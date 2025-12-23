@@ -55,37 +55,139 @@ Authorization: Bearer YOUR_SECRET_KEY
 
 ## Example Request
 
-```javascript
-const response = await fetch(
-  "https://pay.sandbox.yabetoopay.com/v1/remittance",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer YOUR_SECRET_KEY",
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/remittance \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "amount": "100",
+    "currency": "XAF",
+    "first_name": "John",
+    "last_name": "Doe",
+    "payment_method_data": {
+      "type": "momo",
+      "momo": {
+        "msisdn": "242066594470",
+        "country": "CG",
+        "operator_name": "mtn"
+      }
     },
-    body: JSON.stringify({
-      amount: "100",
-      currency: "XAF",
-      first_name: "John",
-      last_name: "Doe",
-      payment_method_data: {
-        type: "momo",
-        momo: {
-          msisdn: "242066594470",
-          country: "CG",
-          operator_name: "mtn",
-        },
-      },
-      metadata: {
-        source: "yabetoo-partner-portal",
-      },
-    }),
-  }
-);
-
-const data = await response.json();
+    "metadata": {
+      "source": "yabetoo-partner-portal"
+    }
+  }'
 ```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const remittance = await yabetoo.remittances.create({
+  amount: 100,
+  currency: "XAF",
+  firstName: "John",
+  lastName: "Doe",
+  paymentMethodData: {
+    type: "momo",
+    momo: {
+      msisdn: "242066594470",
+      country: "CG",
+      operatorName: "mtn",
+    },
+  },
+  metadata: {
+    source: "yabetoo-partner-portal",
+  },
+});
+```
+
+```python Python
+from yabetoo import YabetooSDK
+from yabetoo.models.remittance import CreateRemittanceRequest
+from yabetoo.models.payment import PaymentMethodData, MomoData
+
+sdk = YabetooSDK("YOUR_SECRET_KEY")
+
+remittance = sdk.remittances.create(CreateRemittanceRequest(
+    amount=100,
+    currency="XAF",
+    first_name="John",
+    last_name="Doe",
+    payment_method_data=PaymentMethodData(
+        type="momo",
+        momo=MomoData(
+            msisdn="242066594470",
+            country="CG",
+            operator_name="mtn"
+        )
+    ),
+    metadata={"source": "yabetoo-partner-portal"}
+))
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$remittance = $yabetoo->remittances->create([
+    "amount" => 100,
+    "currency" => "XAF",
+    "first_name" => "John",
+    "last_name" => "Doe",
+    "payment_method_data" => [
+        "type" => "momo",
+        "momo" => [
+            "msisdn" => "242066594470",
+            "country" => "CG",
+            "operator_name" => "mtn",
+        ],
+    ],
+    "metadata" => [
+        "source" => "yabetoo-partner-portal",
+    ],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Remittance;
+import com.yabetoo.request.RemittanceCreateRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+RemittanceCreateRequest request = RemittanceCreateRequest.builder()
+    .amount(100)
+    .currency("XAF")
+    .firstName("John")
+    .lastName("Doe")
+    .paymentMethodData(
+        RemittanceCreateRequest.PaymentMethodData.builder()
+            .type("momo")
+            .momo(
+                RemittanceCreateRequest.PaymentMethodData.Momo.builder()
+                    .msisdn("242066594470")
+                    .country("CG")
+                    .operatorName("mtn")
+                    .build()
+            )
+            .build()
+    )
+    .putMetadata("source", "yabetoo-partner-portal")
+    .build();
+
+Remittance remittance = yabetoo.remittances().create(request);
+```
+</CodeGroup>
 
 ## Response
 

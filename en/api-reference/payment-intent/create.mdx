@@ -29,26 +29,83 @@ Authorization: Bearer YOUR_SECRET_KEY
 
 ## Example Request
 
-```javascript
-const response = await fetch(
-  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer YOUR_SECRET_KEY",
-    },
-    body: JSON.stringify({
-      amount: 2000,
-      currency: "xaf",
-      description: "Payment for product",
-      metadata: { orderId: "1234" },
-    }),
-  }
-);
-
-const data = await response.json();
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "amount": 2000,
+    "currency": "xaf",
+    "description": "Payment for product",
+    "metadata": { "orderId": "1234" }
+  }'
 ```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const paymentIntent = await yabetoo.payments.create({
+  amount: 2000,
+  currency: "xaf",
+  description: "Payment for product",
+  metadata: { orderId: "1234" },
+});
+```
+
+```python Python
+from yabetoo import YabetooSDK
+from yabetoo.models.payment import CreateIntentRequest
+
+sdk = YabetooSDK("YOUR_SECRET_KEY")
+
+payment_intent = sdk.payments.create(CreateIntentRequest(
+    amount=2000,
+    currency="xaf",
+    description="Payment for product",
+    metadata={"orderId": "1234"}
+))
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$paymentIntent = $yabetoo->payments->create([
+    "amount" => 2000,
+    "currency" => "xaf",
+    "description" => "Payment for product",
+    "metadata" => ["orderId" => "1234"],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.request.PaymentIntentRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+PaymentIntentRequest request = PaymentIntentRequest.builder()
+    .amount(2000)
+    .currency("xaf")
+    .description("Payment for product")
+    .putMetadata("orderId", "1234")
+    .build();
+
+PaymentIntent paymentIntent = yabetoo.paymentIntents().create(request);
+```
+</CodeGroup>
 
 ## Response
 

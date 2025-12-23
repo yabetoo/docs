@@ -56,34 +56,128 @@ Authorization: Bearer YOUR_SECRET_KEY
 
 ## Exemple de requête
 
-```javascript
-const response = await fetch(
-  "https://pay.sandbox.yabetoopay.com/v1/disbursements",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer YOUR_SECRET_KEY",
-    },
-    body: JSON.stringify({
-      amount: 10000,
-      currency: "XAF",
-      first_name: "Jean",
-      last_name: "Dupont",
-      payment_method_data: {
-        type: "momo",
-        momo: {
-          msisdn: "242066594471",
-          country: "CG",
-          operator_name: "mtn",
-        },
-      },
-    }),
-  }
-);
-
-const data = await response.json();
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/disbursements \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "amount": 10000,
+    "currency": "XAF",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "payment_method_data": {
+      "type": "momo",
+      "momo": {
+        "msisdn": "242066594471",
+        "country": "CG",
+        "operator_name": "mtn"
+      }
+    }
+  }'
 ```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const disbursement = await yabetoo.disbursements.create({
+  amount: 10000,
+  currency: "XAF",
+  firstName: "Jean",
+  lastName: "Dupont",
+  paymentMethodData: {
+    type: "momo",
+    momo: {
+      msisdn: "242066594471",
+      country: "CG",
+      operatorName: "mtn",
+    },
+  },
+});
+```
+
+```python Python
+from yabetoo import YabetooSDK
+from yabetoo.models.disbursement import CreateDisbursementRequest
+from yabetoo.models.payment import PaymentMethodData, MomoData
+
+sdk = YabetooSDK("YOUR_SECRET_KEY")
+
+disbursement = sdk.disbursements.create(CreateDisbursementRequest(
+    amount=10000,
+    currency="XAF",
+    first_name="Jean",
+    last_name="Dupont",
+    payment_method_data=PaymentMethodData(
+        type="momo",
+        momo=MomoData(
+            msisdn="242066594471",
+            country="CG",
+            operator_name="mtn"
+        )
+    )
+))
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$disbursement = $yabetoo->disbursements->create([
+    "amount" => 10000,
+    "currency" => "XAF",
+    "first_name" => "Jean",
+    "last_name" => "Dupont",
+    "payment_method_data" => [
+        "type" => "momo",
+        "momo" => [
+            "msisdn" => "242066594471",
+            "country" => "CG",
+            "operator_name" => "mtn",
+        ],
+    ],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Disbursement;
+import com.yabetoo.request.DisbursementCreateRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+DisbursementCreateRequest request = DisbursementCreateRequest.builder()
+    .amount(10000)
+    .currency("XAF")
+    .firstName("Jean")
+    .lastName("Dupont")
+    .paymentMethodData(
+        DisbursementCreateRequest.PaymentMethodData.builder()
+            .type("momo")
+            .momo(
+                DisbursementCreateRequest.PaymentMethodData.Momo.builder()
+                    .msisdn("242066594471")
+                    .country("CG")
+                    .operatorName("mtn")
+                    .build()
+            )
+            .build()
+    )
+    .build();
+
+Disbursement disbursement = yabetoo.disbursements().create(request);
+```
+</CodeGroup>
 
 ## Réponse
 

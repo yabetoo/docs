@@ -138,6 +138,19 @@ app.post("/webhook", (req, res) => {
 | `succeeded` | Payment completed successfully |
 | `failed` | Payment failed (insufficient funds, rejected, etc.) |
 
+## Common Error Codes
+
+When a payment fails, you may receive one of these error codes:
+
+| Code | Description |
+|------|-------------|
+| `LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED` | Insufficient funds, transaction limit reached, or transaction not allowed |
+| `TIMEOUT` | Customer did not confirm the payment in time |
+
+<Warning>
+  Always handle the `LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED` error gracefully by informing the customer that their payment could not be processed due to insufficient balance or account restrictions.
+</Warning>
+
 ## Best Practices
 
 1. **Always verify webhooks** - Don't rely solely on the synchronous response

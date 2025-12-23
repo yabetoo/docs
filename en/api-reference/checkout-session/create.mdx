@@ -42,33 +42,131 @@ Authorization: Bearer YOUR_SECRET_KEY
 
 ## Example Request
 
-```javascript
-const response = await fetch("https://buy.api.yabetoopay.com/v1/sessions", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: "Bearer YOUR_SECRET_KEY",
-  },
-  body: JSON.stringify({
-    total: 200000,
-    currency: "xaf",
-    accountId: "acct_xxxxxxxx",
-    successUrl: "https://your-site.com/checkout-success",
-    cancelUrl: "https://your-site.com/checkout-cancel",
-    metadata: { orderId: "1234" },
-    items: [
+<CodeGroup>
+```bash cURL
+curl -X POST https://buy.api.yabetoopay.com/v1/sessions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "total": 200000,
+    "currency": "xaf",
+    "accountId": "acct_xxxxxxxx",
+    "successUrl": "https://your-site.com/checkout-success",
+    "cancelUrl": "https://your-site.com/checkout-cancel",
+    "metadata": { "orderId": "1234" },
+    "items": [
       {
-        productId: "prod_12345",
-        quantity: 1,
-        price: 200000,
-        productName: "HD Screen",
-      },
-    ],
-  }),
-});
-
-const data = await response.json();
+        "productId": "prod_12345",
+        "quantity": 1,
+        "price": 200000,
+        "productName": "HD Screen"
+      }
+    ]
+  }'
 ```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const session = await yabetoo.sessions.create({
+  accountId: "acct_xxxxxxxx",
+  total: 200000,
+  currency: "xaf",
+  successUrl: "https://your-site.com/checkout-success",
+  cancelUrl: "https://your-site.com/checkout-cancel",
+  metadata: { orderId: "1234" },
+  items: [
+    {
+      productId: "prod_12345",
+      quantity: 1,
+      price: 200000,
+      productName: "HD Screen",
+    },
+  ],
+});
+```
+
+```python Python
+from yabetoo import YabetooSDK
+from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
+
+sdk = YabetooSDK("YOUR_SECRET_KEY")
+
+items = [
+    CheckoutItem(
+        product_id="prod_12345",
+        product_name="HD Screen",
+        quantity=1,
+        price=200000
+    )
+]
+
+session = sdk.sessions.create(CreateCheckoutSession(
+    account_id="acct_xxxxxxxx",
+    total=200000,
+    currency="xaf",
+    success_url="https://your-site.com/checkout-success",
+    cancel_url="https://your-site.com/checkout-cancel",
+    items=items,
+    metadata={"orderId": "1234"}
+))
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$session = $yabetoo->sessions->create([
+    "total" => 200000,
+    "currency" => "xaf",
+    "accountId" => "acct_xxxxxxxx",
+    "successUrl" => "https://your-site.com/checkout-success",
+    "cancelUrl" => "https://your-site.com/checkout-cancel",
+    "metadata" => ["orderId" => "1234"],
+    "items" => [
+        [
+            "productId" => "prod_12345",
+            "quantity" => 1,
+            "price" => 200000,
+            "productName" => "HD Screen",
+        ]
+    ],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Session;
+import com.yabetoo.request.SessionCreateRequest;
+import com.yabetoo.request.LineItem;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+SessionCreateRequest request = SessionCreateRequest.builder()
+    .successUrl("https://your-site.com/checkout-success")
+    .cancelUrl("https://your-site.com/checkout-cancel")
+    .addLineItem(LineItem.builder()
+        .productId("prod_12345")
+        .quantity(1)
+        .price(200000)
+        .productName("HD Screen")
+        .build())
+    .currency("xaf")
+    .build();
+
+Session session = yabetoo.sessions().create(request);
+```
+</CodeGroup>
 
 ## Response
 

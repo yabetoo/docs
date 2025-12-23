@@ -18,6 +18,26 @@ The Yabetoo API uses conventional HTTP response codes to indicate the success or
 | `429` | Too Many Requests | Rate limit exceeded |
 | `500` | Internal Server Error | Server-side error |
 
+## Payment Error Codes
+
+When a payment fails, the API returns specific error codes to help you understand what went wrong:
+
+| Code | Description |
+|------|-------------|
+| `LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED` | The customer has insufficient funds, has reached their transaction limit, or the transaction is not allowed by the operator |
+| `TIMEOUT` | The customer did not confirm the payment in time (did not enter their PIN) |
+
+### Example Error Response
+
+```json
+{
+  "error": {
+    "message": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED",
+    "code": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED"
+  }
+}
+```
+
 ## Best Practices
 
 1. **Always handle errors gracefully** - Never expose raw error messages to end users
