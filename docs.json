@@ -115,7 +115,15 @@
                 "pages": ["fr/platforms/overview"],
                 "icon": "globe"
               },
-                            {
+              {
+                "group": "Intégrations Plateformes",
+                "pages": [
+                  "fr/platforms/integrations",
+                  "fr/platforms/wordpress"
+                ],
+                "icon": "puzzle"
+              },
+              {
                 "group": "Études de cas",
                 "pages": [
                   "fr/platforms/examples",
@@ -297,29 +305,11 @@
                 "group": "Platform Integrations",
                 "pages": [
                   "en/platforms/integrations",
-                  "en/platforms/wordpress",
-                  "en/platforms/shopify",
-                  "en/platforms/magento"
+                  "en/platforms/wordpress"
                 ],
                 "icon": "puzzle"
               },
               {
-                "group": "Marketplace Solutions",
-                "pages": [
-                  "en/platforms/marketplace"
-                ],
-                "icon": "layers"
-              },
-              {
-                "group": "Developer Resources",
-                "pages": [
-                  "en/platforms/developer-resources",
-                  "en/platforms/developer-resources/sdk",
-                  "en/platforms/developer-resources/plugins"
-                ],
-                "icon": "code"
-              },
-                            {
                 "group": "Case Studies",
                 "pages": [
                   "en/platforms/examples",
