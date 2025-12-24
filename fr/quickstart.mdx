@@ -67,58 +67,8 @@ implementation 'com.yabetoo:yabetoo-java:1.0.0'
 Le moyen le plus rapide d'accepter des paiements. Redirigez vos clients vers une page hébergée par Yabetoo.
 
 <CodeGroup>
-```javascript JavaScript
-import Yabetoo from "yabetoo";
 
-const yabetoo = new Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
-
-const session = await yabetoo.sessions.create({
-  accountId: "acct_xxxxxxxx",
-  total: 5000,
-  currency: "xaf",
-  successUrl: "https://votre-site.com/succes",
-  cancelUrl: "https://votre-site.com/annuler",
-  items: [
-    {
-      productId: "prod_123",
-      productName: "Plan Premium",
-      quantity: 1,
-      price: 5000,
-    },
-  ],
-});
-
-// Redirigez le client vers session.url
-console.log(session.url);
-```
-
-```python Python
-from yabetoo import Yabetoo
-from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
-
-yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
-
-session = yabetoo.sessions.create(CreateCheckoutSession(
-    account_id="acct_xxxxxxxx",
-    total=5000,
-    currency="xaf",
-    success_url="https://votre-site.com/succes",
-    cancel_url="https://votre-site.com/annuler",
-    items=[
-        CheckoutItem(
-            product_id="prod_123",
-            product_name="Plan Premium",
-            quantity=1,
-            price=5000
-        )
-    ]
-))
-
-# Redirigez le client vers session.url
-print(session.url)
-```
-
-```bash cURL
+```bash curl
 curl -X POST https://buy.api.yabetoopay.com/v1/sessions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
@@ -136,6 +86,85 @@ curl -X POST https://buy.api.yabetoopay.com/v1/sessions \
     }]
   }'
 ```
+
+```javascript Node.js
+import { Yabetoo } from '@yabetoopay/node';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const session = await yabetoo.sessions.create({
+  accountId: 'acct_xxxxxxxx',
+  total: 5000,
+  currency: 'xaf',
+  successUrl: 'https://votre-site.com/succes',
+  cancelUrl: 'https://votre-site.com/annuler',
+  items: [
+    {
+      productId: 'prod_123',
+      productName: 'Plan Premium',
+      quantity: 1,
+      price: 5000,
+    },
+  ],
+});
+
+// Redirigez le client vers session.url
+console.log(session.url);
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
+
+yabetoo = Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX')
+
+session = yabetoo.sessions.create(CreateCheckoutSession(
+    account_id='acct_xxxxxxxx',
+    total=5000,
+    currency='xaf',
+    success_url='https://votre-site.com/succes',
+    cancel_url='https://votre-site.com/annuler',
+    items=[
+        CheckoutItem(
+            product_id='prod_123',
+            product_name='Plan Premium',
+            quantity=1,
+            price=5000
+        )
+    ]
+))
+
+# Redirigez le client vers session.url
+print(session.url)
+```
+
+```php PHP
+<?php
+require_once('vendor/autoload.php');
+
+$yabetoo = new \Yabetoo\YabetooClient('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+$session = $yabetoo->sessions->create([
+  'accountId' => 'acct_xxxxxxxx',
+  'total' => 5000,
+  'currency' => 'xaf',
+  'successUrl' => 'https://votre-site.com/succes',
+  'cancelUrl' => 'https://votre-site.com/annuler',
+  'items' => [
+    [
+      'productId' => 'prod_123',
+      'productName' => 'Plan Premium',
+      'quantity' => 1,
+      'price' => 5000
+    ]
+  ]
+]);
+
+// Redirigez le client vers $session->url
+echo $session->url;
+?>
+```
+
 </CodeGroup>
 
 ### Option B : Intégration personnalisée
@@ -143,30 +172,64 @@ curl -X POST https://buy.api.yabetoopay.com/v1/sessions \
 Pour un contrôle total sur l'expérience de paiement, utilisez l'API Payment Intent.
 
 <CodeGroup>
-```javascript JavaScript
-import Yabetoo from "yabetoo";
 
-const yabetoo = new Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+```bash curl
+# Étape 1 : Créer l'intention de paiement
+curl https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -d '{
+    "amount": 5000,
+    "currency": "xaf",
+    "description": "Abonnement Plan Premium"
+  }'
+
+# Étape 2 : Confirmer avec le moyen de paiement du client
+curl https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -d '{
+    "client_secret": "pi_xxx_secret_yyy",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "receipt_email": "jean@example.com",
+    "payment_method_data": {
+      "type": "momo",
+      "momo": {
+        "country": "cg",
+        "msisdn": "242123456789",
+        "operator_name": "mtn"
+      }
+    }
+  }'
+```
+
+```javascript Node.js
+import { Yabetoo } from '@yabetoopay/node';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
 // Étape 1 : Créer l'intention de paiement
-const intent = await yabetoo.payments.create({
+const intent = await yabetoo.paymentIntents.create({
   amount: 5000,
-  currency: "xaf",
-  description: "Abonnement Plan Premium",
+  currency: 'xaf',
+  description: 'Abonnement Plan Premium',
 });
 
 // Étape 2 : Confirmer avec le moyen de paiement du client
-const payment = await yabetoo.payments.confirm(intent.id, {
-  clientSecret: intent.clientSecret,
-  firstName: "Jean",
-  lastName: "Dupont",
-  receiptEmail: "jean@example.com",
-  paymentMethodData: {
-    type: "momo",
+const payment = await yabetoo.paymentIntents.confirm({
+  client_secret: intent.client_secret,
+  first_name: 'Jean',
+  last_name: 'Dupont',
+  receipt_email: 'jean@example.com',
+  payment_method_data: {
+    type: 'momo',
     momo: {
-      country: "cg",
-      msisdn: "242123456789",
-      operatorName: "mtn",
+      country: 'cg',
+      msisdn: '242123456789',
+      operator_name: 'mtn',
     },
   },
 });
@@ -183,29 +246,29 @@ from yabetoo.models.payment import (
     MomoData
 )
 
-yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+yabetoo = Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX')
 
 # Étape 1 : Créer l'intention de paiement
-intent = yabetoo.payments.create(CreateIntentRequest(
+intent = yabetoo.payment_intents.create(CreateIntentRequest(
     amount=5000,
-    currency="xaf",
-    description="Abonnement Plan Premium"
+    currency='xaf',
+    description='Abonnement Plan Premium'
 ))
 
 # Étape 2 : Confirmer avec le moyen de paiement du client
-payment = yabetoo.payments.confirm(
+payment = yabetoo.payment_intents.confirm(
     payment_id=intent.id,
     data=ConfirmIntentRequest(
         client_secret=intent.client_secret,
-        first_name="Jean",
-        last_name="Dupont",
-        receipt_email="jean@example.com",
+        first_name='Jean',
+        last_name='Dupont',
+        receipt_email='jean@example.com',
         payment_method_data=PaymentMethodData(
-            type="momo",
+            type='momo',
             momo=MomoData(
-                country="cg",
-                msisdn="242123456789",
-                operator_name="mtn"
+                country='cg',
+                msisdn='242123456789',
+                operator_name='mtn'
             )
         )
     )
@@ -213,6 +276,40 @@ payment = yabetoo.payments.confirm(
 
 print(payment.status)  # "succeeded"
 ```
+
+```php PHP
+<?php
+require_once('vendor/autoload.php');
+
+$yabetoo = new \Yabetoo\YabetooClient('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+// Étape 1 : Créer l'intention de paiement
+$intent = $yabetoo->paymentIntents->create([
+  'amount' => 5000,
+  'currency' => 'xaf',
+  'description' => 'Abonnement Plan Premium'
+]);
+
+// Étape 2 : Confirmer avec le moyen de paiement du client
+$payment = $yabetoo->paymentIntents->confirm([
+  'client_secret' => $intent->client_secret,
+  'first_name' => 'Jean',
+  'last_name' => 'Dupont',
+  'receipt_email' => 'jean@example.com',
+  'payment_method_data' => [
+    'type' => 'momo',
+    'momo' => [
+      'country' => 'cg',
+      'msisdn' => '242123456789',
+      'operator_name' => 'mtn'
+    ]
+  ]
+]);
+
+echo $payment->status; // "succeeded"
+?>
+```
+
 </CodeGroup>
 
 ## Étape 4 : Testez votre intégration
