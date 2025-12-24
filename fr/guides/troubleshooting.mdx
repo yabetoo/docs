@@ -65,14 +65,20 @@ const response = await fetch("https://pay.sandbox.yabetoopay.com/v1/payment-inte
 2. Confirmez que le client utilise le bon opérateur (MTN ou Airtel)
 3. Demandez au client de vérifier son inscription Mobile Money
 
-### LOW_BALANCE
+### LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED
 
-**Problème :** Le paiement échoue pour fonds insuffisants.
+**Problème :** Le paiement échoue pour fonds insuffisants, limite de transaction atteinte, ou transaction non autorisée.
+
+**Causes :**
+- Fonds insuffisants dans le compte Mobile Money
+- Limite de transaction quotidienne ou mensuelle atteinte
+- Transaction bloquée par l'opérateur Mobile Money
 
 **Solutions :**
-1. Affichez un message clair au client
+1. Affichez un message clair au client expliquant la raison de l'échec
 2. Suggérez-lui de recharger son compte Mobile Money
-3. Permettez-lui de réessayer après la recharge
+3. Demandez-lui de vérifier ses limites de transaction avec son opérateur
+4. Permettez-lui de réessayer après avoir résolu le problème
 
 ## Problèmes de webhooks
 
