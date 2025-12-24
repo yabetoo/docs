@@ -51,7 +51,7 @@ Ces numéros simulent différents types d'échecs de transaction. Utilisez-les p
 | `242050017890` | Airtel Money | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`     |
 | `46733123450`  | MTN MoMo     | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`     |
 | `46733123451`  | MTN MoMo     | Congo-Brazzaville | `failed` | `APPROVAL_REJECTED`             |
-| `46733123455`  | MTN MoMo     | Congo-Brazzaville | `failed` | `PAYER_NOT_FOUND`               |
+| `46733123455`  | MTN MoMo     | Congo-Brazzaville | `failed` | `PAYEE_NOT_FOUND`               |
 | `46733123456`  | MTN MoMo     | Congo-Brazzaville | `failed` | `PAYEE_NOT_ALLOWED_TO_RECEIVE`  |
 | `46733123457`  | MTN MoMo     | Congo-Brazzaville | `failed` | `NOT_ALLOWED`                   |
 
@@ -85,7 +85,7 @@ Chaque numéro de test est associé à un statut prédéfini (réussi, échoué 
 | `EXPIRED`                                           | La demande de paiement a expiré avant que l'utilisateur ne prenne des mesures.              |
 | `TIMEOUT`                                           | La session de paiement est restée inactive trop longtemps et a expiré.                       |
 | `PAYER_DELAYED`                                     | Le payeur a mis trop de temps à confirmer, mais la transaction a finalement réussi.         |
-| `PAYER_NOT_FOUND`                                   | Le numéro du payeur n'existe pas ou n'est pas enregistré auprès de l'opérateur.            |
+| `PAYEE_NOT_FOUND`                                   | Le numéro du payeur n'existe pas ou n'est pas enregistré auprès de l'opérateur.            |
 | `PAYEE_NOT_ALLOWED_TO_RECEIVE`                      | Le compte du bénéficiaire n'est pas autorisé à recevoir des fonds.                         |
 | `NOT_ALLOWED`                                       | La transaction n'est pas autorisée en raison de restrictions de configuration ou de politique.|
 | `LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED` | Le solde du payeur est trop faible ou le compte du bénéficiaire n'est pas autorisé à recevoir des fonds. |
