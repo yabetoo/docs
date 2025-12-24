@@ -45,29 +45,126 @@ Le fournisseur Mobile Money confirme le paiement et notifie Yabetoo.
 
 Lors de la confirmation d'une intention de paiement, vous devez fournir les détails Mobile Money :
 
-```javascript
-const confirmation = await fetch(
-  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
-    },
-    body: JSON.stringify({
-      client_secret: "pi_xxx_secret_xxx",
-      payment_method_data: {
-        type: "momo",
-        momo: {
-          country: "cg",
-          msisdn: "+242066594470",
-          operator_name: "mtn",
-        },
-      },
-    }),
-  }
-);
+<CodeGroup>
+
+```bash curl
+curl https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -d '{
+    "client_secret": "pi_xxx_secret_xxx",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "receipt_email": "jean@exemple.com",
+    "payment_method_data": {
+      "type": "momo",
+      "momo": {
+        "country": "cg",
+        "msisdn": "+242066594470",
+        "operator_name": "mtn"
+      }
+    }
+  }'
 ```
+
+```javascript Node.js
+import { Yabetoo } from '@yabetoopay/node';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const confirmation = await yabetoo.paymentIntents.confirm({
+  client_secret: 'pi_xxx_secret_xxx',
+  first_name: 'Jean',
+  last_name: 'Dupont',
+  receipt_email: 'jean@exemple.com',
+  payment_method_data: {
+    type: 'momo',
+    momo: {
+      country: 'cg',
+      msisdn: '+242066594470',
+      operator_name: 'mtn',
+    },
+  },
+});
+```
+
+```python Python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX')
+
+confirmation = yabetoo.payment_intents.confirm(
+  client_secret='pi_xxx_secret_xxx',
+  first_name='Jean',
+  last_name='Dupont',
+  receipt_email='jean@exemple.com',
+  payment_method_data={
+    'type': 'momo',
+    'momo': {
+      'country': 'cg',
+      'msisdn': '+242066594470',
+      'operator_name': 'mtn'
+    }
+  }
+)
+```
+
+```php PHP
+<?php
+require_once('vendor/autoload.php');
+
+$yabetoo = new \Yabetoo\YabetooClient('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+$confirmation = $yabetoo->paymentIntents->confirm([
+  'client_secret' => 'pi_xxx_secret_xxx',
+  'first_name' => 'Jean',
+  'last_name' => 'Dupont',
+  'receipt_email' => 'jean@exemple.com',
+  'payment_method_data' => [
+    'type' => 'momo',
+    'momo' => [
+      'country' => 'cg',
+      'msisdn' => '+242066594470',
+      'operator_name' => 'mtn'
+    ]
+  ]
+]);
+?>
+```
+
+```java Java
+import com.yabetoo.YabetooClient;
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.param.PaymentIntentConfirmParams;
+import com.yabetoo.param.PaymentMethodData;
+import com.yabetoo.param.MomoData;
+
+YabetooClient yabetoo = new YabetooClient("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+MomoData momoData = MomoData.builder()
+    .setCountry("cg")
+    .setMsisdn("+242066594470")
+    .setOperatorName("mtn")
+    .build();
+
+PaymentMethodData paymentMethodData = PaymentMethodData.builder()
+    .setType("momo")
+    .setMomo(momoData)
+    .build();
+
+PaymentIntentConfirmParams params = PaymentIntentConfirmParams.builder()
+    .setClientSecret("pi_xxx_secret_xxx")
+    .setFirstName("Jean")
+    .setLastName("Dupont")
+    .setReceiptEmail("jean@exemple.com")
+    .setPaymentMethodData(paymentMethodData)
+    .build();
+
+PaymentIntent confirmation = yabetoo.paymentIntents().confirm(params);
+```
+
+</CodeGroup>
 
 ### Champs requis
 

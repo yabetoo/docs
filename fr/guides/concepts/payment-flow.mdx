@@ -87,6 +87,23 @@ $paymentIntent = $yabetoo->paymentIntents->create([
 ?>
 ```
 
+```java Java
+import com.yabetoo.YabetooClient;
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.param.PaymentIntentCreateParams;
+
+YabetooClient yabetoo = new YabetooClient("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+    .setAmount(5000L)
+    .setCurrency("xaf")
+    .build();
+
+PaymentIntent paymentIntent = yabetoo.paymentIntents().create(params);
+
+// Retourne : { id: "pi_xxx", client_secret: "...", amount: 5000, currency: "xaf" }
+```
+
 </CodeGroup>
 
 À cette étape :
@@ -186,6 +203,37 @@ $confirmedIntent = $yabetoo->paymentIntents->confirm([
 ?>
 ```
 
+```java Java
+import com.yabetoo.YabetooClient;
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.param.PaymentIntentConfirmParams;
+import com.yabetoo.param.PaymentMethodData;
+import com.yabetoo.param.MomoData;
+
+YabetooClient yabetoo = new YabetooClient("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+MomoData momoData = MomoData.builder()
+    .setCountry("cg")
+    .setMsisdn("+242066594470")
+    .setOperatorName("mtn")
+    .build();
+
+PaymentMethodData paymentMethodData = PaymentMethodData.builder()
+    .setType("momo")
+    .setMomo(momoData)
+    .build();
+
+PaymentIntentConfirmParams params = PaymentIntentConfirmParams.builder()
+    .setClientSecret(paymentIntent.getClientSecret())
+    .setFirstName("Jean")
+    .setLastName("Dupont")
+    .setReceiptEmail("jean@exemple.com")
+    .setPaymentMethodData(paymentMethodData)
+    .build();
+
+PaymentIntent confirmedIntent = yabetoo.paymentIntents().confirm(params);
+```
+
 </CodeGroup>
 
 Après la confirmation :
@@ -273,7 +321,13 @@ curl https://buy.api.yabetoopay.com/v1/sessions \
     "currency": "xaf",
     "accountId": "acct_XXXXXXXX",
     "successUrl": "https://votresite.com/success",
-    "cancelUrl": "https://votresite.com/cancel"
+    "cancelUrl": "https://votresite.com/cancel",
+    "items": [{
+      "productId": "prod_123",
+      "productName": "Plan Premium",
+      "quantity": 1,
+      "price": 5000
+    }]
   }'
 ```
 
@@ -288,6 +342,14 @@ const session = await yabetoo.sessions.create({
   accountId: 'acct_XXXXXXXX',
   successUrl: 'https://votresite.com/success',
   cancelUrl: 'https://votresite.com/cancel',
+  items: [
+    {
+      productId: 'prod_123',
+      productName: 'Plan Premium',
+      quantity: 1,
+      price: 5000,
+    },
+  ],
 });
 
 // Redirigez le client vers session.url
@@ -295,16 +357,25 @@ const session = await yabetoo.sessions.create({
 
 ```python Python
 from yabetoo import Yabetoo
+from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
 
 yabetoo = Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX')
 
-session = yabetoo.sessions.create(
+session = yabetoo.sessions.create(CreateCheckoutSession(
   total=5000,
   currency='xaf',
   account_id='acct_XXXXXXXX',
   success_url='https://votresite.com/success',
-  cancel_url='https://votresite.com/cancel'
-)
+  cancel_url='https://votresite.com/cancel',
+  items=[
+    CheckoutItem(
+      product_id='prod_123',
+      product_name='Plan Premium',
+      quantity=1,
+      price=5000
+    )
+  ]
+))
 
 # Redirigez le client vers session.url
 ```
@@ -320,11 +391,48 @@ $session = $yabetoo->sessions->create([
   'currency' => 'xaf',
   'accountId' => 'acct_XXXXXXXX',
   'successUrl' => 'https://votresite.com/success',
-  'cancelUrl' => 'https://votresite.com/cancel'
+  'cancelUrl' => 'https://votresite.com/cancel',
+  'items' => [
+    [
+      'productId' => 'prod_123',
+      'productName' => 'Plan Premium',
+      'quantity' => 1,
+      'price' => 5000
+    ]
+  ]
 ]);
 
 // Redirigez le client vers $session->url
 ?>
+```
+
+```java Java
+import com.yabetoo.YabetooClient;
+import com.yabetoo.model.CheckoutSession;
+import com.yabetoo.param.CheckoutSessionCreateParams;
+import com.yabetoo.param.CheckoutItem;
+
+YabetooClient yabetoo = new YabetooClient("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+CheckoutItem item = CheckoutItem.builder()
+    .setProductId("prod_123")
+    .setProductName("Plan Premium")
+    .setQuantity(1)
+    .setPrice(5000L)
+    .build();
+
+CheckoutSessionCreateParams params = CheckoutSessionCreateParams.builder()
+    .setTotal(5000L)
+    .setCurrency("xaf")
+    .setAccountId("acct_XXXXXXXX")
+    .setSuccessUrl("https://votresite.com/success")
+    .setCancelUrl("https://votresite.com/cancel")
+    .addItem(item)
+    .build();
+
+CheckoutSession session = yabetoo.sessions().create(params);
+
+// Redirigez le client vers session.getUrl()
 ```
 
 </CodeGroup>

@@ -165,6 +165,36 @@ echo $session->url;
 ?>
 ```
 
+```java Java
+import com.yabetoo.YabetooClient;
+import com.yabetoo.model.CheckoutSession;
+import com.yabetoo.param.CheckoutSessionCreateParams;
+import com.yabetoo.param.CheckoutItem;
+
+YabetooClient yabetoo = new YabetooClient("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+CheckoutItem item = CheckoutItem.builder()
+    .setProductId("prod_123")
+    .setProductName("Plan Premium")
+    .setQuantity(1)
+    .setPrice(5000L)
+    .build();
+
+CheckoutSessionCreateParams params = CheckoutSessionCreateParams.builder()
+    .setAccountId("acct_xxxxxxxx")
+    .setTotal(5000L)
+    .setCurrency("xaf")
+    .setSuccessUrl("https://votre-site.com/succes")
+    .setCancelUrl("https://votre-site.com/annuler")
+    .addItem(item)
+    .build();
+
+CheckoutSession session = yabetoo.sessions().create(params);
+
+// Redirigez le client vers session.getUrl()
+System.out.println(session.getUrl());
+```
+
 </CodeGroup>
 
 ### Option B : Intégration personnalisée
@@ -308,6 +338,50 @@ $payment = $yabetoo->paymentIntents->confirm([
 
 echo $payment->status; // "succeeded"
 ?>
+```
+
+```java Java
+import com.yabetoo.YabetooClient;
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.param.PaymentIntentCreateParams;
+import com.yabetoo.param.PaymentIntentConfirmParams;
+import com.yabetoo.param.PaymentMethodData;
+import com.yabetoo.param.MomoData;
+
+YabetooClient yabetoo = new YabetooClient("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+// Étape 1 : Créer l'intention de paiement
+PaymentIntentCreateParams createParams = PaymentIntentCreateParams.builder()
+    .setAmount(5000L)
+    .setCurrency("xaf")
+    .setDescription("Abonnement Plan Premium")
+    .build();
+
+PaymentIntent intent = yabetoo.paymentIntents().create(createParams);
+
+// Étape 2 : Confirmer avec le moyen de paiement du client
+MomoData momoData = MomoData.builder()
+    .setCountry("cg")
+    .setMsisdn("242123456789")
+    .setOperatorName("mtn")
+    .build();
+
+PaymentMethodData paymentMethodData = PaymentMethodData.builder()
+    .setType("momo")
+    .setMomo(momoData)
+    .build();
+
+PaymentIntentConfirmParams confirmParams = PaymentIntentConfirmParams.builder()
+    .setClientSecret(intent.getClientSecret())
+    .setFirstName("Jean")
+    .setLastName("Dupont")
+    .setReceiptEmail("jean@example.com")
+    .setPaymentMethodData(paymentMethodData)
+    .build();
+
+PaymentIntent payment = yabetoo.paymentIntents().confirm(confirmParams);
+
+System.out.println(payment.getStatus()); // "succeeded"
 ```
 
 </CodeGroup>
