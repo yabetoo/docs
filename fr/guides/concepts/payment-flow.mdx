@@ -33,25 +33,61 @@ sequenceDiagram
 
 Une intention de paiement représente votre intention de collecter un paiement. Elle suit le cycle de vie du paiement et stocke les informations sur la transaction.
 
-```javascript
-const response = await fetch(
-  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
-    },
-    body: JSON.stringify({
-      amount: 5000,
-      currency: "xaf",
-    }),
-  }
-);
+<CodeGroup>
 
-const paymentIntent = await response.json();
+```bash curl
+curl https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -d '{
+    "amount": 5000,
+    "currency": "xaf"
+  }'
+```
+
+```javascript Node.js
+import { Yabetoo } from '@yabetoopay/node';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const paymentIntent = await yabetoo.paymentIntents.create({
+  amount: 5000,
+  currency: 'xaf',
+});
+
 // Retourne : { id: "pi_xxx", client_secret: "...", amount: 5000, currency: "xaf" }
 ```
+
+```python Python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX')
+
+payment_intent = yabetoo.payment_intents.create(
+  amount=5000,
+  currency='xaf'
+)
+
+# Retourne : { id: "pi_xxx", client_secret: "...", amount: 5000, currency: "xaf" }
+```
+
+```php PHP
+<?php
+require_once('vendor/autoload.php');
+
+$yabetoo = new \Yabetoo\YabetooClient('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+$paymentIntent = $yabetoo->paymentIntents->create([
+  'amount' => 5000,
+  'currency' => 'xaf'
+]);
+
+// Retourne : [ 'id' => 'pi_xxx', 'client_secret' => '...', 'amount' => 5000, 'currency' => 'xaf' ]
+?>
+```
+
+</CodeGroup>
 
 À cette étape :
 - Aucun argent n'a été transféré
@@ -62,32 +98,95 @@ const paymentIntent = await response.json();
 
 La confirmation déclenche le paiement réel. Vous fournissez les détails du moyen de paiement du client (informations Mobile Money).
 
-```javascript
-const response = await fetch(
-  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
-    },
-    body: JSON.stringify({
-      client_secret: paymentIntent.client_secret,
-      first_name: "Jean",
-      last_name: "Dupont",
-      receipt_email: "jean@exemple.com",
-      payment_method_data: {
-        type: "momo",
-        momo: {
-          country: "cg",
-          msisdn: "+242066594470",
-          operator_name: "mtn",
-        },
-      },
-    }),
-  }
-);
+<CodeGroup>
+
+```bash curl
+curl https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -d '{
+    "client_secret": "pi_xxx_secret_yyy",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "receipt_email": "jean@exemple.com",
+    "payment_method_data": {
+      "type": "momo",
+      "momo": {
+        "country": "cg",
+        "msisdn": "+242066594470",
+        "operator_name": "mtn"
+      }
+    }
+  }'
 ```
+
+```javascript Node.js
+import { Yabetoo } from '@yabetoopay/node';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const confirmedIntent = await yabetoo.paymentIntents.confirm({
+  client_secret: paymentIntent.client_secret,
+  first_name: 'Jean',
+  last_name: 'Dupont',
+  receipt_email: 'jean@exemple.com',
+  payment_method_data: {
+    type: 'momo',
+    momo: {
+      country: 'cg',
+      msisdn: '+242066594470',
+      operator_name: 'mtn',
+    },
+  },
+});
+```
+
+```python Python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX')
+
+confirmed_intent = yabetoo.payment_intents.confirm(
+  client_secret=payment_intent.client_secret,
+  first_name='Jean',
+  last_name='Dupont',
+  receipt_email='jean@exemple.com',
+  payment_method_data={
+    'type': 'momo',
+    'momo': {
+      'country': 'cg',
+      'msisdn': '+242066594470',
+      'operator_name': 'mtn'
+    }
+  }
+)
+```
+
+```php PHP
+<?php
+require_once('vendor/autoload.php');
+
+$yabetoo = new \Yabetoo\YabetooClient('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+$confirmedIntent = $yabetoo->paymentIntents->confirm([
+  'client_secret' => $paymentIntent->client_secret,
+  'first_name' => 'Jean',
+  'last_name' => 'Dupont',
+  'receipt_email' => 'jean@exemple.com',
+  'payment_method_data' => [
+    'type' => 'momo',
+    'momo' => [
+      'country' => 'cg',
+      'msisdn' => '+242066594470',
+      'operator_name' => 'mtn'
+    ]
+  ]
+]);
+?>
+```
+
+</CodeGroup>
 
 Après la confirmation :
 - Le client reçoit une notification push sur son téléphone
@@ -162,24 +261,73 @@ Lorsqu'un paiement échoue, vous pouvez recevoir l'un de ces codes d'erreur :
 
 Pour une intégration plus simple, utilisez les Sessions de paiement. Yabetoo gère l'interface de paiement complète :
 
-```javascript
-const session = await fetch("https://buy.api.yabetoopay.com/v1/sessions", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
-  },
-  body: JSON.stringify({
-    total: 5000,
-    currency: "xaf",
-    accountId: "acct_XXXXXXXX",
-    successUrl: "https://votresite.com/success",
-    cancelUrl: "https://votresite.com/cancel",
-  }),
+<CodeGroup>
+
+```bash curl
+curl https://buy.api.yabetoopay.com/v1/sessions \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -d '{
+    "total": 5000,
+    "currency": "xaf",
+    "accountId": "acct_XXXXXXXX",
+    "successUrl": "https://votresite.com/success",
+    "cancelUrl": "https://votresite.com/cancel"
+  }'
+```
+
+```javascript Node.js
+import { Yabetoo } from '@yabetoopay/node';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+const session = await yabetoo.sessions.create({
+  total: 5000,
+  currency: 'xaf',
+  accountId: 'acct_XXXXXXXX',
+  successUrl: 'https://votresite.com/success',
+  cancelUrl: 'https://votresite.com/cancel',
 });
 
 // Redirigez le client vers session.url
 ```
+
+```python Python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX')
+
+session = yabetoo.sessions.create(
+  total=5000,
+  currency='xaf',
+  account_id='acct_XXXXXXXX',
+  success_url='https://votresite.com/success',
+  cancel_url='https://votresite.com/cancel'
+)
+
+# Redirigez le client vers session.url
+```
+
+```php PHP
+<?php
+require_once('vendor/autoload.php');
+
+$yabetoo = new \Yabetoo\YabetooClient('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+
+$session = $yabetoo->sessions->create([
+  'total' => 5000,
+  'currency' => 'xaf',
+  'accountId' => 'acct_XXXXXXXX',
+  'successUrl' => 'https://votresite.com/success',
+  'cancelUrl' => 'https://votresite.com/cancel'
+]);
+
+// Redirigez le client vers $session->url
+?>
+```
+
+</CodeGroup>
 
 <Note>
   Pour plus de détails sur chaque étape, consultez la [documentation de l'API Payment Intent](/fr/api-reference/payment-intent/create).
