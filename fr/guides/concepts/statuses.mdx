@@ -33,9 +33,10 @@ stateDiagram-v2
 
 | Statut | Description |
 |--------|-------------|
-| `open` | Session créée, en attente du client |
-| `complete` | Le client a effectué le paiement |
+| `pending` | Session créée, en attente de paiement |
+| `complete` | Paiement effectué avec succès |
 | `expired` | Session expirée sans paiement |
+| `canceled` | Session annulée |
 
 ## Statuts des décaissements
 
