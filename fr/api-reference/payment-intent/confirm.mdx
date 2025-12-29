@@ -1,5 +1,252 @@
 ---
-title: Confirmer une intention
-description: Confirmez une intention de paiement avec une méthode de paiement.
-openapi: "POST /v1/payment-intents/{id}/confirm"
+title: "Confirmer une intention de paiement"
+description: "Confirmez une intention de paiement pour traiter le paiement."
 ---
+
+## Endpoint
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/payment-intents   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
+```
+
+## Authentification
+
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Corps de la requête
+
+| Paramètre | Type | Obligatoire | Description |
+|-----------|------|-------------|-------------|
+| `client_secret` | `string` | Oui | Le secret client de l'intention de paiement |
+| `first_name` | `string` | Non | Prénom du client |
+| `last_name` | `string` | Non | Nom du client |
+| `receipt_email` | `string` | Non | Adresse email du client |
+| `payment_method_data` | `object` | Oui | Détails de la méthode de paiement |
+
+### Structure payment_method_data
+
+```json
+{
+  "type": "momo",
+  "momo": {
+    "country": "cg",
+    "msisdn": "+242123456789",
+    "operator_name": "mtn"
+  }
+}
+```
+
+| Champ | Description |
+|-------|-------------|
+| `type` | Type de méthode de paiement (`momo` pour Mobile Money) |
+| `momo.country` | Code pays (ex: `cg`, `cm`) |
+| `momo.msisdn` | Numéro de téléphone au format international |
+| `momo.operator_name` | Nom de l'opérateur (`mtn`, `airtel`) |
+
+## Exemple de requête
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "client_secret": "YOUR_CLIENT_SECRET",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "receipt_email": "jean.dupont@example.com",
+    "payment_method_data": {
+      "type": "momo",
+      "momo": {
+        "country": "cg",
+        "msisdn": "+242123456789",
+        "operator_name": "mtn"
+      }
+    }
+  }'
+```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const confirmation = await yabetoo.payments.confirm("PAYMENT_INTENT_ID", {
+  clientSecret: "YOUR_CLIENT_SECRET",
+  firstName: "Jean",
+  lastName: "Dupont",
+  receiptEmail: "jean.dupont@example.com",
+  paymentMethodData: {
+    type: "momo",
+    momo: {
+      country: "cg",
+      msisdn: "+242123456789",
+      operatorName: "mtn",
+    },
+  },
+});
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.payment import ConfirmIntentRequest, PaymentMethodData, MomoData
+
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
+
+confirmation = yabetoo.payments.confirm(
+    payment_id="PAYMENT_INTENT_ID",
+    data=ConfirmIntentRequest(
+        client_secret="YOUR_CLIENT_SECRET",
+        first_name="Jean",
+        last_name="Dupont",
+        receipt_email="jean.dupont@example.com",
+        payment_method_data=PaymentMethodData(
+            type="momo",
+            momo=MomoData(
+                country="cg",
+                msisdn="+242123456789",
+                operator_name="mtn"
+            )
+        )
+    )
+)
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$confirmation = $yabetoo->payments->confirm("PAYMENT_INTENT_ID", [
+    "client_secret" => "YOUR_CLIENT_SECRET",
+    "first_name" => "Jean",
+    "last_name" => "Dupont",
+    "receipt_email" => "jean.dupont@example.com",
+    "payment_method_data" => [
+        "type" => "momo",
+        "momo" => [
+            "country" => "cg",
+            "msisdn" => "+242123456789",
+            "operator_name" => "mtn",
+        ],
+    ],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.model.PaymentMethod;
+import com.yabetoo.request.PaymentIntentConfirmRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+PaymentMethod.MomoDetails momoDetails = PaymentMethod.MomoDetails.builder()
+    .msisdn("+242123456789")
+    .country("cg")
+    .operatorName("mtn")
+    .build();
+
+PaymentMethod paymentMethod = PaymentMethod.builder()
+    .type("momo")
+    .momoDetails(momoDetails)
+    .build();
+
+PaymentIntent confirmation = yabetoo.paymentIntents().confirm(
+    "PAYMENT_INTENT_ID",
+    PaymentIntentConfirmRequest.builder()
+        .clientSecret("YOUR_CLIENT_SECRET")
+        .firstName("Jean")
+        .lastName("Dupont")
+        .email("jean.dupont@example.com")
+        .paymentMethod(paymentMethod)
+        .build()
+);
+```
+</CodeGroup>
+
+## Réponse
+
+### 200 OK
+
+```json
+{
+  "intent_id": "pi_9aATHBv8UXuD6H5qrSav",
+  "financial_transaction_id": "832546449",
+  "transaction_id": "3c043d55-e659-4a86-9fab-b377fea9ee6b",
+  "amount": 500,
+  "currency": "xaf",
+  "status": "succeeded",
+  "captured": true,
+  "external_id": "ext_3rxAagDtTSlN9XO96R1slJk14WENvxOlJbCu",
+  "id": "ch_1jro7CEishIEWadybzlm"
+}
+```
+
+### 422 Bad Request
+
+```json
+{
+  "error": {
+    "message": "E_CONFIRMED_INTENT_EXCEPTION: Intent already confirmed",
+    "code": "E_CONFIRMED_INTENT_EXCEPTION"
+  }
+}
+```
+
+### Paiement échoué - Solde insuffisant
+
+```json
+{
+  "error": {
+    "message": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED",
+    "code": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED"
+  }
+}
+```
+
+Cette erreur survient quand :
+- Le client n'a pas assez de fonds sur son compte Mobile Money
+- Le client a atteint sa limite de transaction
+- La transaction n'est pas autorisée par l'opérateur
+
+### Paiement échoué - Délai dépassé
+
+```json
+{
+  "error": {
+    "message": "TIMEOUT",
+    "code": "TIMEOUT"
+  }
+}
+```
+
+Cette erreur survient quand le client n'a pas confirmé le paiement à temps (n'a pas entré son code PIN sur l'invite Mobile Money).
+
+### 401 Unauthorized
+
+```json
+{
+  "error": {
+    "message": "Unauthorized",
+    "code": "Unauthorized"
+  }
+}
+```
+
+<Warning>
+  La gestion des erreurs est importante, car la confirmation peut échouer pour diverses raisons
+  (fonds insuffisants, informations de paiement incorrectes, etc.).
+</Warning>

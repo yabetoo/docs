@@ -1,5 +1,244 @@
 ---
-title: Créer un transfert
-description: Créez un nouveau transfert d'argent international.
-openapi: "POST /v1/remittance"
+title: "Créer un transfert d'argent"
+description: "Envoyez de l'argent à un bénéficiaire pour le compte d'un utilisateur via votre compte professionnel Yabetoo."
 ---
+
+## Endpoint
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/remittance   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/remittance       # Production
+```
+
+## Authentification
+
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+<Note>
+  Sécurité de la clé secrète : Votre clé secrète doit rester confidentielle et ne doit jamais être exposée dans le frontend ou le code côté client. Elle doit uniquement être utilisée côté serveur.
+</Note>
+
+## Corps de la requête
+
+| Paramètre | Type | Obligatoire | Description |
+|-----------|------|-------------|-------------|
+| `amount` | `string` | Oui | Le montant à transférer (dans la plus petite unité monétaire) |
+| `currency` | `string` | Oui | Code de la devise (ex: `XAF`, `USD`) |
+| `first_name` | `string` | Oui | Prénom du bénéficiaire |
+| `last_name` | `string` | Oui | Nom du bénéficiaire |
+| `payment_method_data` | `object` | Oui | Détails de la méthode de paiement |
+| `metadata` | `object` | Non | Métadonnées clé-valeur pour le suivi interne |
+
+### Structure payment_method_data
+
+```json
+{
+  "type": "momo",
+  "momo": {
+    "msisdn": "242066594470",
+    "country": "CG",
+    "operator_name": "mtn"
+  }
+}
+```
+
+| Champ | Description |
+|-------|-------------|
+| `type` | Type de méthode de paiement (`momo` pour Mobile Money) |
+| `momo.msisdn` | Numéro de téléphone du bénéficiaire |
+| `momo.country` | Code pays (ex: `CG`, `CM`) |
+| `momo.operator_name` | Nom de l'opérateur (`mtn`, `airtel`) |
+
+## Exemple de requête
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/remittance \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "amount": "100",
+    "currency": "XAF",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "payment_method_data": {
+      "type": "momo",
+      "momo": {
+        "msisdn": "242066594470",
+        "country": "CG",
+        "operator_name": "mtn"
+      }
+    },
+    "metadata": {
+      "source": "yabetoo-partner-portal"
+    }
+  }'
+```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const remittance = await yabetoo.remittances.create({
+  amount: 100,
+  currency: "XAF",
+  firstName: "Jean",
+  lastName: "Dupont",
+  paymentMethodData: {
+    type: "momo",
+    momo: {
+      msisdn: "242066594470",
+      country: "CG",
+      operatorName: "mtn",
+    },
+  },
+  metadata: {
+    source: "yabetoo-partner-portal",
+  },
+});
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.remittance import CreateRemittanceRequest
+from yabetoo.models.payment import PaymentMethodData, MomoData
+
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
+
+remittance = yabetoo.remittances.create(CreateRemittanceRequest(
+    amount=100,
+    currency="XAF",
+    first_name="Jean",
+    last_name="Dupont",
+    payment_method_data=PaymentMethodData(
+        type="momo",
+        momo=MomoData(
+            msisdn="242066594470",
+            country="CG",
+            operator_name="mtn"
+        )
+    ),
+    metadata={"source": "yabetoo-partner-portal"}
+))
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$remittance = $yabetoo->remittances->create([
+    "amount" => 100,
+    "currency" => "XAF",
+    "first_name" => "Jean",
+    "last_name" => "Dupont",
+    "payment_method_data" => [
+        "type" => "momo",
+        "momo" => [
+            "msisdn" => "242066594470",
+            "country" => "CG",
+            "operator_name" => "mtn",
+        ],
+    ],
+    "metadata" => [
+        "source" => "yabetoo-partner-portal",
+    ],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Remittance;
+import com.yabetoo.request.RemittanceCreateRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+RemittanceCreateRequest request = RemittanceCreateRequest.builder()
+    .amount(100)
+    .currency("XAF")
+    .firstName("Jean")
+    .lastName("Dupont")
+    .paymentMethodData(
+        RemittanceCreateRequest.PaymentMethodData.builder()
+            .type("momo")
+            .momo(
+                RemittanceCreateRequest.PaymentMethodData.Momo.builder()
+                    .msisdn("242066594470")
+                    .country("CG")
+                    .operatorName("mtn")
+                    .build()
+            )
+            .build()
+    )
+    .putMetadata("source", "yabetoo-partner-portal")
+    .build();
+
+Remittance remittance = yabetoo.remittances().create(request);
+```
+</CodeGroup>
+
+## Réponse
+
+### 200 OK
+
+```json
+{
+  "id": "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "object": "remittance",
+  "amount": 1000,
+  "currency": "xaf",
+  "status": "succeeded",
+  "firstName": "Jean",
+  "lastName": "Dupont",
+  "operatorName": "mtn",
+  "country": "cg",
+  "phone": "242066594470",
+  "type": 1,
+  "shouldExecutedAt": "2025-03-18T09:24:57.555Z",
+  "createdAt": "2025-03-17T10:24:57.559+01:00",
+  "updatedAt": "2025-03-17T10:24:57.559+01:00"
+}
+```
+
+### Statuts du transfert
+
+| Statut | Description |
+|--------|-------------|
+| `processing` | En cours de traitement |
+| `succeeded` | Transfert réussi |
+| `failed` | Transfert échoué |
+| `canceled` | Transfert annulé |
+
+### 400 Mauvaise requête
+
+```json
+{
+  "errors": [
+    {
+      "rule": "required",
+      "field": "currency",
+      "message": "required validation failed"
+    }
+  ]
+}
+```
+
+### 401 Non autorisé
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

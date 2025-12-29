@@ -1,107 +1,261 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: 'Development Environment'
+description: 'Set up your environment to develop and test your Yabetoo integration'
 ---
 
-<Info>
-  **Prerequisite**: Please install Node.js (version 19 or higher) before proceeding. <br />
-  Please upgrade to ```docs.json``` before proceeding and delete the legacy ```mint.json``` file.
-</Info>
+## Sandbox vs Production Mode
 
-Follow these steps to install and run Mintlify on your operating system:
+Yabetoo provides two distinct environments for safe development and testing.
 
-**Step 1**: Install Mintlify:
+<CardGroup cols={2}>
+  <Card title="Sandbox (Test)" icon="flask">
+    Test environment for development. No real transactions are made.
+
+    **Key prefix**: `sk_test_`
+  </Card>
+  <Card title="Production (Live)" icon="rocket">
+    Production environment for real transactions.
+
+    **Key prefix**: `sk_live_`
+  </Card>
+</CardGroup>
+
+## API Keys Configuration
+
+<Warning>
+  Never share your secret API keys. Use environment variables to store them securely.
+</Warning>
+
+### Recommended Environment Variables
+
+Create a `.env` file at the root of your project:
+
+```bash .env
+# Test environment
+YABETOO_SECRET_KEY=sk_test_XXXXXXXXXXXXXXXXXXXXXXXX
+YABETOO_ACCOUNT_ID=acct_xxxxxxxx
+
+# Callback URLs
+YABETOO_SUCCESS_URL=http://localhost:3000/checkout/success
+YABETOO_CANCEL_URL=http://localhost:3000/checkout/cancel
+YABETOO_WEBHOOK_URL=http://localhost:3000/webhooks/yabetoo
+```
+
+### Usage in Your Code
 
 <CodeGroup>
+```javascript JavaScript
+import Yabetoo from "yabetoo";
 
-  ```bash npm
-  npm i -g mintlify
-  ```
-
-```bash yarn
-yarn global add mintlify
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY);
 ```
 
+```python Python
+import os
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo(os.environ.get("YABETOO_SECRET_KEY"))
+```
+
+```php PHP
+<?php
+$yabetoo = new Yabetoo\Yabetoo($_ENV['YABETOO_SECRET_KEY']);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+
+Yabetoo yabetoo = new Yabetoo(System.getenv("YABETOO_SECRET_KEY"));
+```
 </CodeGroup>
 
-**Step 2**: Navigate to the docs directory (where the `docs.json` file is located) and execute the following command:
+## Test Phone Numbers
 
-```bash
-mintlify dev
-```
+In sandbox mode, use these phone numbers to simulate different scenarios:
 
-A local preview of your documentation will be available at `http://localhost:3000`.
-
-### Custom Ports
-
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. To run Mintlify on port 3333, for instance, use this command:
-
-```bash
-mintlify dev --port 3333
-```
-
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
-
-```md
-Port 3000 is already in use. Trying 3001 instead.
-```
-
-## Mintlify Versions
-
-Please note that each CLI release is associated with a specific version of Mintlify. If your local website doesn't align with the production version, please update the CLI:
-
-<CodeGroup>
-
-```bash npm
-npm i -g mintlify@latest
-```
-
-```bash yarn
-yarn global upgrade mintlify
-```
-
-</CodeGroup>
-
-## Validating Links
-
-The CLI can assist with validating reference links made in your documentation. To identify any broken links, use the following command:
-
-```bash
-mintlify broken-links
-```
-
-## Deployment
+| Number | Operator | Behavior |
+|--------|----------|----------|
+| `242000000001` | MTN | Payment succeeds |
+| `242000000002` | MTN | Fails (insufficient funds) |
+| `242000000003` | MTN | Pending 30s, then succeeds |
+| `242000000004` | Airtel | Payment succeeds |
+| `242000000005` | Airtel | Fails (invalid number) |
 
 <Tip>
-  Unlimited editors available under the [Pro
-  Plan](https://mintlify.com/pricing) and above.
+  Test mode transactions don't involve real money. You can test as much as needed.
 </Tip>
 
-If the deployment is successful, you should see the following:
+## Testing Webhooks Locally
 
-<Frame>
-  <img src="/images/checks-passed.png" style={{ borderRadius: '0.5rem' }} />
-</Frame>
+To receive webhooks locally, use a tunneling tool like ngrok:
 
-## Code Formatting
+<Steps>
+  <Step title="Install ngrok">
+    ```bash
+    # macOS
+    brew install ngrok
 
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
+    # or download from https://ngrok.com
+    ```
+  </Step>
+  <Step title="Expose your local server">
+    ```bash
+    ngrok http 3000
+    ```
 
-## Troubleshooting
+    You'll get a URL like `https://abc123.ngrok.io`
+  </Step>
+  <Step title="Configure the webhook in the Dashboard">
+    Go to **Settings** > **Webhooks** and add your ngrok URL:
+
+    ```
+    https://abc123.ngrok.io/webhooks/yabetoo
+    ```
+  </Step>
+</Steps>
+
+## Verify Webhook Signatures
+
+Always verify webhook signatures to ensure they come from Yabetoo:
+
+<CodeGroup>
+```javascript JavaScript
+import crypto from 'crypto';
+
+function verifyWebhookSignature(payload, signature, secret) {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+```
+
+```python Python
+import hmac
+import hashlib
+
+def verify_webhook_signature(payload: str, signature: str, secret: str) -> bool:
+    expected_signature = hmac.new(
+        secret.encode(),
+        payload.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(signature, expected_signature)
+```
+
+```java Java
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.MessageDigest;
+
+public boolean verifyWebhookSignature(String payload, String signature, String secret) {
+    try {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(), "HmacSHA256");
+        mac.init(secretKeySpec);
+        byte[] hash = mac.doFinal(payload.getBytes());
+        String expectedSignature = bytesToHex(hash);
+        return MessageDigest.isEqual(
+            signature.getBytes(),
+            expectedSignature.getBytes()
+        );
+    } catch (Exception e) {
+        return false;
+    }
+}
+```
+</CodeGroup>
+
+## Best Practices
 
 <AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
+  <Accordion title="Error Handling">
+    Always implement robust error handling:
 
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of mintlify: `npm remove -g mintlify`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall mintlify: `npm install -g mintlify`
+    ```python
+    from yabetoo import Yabetoo, YabetooError
+    from yabetoo.errors import ValidationError, APIError
+
+    try:
+        payment = yabetoo.payments.create(data)
+    except ValidationError as e:
+        # Invalid data
+        print(f"Validation error: {e.errors}")
+    except APIError as e:
+        # API error
+        print(f"API error: {e.message}")
+    except YabetooError as e:
+        # Other Yabetoo error
+        print(f"Error: {e}")
+    ```
   </Accordion>
 
-  <Accordion title="Issue: Encountering an unknown error">
-  
-    Solution: Go to the root of your device and delete the \~/.mintlify folder. Afterwards, run `mintlify dev` again.
+  <Accordion title="Idempotency">
+    Use idempotency keys to avoid duplicates on retry:
+
+    ```python
+    payment = yabetoo.payments.create(
+        data,
+        idempotency_key="order_12345_payment"
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="Logging and Monitoring">
+    Log all transactions for debugging:
+
+    ```python
+    import logging
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("yabetoo")
+
+    # Yabetoo SDKs log automatically
+    ```
   </Accordion>
 </AccordionGroup>
 
-Curious about what changed in the CLI version? [Check out the CLI changelog.](https://www.npmjs.com/package/mintlify?activeTab=versions)
+## Pre-Production Checklist
+
+Before going live, verify:
+
+<Steps>
+  <Step title="Complete Testing">
+    - [ ] Test all payment scenarios (success, failure, pending)
+    - [ ] Test webhook reception and processing
+    - [ ] Test refunds and cancellations
+  </Step>
+  <Step title="Security">
+    - [ ] API keys stored in environment variables
+    - [ ] Webhook signature verification implemented
+    - [ ] HTTPS enabled on all endpoints
+  </Step>
+  <Step title="Configuration">
+    - [ ] Production callback URLs configured
+    - [ ] Webhooks pointing to production server
+    - [ ] Production keys (`sk_live_`) in place
+  </Step>
+</Steps>
+
+## Useful Resources
+
+<CardGroup cols={2}>
+  <Card title="Postman Collection" icon="rocket" href="/en/developer-tools/postman">
+    Quickly test the API with our Postman collection
+  </Card>
+  <Card title="API Reference" icon="book" href="/en/api-reference/introduction">
+    Complete API documentation
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/en/api-reference/errors">
+    List of error codes and solutions
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/en/developer-tools/webhook/overview">
+    Webhook configuration and management
+  </Card>
+</CardGroup>

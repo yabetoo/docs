@@ -11,14 +11,254 @@
   "navigation": {
     "languages": [
       {
+        "language": "fr",
+        "tabs": [
+          {
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Pour commencer",
+                "pages": ["fr/introduction", "fr/quickstart", "fr/development"],
+                "icon": "code"
+              },
+              {
+                "group": "Configuration du compte",
+                "pages": ["fr/account/overview", "fr/account/activate"]
+              },
+              {
+                "group": "Concepts clés",
+                "pages": [
+                  "fr/guides/concepts/payment-flow",
+                  "fr/guides/concepts/mobile-money",
+                  "fr/guides/concepts/statuses"
+                ],
+                "icon": "lightbulb"
+              },
+              {
+                "group": "Ressources",
+                "pages": [
+                  "fr/guides/troubleshooting",
+                  "fr/guides/faq",
+                  "fr/guides/glossary"
+                ],
+                "icon": "life-ring"
+              }
+            ]
+          },
+          {
+            "tab": "Paiements",
+            "groups": [
+              {
+                "group": "Pour commencer",
+                "pages": ["fr/payments/overview"]
+              },
+              {
+                "group": "Créer une page de paiement",
+                "pages": [
+                  "fr/payments/checkout-page/intro",
+                  "fr/payments/checkout-page/create"
+                ]
+              },
+              {
+                "group": "Intégration avancée des paiements",
+                "pages": [
+                  "fr/payments/api/overview",
+                  "fr/payments/api/create",
+                  "fr/payments/api/confirm"
+                ]
+              },
+              {
+                "group": "Décaissements",
+                "pages": [
+                  "fr/payments/disbursement/overview",
+                  "fr/payments/disbursement/create",
+                  "fr/payments/disbursement/get"
+                ]
+              },
+              {
+                "group": "Transferts",
+                "pages": [
+                  "fr/payments/remittance/overview",
+                  "fr/payments/remittance/create",
+                  "fr/payments/remittance/get"
+                ]
+              },
+              {
+                "group": "Liens de paiement",
+                "pages": [
+                  "fr/payments/payment-link/intro",
+                  "fr/payments/payment-link/create",
+                  "fr/payments/payment-link/share"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "Outils développeur",
+            "groups": [
+              {
+                "group": "Tests",
+                "pages": [
+                  "fr/developer-tools/test/overview",
+                  "fr/developer-tools/postman"
+                ]
+              },
+              {
+                "group": "Webhook",
+                "pages": [
+                  "fr/developer-tools/webhook/overview",
+                  "fr/developer-tools/webhook/events"
+                ]
+              },
+              {
+                "group": "Bibliothèques",
+                "pages": [
+                  "fr/developer-tools/sdk/javascript",
+                  "fr/developer-tools/sdk/python",
+                  "fr/developer-tools/sdk/php",
+                  "fr/developer-tools/sdk/java"
+                ]
+              },
+              {
+                "group": "Extensions",
+                "pages": ["fr/developer-tools/plugins/wordpress"]
+              }
+            ]
+          },
+          {
+            "tab": "Plateformes & Marchés",
+            "groups": [
+              {
+                "group": "Vue d'ensemble",
+                "pages": ["fr/platforms/overview"],
+                "icon": "globe"
+              },
+              {
+                "group": "Intégrations Plateformes",
+                "pages": [
+                  "fr/platforms/integrations",
+                  "fr/platforms/wordpress"
+                ],
+                "icon": "puzzle"
+              },
+              {
+                "group": "Études de cas",
+                "pages": [
+                  "fr/platforms/examples",
+                  "fr/platforms/examples/saas-platform",
+                  "fr/platforms/examples/school-fees",
+                  "fr/platforms/examples/event-ticketing",
+                  "fr/platforms/examples/delivery-service",
+                  "fr/platforms/examples/savings-vault",
+                  "fr/platforms/examples/ride-hailing"
+                ],
+                "icon": "book"
+              }
+            ]
+          },
+          {
+            "tab": "Référence API",
+            "groups": [
+              {
+                "group": "Documentation API",
+                "pages": [
+                  "fr/api-reference/introduction",
+                  "fr/api-reference/authentication",
+                  "fr/api-reference/errors",
+                  "fr/api-reference/currencies"
+                ]
+              },
+              {
+                "group": "Session de paiement",
+                "pages": [
+                  "fr/api-reference/checkout-session/create",
+                  "fr/api-reference/checkout-session/get"
+                ]
+              },
+              {
+                "group": "Intention de paiement",
+                "pages": [
+                  "fr/api-reference/payment-intent/create",
+                  "fr/api-reference/payment-intent/confirm",
+                  "fr/api-reference/payment-intent/get"
+                ]
+              },
+              {
+                "group": "Décaissement",
+                "pages": [
+                  "fr/api-reference/disbursement/create",
+                  "fr/api-reference/disbursement/get"
+                ]
+              },
+              {
+                "group": "Transfert",
+                "pages": [
+                  "fr/api-reference/remittance/create",
+                  "fr/api-reference/remittance/get",
+                  "fr/api-reference/remittance/all"
+                ]
+              },
+              {
+                "group": "Lien de paiement",
+                "pages": [
+                  "fr/api-reference/payment-link/create",
+                  "fr/api-reference/payment-link/get",
+                  "fr/api-reference/payment-link/all"
+                ]
+              },
+              {
+                "group": "Webhook",
+                "pages": [
+                  "fr/api-reference/webhook/create",
+                  "fr/api-reference/webhook/get",
+                  "fr/api-reference/webhook/all"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
         "language": "en",
         "tabs": [
+          {
+            "tab": "Guides",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": ["en/introduction", "en/quickstart", "en/development"],
+                "icon": "code"
+              },
+              {
+                "group": "Setup account",
+                "pages": ["en/account/overview", "en/account/activate"]
+              },
+              {
+                "group": "Key concepts",
+                "pages": [
+                  "en/guides/concepts/payment-flow",
+                  "en/guides/concepts/mobile-money",
+                  "en/guides/concepts/statuses"
+                ],
+                "icon": "lightbulb"
+              },
+              {
+                "group": "Resources",
+                "pages": [
+                  "en/guides/troubleshooting",
+                  "en/guides/faq",
+                  "en/guides/glossary"
+                ],
+                "icon": "life-ring"
+              }
+            ]
+          },
           {
             "tab": "Payments",
             "groups": [
               {
                 "group": "Get started",
-                "pages": ["en/payments/overview", "en/payments/api-keys"]
+                "pages": ["en/payments/overview"]
               },
               {
                 "group": "Build a checkout page",
@@ -47,7 +287,8 @@
                 "group": "Remittance",
                 "pages": [
                   "en/payments/remittance/overview",
-                  "en/payments/remittance/create"
+                  "en/payments/remittance/create",
+                  "en/payments/remittance/get"
                 ]
               },
               {
@@ -66,7 +307,10 @@
             "groups": [
               {
                 "group": "Testing",
-                "pages": ["en/developer-tools/test/overview"]
+                "pages": [
+                  "en/developer-tools/test/overview",
+                  "en/developer-tools/postman"
+                ]
               },
               {
                 "group": "Webhook",
@@ -78,6 +322,8 @@
               {
                 "group": "Libraries",
                 "pages": [
+                  "en/developer-tools/sdk/javascript",
+                  "en/developer-tools/sdk/python",
                   "en/developer-tools/sdk/php",
                   "en/developer-tools/sdk/java"
                 ]
@@ -89,11 +335,47 @@
             ]
           },
           {
+            "tab": "Platforms & Marketplaces",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": ["en/platforms/overview"],
+                "icon": "globe"
+              },
+              {
+                "group": "Platform Integrations",
+                "pages": [
+                  "en/platforms/integrations",
+                  "en/platforms/wordpress"
+                ],
+                "icon": "puzzle"
+              },
+              {
+                "group": "Case Studies",
+                "pages": [
+                  "en/platforms/examples",
+                  "en/platforms/examples/saas-platform",
+                  "en/platforms/examples/school-fees",
+                  "en/platforms/examples/event-ticketing",
+                  "en/platforms/examples/delivery-service",
+                  "en/platforms/examples/savings-vault",
+                  "en/platforms/examples/ride-hailing"
+                ],
+                "icon": "book"
+              }
+            ]
+          },
+          {
             "tab": "API Reference",
             "groups": [
               {
                 "group": "API Documentation",
-                "pages": ["en/api-reference/introduction"]
+                "pages": [
+                  "en/api-reference/introduction",
+                  "en/api-reference/authentication",
+                  "en/api-reference/errors",
+                  "en/api-reference/currencies"
+                ]
               },
               {
                 "group": "Checkout Session",
@@ -126,137 +408,19 @@
                 ]
               },
               {
+                "group": "Payment Link",
+                "pages": [
+                  "en/api-reference/payment-link/create",
+                  "en/api-reference/payment-link/get",
+                  "en/api-reference/payment-link/all"
+                ]
+              },
+              {
                 "group": "Webhook",
                 "pages": [
                   "en/api-reference/webhook/create",
                   "en/api-reference/webhook/get",
                   "en/api-reference/webhook/all"
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "language": "fr",
-        "tabs": [
-          {
-            "tab": "Paiements",
-            "groups": [
-              {
-                "group": "Pour commencer",
-                "pages": ["fr/payments/overview", "fr/payments/api-keys"]
-              },
-              {
-                "group": "Créer une page de paiement",
-                "pages": [
-                  "fr/payments/checkout-page/intro",
-                  "fr/payments/checkout-page/create"
-                ]
-              },
-              {
-                "group": "Intégration avancée des paiements",
-                "pages": [
-                  "fr/payments/api/overview",
-                  "fr/payments/api/create",
-                  "fr/payments/api/confirm"
-                ]
-              },
-              {
-                "group": "Disbursements",
-                "pages": [
-                  "fr/payments/disbursement/overview",
-                  "fr/payments/disbursement/create",
-                  "fr/payments/disbursement/get"
-                ]
-              },
-              {
-                "group": "Remittance",
-                "pages": [
-                  "fr/payments/remittance/overview",
-                  "fr/payments/remittance/create"
-                ]
-              },
-              {
-                "group": "Liens de paiement",
-                "pages": [
-                  "fr/payments/payment-link/intro",
-                  "fr/payments/payment-link/create",
-                  "fr/payments/payment-link/share"
-                ]
-              }
-            ]
-          },
-          {
-            "tab": "Outils développeur",
-            "groups": [
-              {
-                "group": "Tests",
-                "pages": ["fr/developer-tools/test/overview"]
-              },
-              {
-                "group": "Webhook",
-                "pages": [
-                  "fr/developer-tools/webhook/overview",
-                  "fr/developer-tools/webhook/events"
-                ]
-              },
-              {
-                "group": "Bibliothèques",
-                "pages": [
-                  "fr/developer-tools/sdk/php",
-                  "fr/developer-tools/sdk/java"
-                ]
-              },
-              {
-                "group": "Extensions",
-                "pages": ["fr/developer-tools/plugins/wordpress"]
-              }
-            ]
-          },
-          {
-            "tab": "Référence API",
-            "groups": [
-              {
-                "group": "Documentation API",
-                "pages": ["fr/api-reference/introduction"]
-              },
-              {
-                "group": "Session de paiement",
-                "pages": [
-                  "fr/api-reference/checkout-session/create",
-                  "fr/api-reference/checkout-session/get"
-                ]
-              },
-              {
-                "group": "Intention de paiement",
-                "pages": [
-                  "fr/api-reference/payment-intent/create",
-                  "fr/api-reference/payment-intent/confirm",
-                  "fr/api-reference/payment-intent/get"
-                ]
-              },
-              {
-                "group": "Disbursements",
-                "pages": [
-                  "fr/api-reference/disbursement/create",
-                  "fr/api-reference/disbursement/get"
-                ]
-              },
-              {
-                "group": "Remittance",
-                "pages": [
-                  "fr/api-reference/remittance/create",
-                  "fr/api-reference/remittance/get",
-                  "fr/api-reference/remittance/all"
-                ]
-              },
-              {
-                "group": "Webhook",
-                "pages": [
-                  "fr/api-reference/webhook/create",
-                  "fr/api-reference/webhook/get",
-                  "fr/api-reference/webhook/all"
                 ]
               }
             ]
@@ -287,9 +451,32 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "website": "https://yabetoopay.com/",
+      "facebook": "https://www.facebook.com/Yabetoopay/",
+      "linkedin": "https://www.linkedin.com/company/yabetoopay/"
+    }
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true
+  },
+  "search": {
+    "prompt": "Search documentation..."
+  },
+  "modeToggle": {
+    "default": "light",
+    "isHidden": false
+  },
+  "backgroundImage": "/images/background.png",
+  "rounded": "default",
+  "fonts": {
+    "heading": {
+      "family": "Inter",
+      "weight": 600
+    },
+    "body": {
+      "family": "Inter",
+      "weight": 400
     }
   }
 }

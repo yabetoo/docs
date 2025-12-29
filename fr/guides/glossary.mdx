@@ -1,0 +1,106 @@
+---
+title: Glossaire
+description: Définitions des termes clés utilisés dans la documentation Yabetoo.
+icon: "book"
+---
+
+Ce glossaire définit les termes et concepts clés que vous rencontrerez en travaillant avec Yabetoo.
+
+## A
+
+### API Key (Clé API)
+Un identifiant unique utilisé pour authentifier les requêtes à l'API Yabetoo. Il existe deux types :
+- **Clé secrète** (`sk_test_` ou `sk_live_`) : Utilisée côté serveur, doit rester confidentielle
+- **Clé publique** (`pk_test_` ou `pk_live_`) : Peut être utilisée côté client
+
+### Account ID (ID de compte)
+Votre identifiant marchand unique dans Yabetoo. Disponible dans votre [tableau de bord](https://app.yabetoo.com/developers) et requis pour certains appels API.
+
+## C
+
+### Checkout Session (Session de paiement)
+Une page de paiement hébergée créée par Yabetoo. Vous redirigez les clients vers cette page pour compléter le paiement, et ils sont redirigés vers votre site ensuite.
+
+### Client Secret (Secret client)
+Un token unique associé à une intention de paiement. Utilisé pour confirmer le paiement et empêcher les modifications non autorisées.
+
+### Confirm (Confirmer)
+L'action de finaliser une intention de paiement en fournissant les détails du moyen de paiement du client. Cela déclenche le paiement réel.
+
+## D
+
+### Disbursement (Décaissement)
+Un versement de votre compte Yabetoo vers le compte Mobile Money d'un client. Utilisé pour envoyer de l'argent aux destinataires (remboursements, versements, récompenses, etc.).
+
+## I
+
+### Intent (Intention)
+Voir [Payment Intent](#payment-intent-intention-de-paiement).
+
+## M
+
+### Mobile Money (MoMo)
+Un service de paiement numérique qui permet aux utilisateurs de stocker, envoyer et recevoir de l'argent via leur téléphone mobile. Opérateurs supportés : MTN et Airtel.
+
+### MSISDN
+Mobile Station International Subscriber Directory Number. Le numéro de téléphone complet au format international (ex : `+242066594470`).
+
+## O
+
+### Operator (Opérateur)
+Le fournisseur de service Mobile Money. Yabetoo supporte :
+- **MTN** (`mtn`) : MTN Mobile Money
+- **Airtel** (`airtel`) : Airtel Money
+
+## P
+
+### Payment Intent (Intention de paiement)
+Un objet qui représente votre intention de collecter un paiement. Il suit le cycle de vie du paiement de la création à la confirmation.
+
+### Payment Method (Moyen de paiement)
+Le moyen par lequel un client paie. Dans Yabetoo, c'est généralement le Mobile Money (`momo`).
+
+### Production (Live)
+L'environnement réel où les vrais paiements sont traités. Utilisez les clés `sk_live_` et de vrais numéros de téléphone.
+
+## R
+
+### Remittance (Transfert)
+Un transfert de fonds, généralement pour des paiements transfrontaliers ou programmés. Similaire aux décaissements mais peut avoir des règles de traitement différentes.
+
+## S
+
+### Sandbox (Bac à sable)
+L'environnement de test pour le développement et les tests. Aucun argent réel n'est traité. Utilisez les clés `sk_test_` et les numéros de téléphone de test.
+
+### Secret Key (Clé secrète)
+Votre clé API confidentielle utilisée pour l'authentification côté serveur. Ne jamais exposer dans le code côté client. Préfixée par `sk_test_` (sandbox) ou `sk_live_` (production).
+
+### Session
+Voir [Checkout Session](#checkout-session-session-de-paiement).
+
+### Status (Statut)
+L'état actuel d'un paiement ou d'un transfert. Statuts courants :
+- `pending` : En attente de traitement
+- `processing` : En cours de traitement
+- `succeeded` : Terminé avec succès
+- `failed` : Échec
+
+## W
+
+### Webhook
+Un callback HTTP que Yabetoo envoie à votre serveur lorsque des événements se produisent (ex : paiement terminé). Utilisé pour des notifications d'événements fiables.
+
+### Webhook Secret (Secret webhook)
+Une clé secrète utilisée pour vérifier que les requêtes webhook proviennent réellement de Yabetoo. Disponible dans les paramètres webhook de votre tableau de bord.
+
+## X
+
+### XAF
+Le code de devise ISO 4217 pour le Franc CFA d'Afrique Centrale. La devise utilisée dans les pays de la CEMAC, y compris le Congo-Brazzaville.
+
+---
+
+<Note>
+  Vous ne trouvez pas un terme ? Contactez-nous à support@yabetoopay.com et nous vous aiderons à clarifier et potentiellement l'ajouter à ce glossaire.
+</Note>

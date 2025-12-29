@@ -1,0 +1,191 @@
+---
+title: "WordPress Integration"
+description: "Accept Mobile Money payments on your WordPress WooCommerce store with Yabetoo."
+---
+
+Integrate Yabetoo payments into your WordPress WooCommerce store to accept Mobile Money payments from customers across Africa.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- WordPress 5.0 or higher
+- WooCommerce 4.0 or higher
+- PHP 7.4 or higher
+- A Yabetoo merchant account with API keys
+- SSL certificate installed (HTTPS required)
+
+## Installation
+
+### Method 1: WordPress Plugin Directory (Recommended)
+
+1. Go to your WordPress admin dashboard
+2. Navigate to **Plugins > Add New**
+3. Search for "Yabetoo Payment Gateway"
+4. Click **Install Now**, then **Activate**
+
+### Method 2: Manual Installation
+
+1. Download the plugin from [Yabetoo Dashboard](https://app.yabetoo.com)
+2. Go to **Plugins > Add New > Upload Plugin**
+3. Select the downloaded ZIP file
+4. Click **Install Now**, then **Activate**
+
+## Configuration
+
+### Step 1: Access Plugin Settings
+
+1. Go to **WooCommerce > Settings**
+2. Click on the **Payments** tab
+3. Find "Yabetoo" and click **Manage**
+
+### Step 2: Configure API Keys
+
+```
+Enable/Disable: ✓ Enable Yabetoo Payment Gateway
+Title: Mobile Money Payment
+Description: Pay securely with Mobile Money (MTN, Airtel)
+
+API Settings:
+- Secret Key: sk_test_XXXXXXXXXXXXXXXXXXXXXXXX
+- Public Key: pk_test_XXXXXXXXXXXXXXXXXXXXXXXX
+- Environment: Sandbox (for testing) / Production (for live)
+```
+
+<Warning>
+  Never share your secret key publicly. Keep it secure and only use it on the server side.
+</Warning>
+
+### Step 3: Configure Webhook
+
+1. In your Yabetoo Dashboard, go to **Developers > Webhooks**
+2. Add a new webhook with URL: `https://yourstore.com/?wc-api=yabetoo_webhook`
+3. Select events: `intent.completed`, `disbursement.completed`
+4. Copy the webhook secret and paste it in the plugin settings
+
+### Step 4: Test the Integration
+
+1. Keep the environment set to **Sandbox**
+2. Create a test order on your store
+3. Complete payment using test phone numbers
+4. Verify the order status updates correctly
+
+## Test Phone Numbers
+
+Use these phone numbers in sandbox mode:
+
+| Phone Number | Country | Operator | Result |
+|--------------|---------|----------|--------|
+| 242066594470 | Congo | MTN | Success |
+| 242055000001 | Congo | Airtel | Success |
+| 237670000001 | Cameroon | MTN | Success |
+| 237650000001 | Cameroon | Orange | Success |
+
+## Going Live
+
+Once testing is complete:
+
+1. Log into your [Yabetoo Dashboard](https://app.yabetoo.com)
+2. Complete the account verification process
+3. Get your production API keys
+4. Update the plugin settings:
+   - Replace test keys with production keys
+   - Change environment to **Production**
+5. Update webhook URL to use production endpoint
+
+## Features
+
+### Supported Payment Methods
+
+- **MTN Mobile Money** - Congo, Cameroon, Ivory Coast
+- **Airtel Money** - Congo, Gabon
+- **Orange Money** - Cameroon, Ivory Coast
+
+### Order Management
+
+The plugin automatically:
+- Updates order status when payment is confirmed
+- Sends order confirmation emails
+- Records payment details in order notes
+- Handles webhook notifications
+
+### Customization Options
+
+| Setting | Description |
+|---------|-------------|
+| Title | Payment method name shown at checkout |
+| Description | Text displayed under payment method |
+| Button Text | Customize the pay button text |
+| Logo | Display Yabetoo or operator logos |
+
+## Troubleshooting
+
+### Payment Not Processing
+
+1. Verify API keys are correct
+2. Check SSL certificate is valid
+3. Ensure webhook URL is accessible
+4. Review WooCommerce logs at **WooCommerce > Status > Logs**
+
+### Webhook Not Receiving Events
+
+1. Verify webhook URL is correct in Yabetoo Dashboard
+2. Check your server allows POST requests
+3. Ensure webhook secret matches in both places
+4. Test webhook connectivity from Dashboard
+
+### Order Status Not Updating
+
+1. Check webhook is configured correctly
+2. Verify webhook secret matches
+3. Review PHP error logs
+4. Ensure WooCommerce is up to date
+
+## Hooks and Filters
+
+Developers can customize the plugin behavior:
+
+```php
+// Modify payment description
+add_filter('yabetoo_payment_description', function($description, $order) {
+    return 'Pay for Order #' . $order->get_id();
+}, 10, 2);
+
+// Custom action after successful payment
+add_action('yabetoo_payment_complete', function($order_id, $transaction_id) {
+    // Your custom logic here
+}, 10, 2);
+
+// Modify supported countries
+add_filter('yabetoo_supported_countries', function($countries) {
+    return ['CG', 'CM', 'CI', 'GA'];
+});
+```
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="Which WooCommerce versions are supported?">
+    The plugin supports WooCommerce 4.0 and higher. We recommend keeping WooCommerce updated to the latest version.
+  </Accordion>
+
+  <Accordion title="Can I use Yabetoo with other payment gateways?">
+    Yes, Yabetoo works alongside other payment gateways. Customers can choose their preferred payment method at checkout.
+  </Accordion>
+
+  <Accordion title="How do refunds work?">
+    Refunds can be initiated from the WooCommerce order page. The refund will be processed through Yabetoo and returned to the customer's mobile money account.
+  </Accordion>
+
+  <Accordion title="Is the plugin compatible with WordPress Multisite?">
+    Yes, the plugin can be activated on individual sites within a WordPress Multisite network.
+  </Accordion>
+</AccordionGroup>
+
+## Support
+
+Need help? Contact us:
+
+- Email: support@yabetoopay.com
+- Plugin documentation: [Developer Tools](/en/developer-tools/plugins/wordpress)
+- API documentation: [API Reference](/en/api-reference/introduction)

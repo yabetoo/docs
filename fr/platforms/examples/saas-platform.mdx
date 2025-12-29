@@ -1,0 +1,256 @@
+---
+title: Plateforme SaaS
+description: Comment intégrer Yabetoo pour la facturation d'abonnements et les paiements récurrents dans votre application SaaS.
+icon: "cloud"
+---
+
+Apprenez à implémenter la collecte de paiements pour une plateforme Software-as-a-Service (SaaS) avec Yabetoo. Ce guide couvre la gestion des abonnements, les paiements ponctuels et les changements de forfait.
+
+## Aperçu
+
+Les plateformes SaaS ont besoin de solutions de paiement flexibles pour gérer :
+- La facturation mensuelle et annuelle des abonnements
+- Les achats ponctuels (modules complémentaires, crédits)
+- Les montées et descentes en gamme
+- La gestion des périodes d'essai
+- La gestion des échecs de paiement
+
+<Note>
+  Yabetoo supporte actuellement les paiements ponctuels. Pour la facturation récurrente, vous devrez implémenter une tâche planifiée (cron) qui crée des intentions de paiement à intervalles réguliers.
+</Note>
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Votre App SaaS] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> A
+```
+
+## Implémentation
+
+### 1. Définir vos forfaits tarifaires
+
+D'abord, définissez vos niveaux d'abonnement :
+
+```typescript
+// pricing.ts
+export const PLANS = {
+  starter: {
+    id: 'starter',
+    name: 'Starter',
+    monthlyPrice: 5000,   // 5 000 XAF/mois
+    annualPrice: 50000,   // 50 000 XAF/an (2 mois gratuits)
+    features: ['5 utilisateurs', '10Go stockage', 'Support email']
+  },
+  professional: {
+    id: 'professional',
+    name: 'Professionnel',
+    monthlyPrice: 15000,  // 15 000 XAF/mois
+    annualPrice: 150000,  // 150 000 XAF/an
+    features: ['25 utilisateurs', '100Go stockage', 'Support prioritaire', 'Accès API']
+  },
+  enterprise: {
+    id: 'enterprise',
+    name: 'Entreprise',
+    monthlyPrice: 50000,  // 50 000 XAF/mois
+    annualPrice: 500000,  // 500 000 XAF/an
+    features: ['Utilisateurs illimités', '1To stockage', 'Support 24/7', 'Intégrations personnalisées']
+  }
+};
+```
+
+### 2. Créer un paiement d'abonnement
+
+Quand un utilisateur s'abonne, créez une intention de paiement :
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+async function createSubscriptionPayment(
+  userId: string,
+  planId: string,
+  billingCycle: 'monthly' | 'annual'
+) {
+  const plan = PLANS[planId];
+  const amount = billingCycle === 'monthly' ? plan.monthlyPrice : plan.annualPrice;
+
+  // Créer l'intention de paiement
+  const intent = await yabetoo.payments.create({
+    amount,
+    currency: 'XAF',
+    description: `Forfait ${plan.name} - Abonnement ${billingCycle === 'monthly' ? 'mensuel' : 'annuel'}`,
+    metadata: {
+      userId,
+      planId,
+      billingCycle,
+      subscriptionStart: new Date().toISOString(),
+      type: 'subscription'
+    }
+  });
+
+  // Stocker l'abonnement en attente
+  await db.pendingSubscriptions.create({
+    userId,
+    planId,
+    billingCycle,
+    paymentIntentId: intent.id,
+    status: 'pending'
+  });
+
+  return intent;
+}
+```
+
+### 3. Gestionnaire Webhook pour l'activation
+
+Configurez un webhook pour activer les abonnements quand le paiement réussit :
+
+```typescript
+app.post('/webhooks/yabetoo', async (req, res) => {
+  const event = req.body;
+
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      await handlePaymentSuccess(event.data);
+      break;
+    case 'payment_intent.failed':
+      await handlePaymentFailure(event.data);
+      break;
+  }
+
+  res.json({ received: true });
+});
+
+async function handlePaymentSuccess(data: any) {
+  const { metadata } = data;
+
+  if (metadata.type === 'subscription') {
+    // Activer l'abonnement
+    const subscription = await db.subscriptions.create({
+      userId: metadata.userId,
+      planId: metadata.planId,
+      billingCycle: metadata.billingCycle,
+      status: 'active',
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: calculatePeriodEnd(metadata.billingCycle),
+      paymentIntentId: data.id
+    });
+
+    // Accorder l'accès aux fonctionnalités
+    await grantPlanFeatures(metadata.userId, metadata.planId);
+
+    // Envoyer email de confirmation
+    await sendSubscriptionConfirmation(metadata.userId, subscription);
+  }
+}
+
+function calculatePeriodEnd(billingCycle: string): Date {
+  const now = new Date();
+  if (billingCycle === 'monthly') {
+    return new Date(now.setMonth(now.getMonth() + 1));
+  }
+  return new Date(now.setFullYear(now.getFullYear() + 1));
+}
+```
+
+### 4. Facturation récurrente
+
+Configurez une tâche planifiée pour gérer les paiements récurrents :
+
+```typescript
+// cron-job.ts (exécuté quotidiennement)
+async function processRecurringBilling() {
+  // Trouver les abonnements expirant dans les 3 prochains jours
+  const expiringSubscriptions = await db.subscriptions.findMany({
+    where: {
+      status: 'active',
+      currentPeriodEnd: {
+        lte: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+      }
+    }
+  });
+
+  for (const subscription of expiringSubscriptions) {
+    const plan = PLANS[subscription.planId];
+    const amount = subscription.billingCycle === 'monthly'
+      ? plan.monthlyPrice
+      : plan.annualPrice;
+
+    // Créer le paiement de renouvellement
+    const intent = await yabetoo.payments.create({
+      amount,
+      currency: 'XAF',
+      description: `Forfait ${plan.name} - Renouvellement`,
+      metadata: {
+        userId: subscription.userId,
+        planId: subscription.planId,
+        billingCycle: subscription.billingCycle,
+        subscriptionId: subscription.id,
+        type: 'renewal'
+      }
+    });
+
+    // Notifier l'utilisateur du renouvellement à venir
+    await sendRenewalReminder(subscription.userId, intent);
+  }
+}
+```
+
+## Flux d'abonnement complet
+
+<Steps>
+  <Step title="L'utilisateur choisit un forfait">
+    L'utilisateur sélectionne un forfait et une période de facturation sur votre page de tarifs.
+  </Step>
+  <Step title="Création de l'intention de paiement">
+    Votre backend crée une intention de paiement avec les métadonnées d'abonnement.
+  </Step>
+  <Step title="Collecte des informations de paiement">
+    L'utilisateur saisit son numéro mobile money et confirme le paiement.
+  </Step>
+  <Step title="Traitement du paiement">
+    Yabetoo traite le paiement via MTN ou Airtel Money.
+  </Step>
+  <Step title="Notification Webhook">
+    Yabetoo envoie un webhook quand le paiement réussit ou échoue.
+  </Step>
+  <Step title="Activation de l'abonnement">
+    Votre gestionnaire webhook active l'abonnement et accorde l'accès.
+  </Step>
+  <Step title="Facturation récurrente">
+    Une tâche planifiée crée les paiements de renouvellement avant chaque fin de période.
+  </Step>
+</Steps>
+
+## Bonnes pratiques
+
+<AccordionGroup>
+  <Accordion title="Période de grâce">
+    Implémentez une période de grâce (3-7 jours) pour les échecs de renouvellement avant de suspendre l'accès.
+  </Accordion>
+  <Accordion title="Rappels de paiement">
+    Envoyez des rappels 7 jours, 3 jours et 1 jour avant le renouvellement.
+  </Accordion>
+  <Accordion title="Gestion des échecs">
+    Réessayez automatiquement les paiements échoués (3 tentatives sur 7 jours) avant d'annuler.
+  </Accordion>
+  <Accordion title="Prorata">
+    Calculez équitablement les montants au prorata lors des changements de forfait en cours de cycle.
+  </Accordion>
+</AccordionGroup>
+
+## Ressources associées
+
+<CardGroup cols={2}>
+  <Card title="Intentions de paiement" icon="credit-card" href="/fr/payments/api/overview">
+    Apprenez à créer et confirmer des paiements
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/fr/developer-tools/webhook/overview">
+    Configurez les webhooks pour les notifications
+  </Card>
+</CardGroup>

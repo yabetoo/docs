@@ -1,0 +1,452 @@
+---
+title: School Fees Collection
+description: How to integrate Yabetoo for tuition and fee collection in educational institutions.
+icon: "graduation-cap"
+---
+
+Learn how to implement a complete school fee collection system using Yabetoo. This guide covers tuition payments, installment plans, multiple fee types, and parent notifications.
+
+## Overview
+
+Educational institutions need payment solutions to handle:
+- Tuition fee collection
+- Registration and enrollment fees
+- Exam and certification fees
+- Installment payment plans
+- Multiple students per family
+- Payment receipts and reporting
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[School Portal] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> A
+    A --> D[Email/SMS]
+```
+
+## Implementation
+
+### 1. Define Fee Structure
+
+Set up your school's fee categories:
+
+```typescript
+// fee-structure.ts
+export interface FeeType {
+  id: string;
+  name: string;
+  amount: number;
+  category: 'tuition' | 'registration' | 'exam' | 'materials' | 'other';
+  mandatory: boolean;
+  academicYear: string;
+}
+
+export const FEE_STRUCTURE: Record<string, FeeType[]> = {
+  'primary': [
+    { id: 'tuition-primary', name: 'Tuition Fee', amount: 150000, category: 'tuition', mandatory: true, academicYear: '2024-2025' },
+    { id: 'registration', name: 'Registration Fee', amount: 25000, category: 'registration', mandatory: true, academicYear: '2024-2025' },
+    { id: 'exam-fee', name: 'Exam Fee', amount: 15000, category: 'exam', mandatory: true, academicYear: '2024-2025' },
+    { id: 'materials', name: 'School Materials', amount: 35000, category: 'materials', mandatory: false, academicYear: '2024-2025' }
+  ],
+  'secondary': [
+    { id: 'tuition-secondary', name: 'Tuition Fee', amount: 250000, category: 'tuition', mandatory: true, academicYear: '2024-2025' },
+    { id: 'registration', name: 'Registration Fee', amount: 35000, category: 'registration', mandatory: true, academicYear: '2024-2025' },
+    { id: 'exam-fee', name: 'Exam Fee', amount: 25000, category: 'exam', mandatory: true, academicYear: '2024-2025' },
+    { id: 'lab-fee', name: 'Laboratory Fee', amount: 20000, category: 'materials', mandatory: true, academicYear: '2024-2025' }
+  ]
+};
+```
+
+### 2. Student Fee Management
+
+Create a system to track student fees:
+
+```typescript
+// student-fees.ts
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+interface StudentFeeAccount {
+  studentId: string;
+  studentName: string;
+  class: string;
+  level: 'primary' | 'secondary';
+  academicYear: string;
+  totalDue: number;
+  totalPaid: number;
+  balance: number;
+  payments: Payment[];
+}
+
+async function getStudentFeeAccount(studentId: string): Promise<StudentFeeAccount> {
+  const student = await db.students.findById(studentId);
+  const fees = FEE_STRUCTURE[student.level];
+  const payments = await db.payments.findByStudent(studentId);
+
+  const totalDue = fees
+    .filter(f => f.mandatory)
+    .reduce((sum, fee) => sum + fee.amount, 0);
+
+  const totalPaid = payments
+    .filter(p => p.status === 'succeeded')
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  return {
+    studentId: student.id,
+    studentName: `${student.firstName} ${student.lastName}`,
+    class: student.class,
+    level: student.level,
+    academicYear: student.academicYear,
+    totalDue,
+    totalPaid,
+    balance: totalDue - totalPaid,
+    payments
+  };
+}
+```
+
+### 3. Create Fee Payment
+
+Allow parents to pay fees:
+
+```typescript
+async function createFeePayment(
+  studentId: string,
+  feeIds: string[],
+  parentInfo: { firstName: string; lastName: string; phone: string; email?: string }
+) {
+  const student = await db.students.findById(studentId);
+  const fees = FEE_STRUCTURE[student.level].filter(f => feeIds.includes(f.id));
+
+  const totalAmount = fees.reduce((sum, fee) => sum + fee.amount, 0);
+
+  const intent = await yabetoo.payments.create({
+    amount: totalAmount,
+    currency: 'XAF',
+    description: `School fees for ${student.firstName} ${student.lastName}`,
+    metadata: {
+      studentId,
+      studentName: `${student.firstName} ${student.lastName}`,
+      class: student.class,
+      academicYear: student.academicYear,
+      feeIds: feeIds.join(','),
+      feeDetails: JSON.stringify(fees.map(f => ({ id: f.id, name: f.name, amount: f.amount }))),
+      parentPhone: parentInfo.phone,
+      parentEmail: parentInfo.email,
+      type: 'school_fee'
+    }
+  });
+
+  // Store pending payment
+  await db.pendingPayments.create({
+    paymentIntentId: intent.id,
+    studentId,
+    feeIds,
+    amount: totalAmount,
+    parentInfo
+  });
+
+  return intent;
+}
+```
+
+### 4. Installment Payment Plans
+
+Support payment in installments:
+
+```typescript
+interface InstallmentPlan {
+  id: string;
+  name: string;
+  installments: number;
+  schedule: { dueDate: Date; percentage: number }[];
+}
+
+const INSTALLMENT_PLANS: InstallmentPlan[] = [
+  {
+    id: 'full',
+    name: 'Full Payment',
+    installments: 1,
+    schedule: [{ dueDate: new Date('2024-09-01'), percentage: 100 }]
+  },
+  {
+    id: 'trimester',
+    name: 'Trimester Plan (3 payments)',
+    installments: 3,
+    schedule: [
+      { dueDate: new Date('2024-09-01'), percentage: 40 },
+      { dueDate: new Date('2024-12-01'), percentage: 30 },
+      { dueDate: new Date('2025-03-01'), percentage: 30 }
+    ]
+  },
+  {
+    id: 'monthly',
+    name: 'Monthly Plan (10 payments)',
+    installments: 10,
+    schedule: Array.from({ length: 10 }, (_, i) => ({
+      dueDate: new Date(2024, 8 + i, 1), // September to June
+      percentage: 10
+    }))
+  }
+];
+
+async function createInstallmentPlan(
+  studentId: string,
+  planId: string,
+  totalAmount: number
+) {
+  const plan = INSTALLMENT_PLANS.find(p => p.id === planId);
+  if (!plan) throw new Error('Invalid installment plan');
+
+  const installments = plan.schedule.map((schedule, index) => ({
+    studentId,
+    installmentNumber: index + 1,
+    totalInstallments: plan.installments,
+    amount: Math.round(totalAmount * (schedule.percentage / 100)),
+    dueDate: schedule.dueDate,
+    status: 'pending'
+  }));
+
+  // Save installment plan to database
+  const savedPlan = await db.installmentPlans.create({
+    studentId,
+    planId,
+    totalAmount,
+    installments
+  });
+
+  return savedPlan;
+}
+
+async function payInstallment(installmentId: string, parentInfo: any) {
+  const installment = await db.installments.findById(installmentId);
+  const student = await db.students.findById(installment.studentId);
+
+  const intent = await yabetoo.payments.create({
+    amount: installment.amount,
+    currency: 'XAF',
+    description: `Installment ${installment.installmentNumber}/${installment.totalInstallments} - ${student.firstName} ${student.lastName}`,
+    metadata: {
+      studentId: installment.studentId,
+      installmentId,
+      installmentNumber: installment.installmentNumber,
+      type: 'installment'
+    }
+  });
+
+  return intent;
+}
+```
+
+### 5. Webhook Handler
+
+Process payment confirmations:
+
+```typescript
+app.post('/webhooks/yabetoo', async (req, res) => {
+  const event = req.body;
+
+  if (event.type === 'payment_intent.succeeded') {
+    const { metadata, amount } = event.data;
+
+    if (metadata.type === 'school_fee') {
+      // Record payment
+      await db.payments.create({
+        studentId: metadata.studentId,
+        amount,
+        paymentIntentId: event.data.id,
+        feeIds: metadata.feeIds.split(','),
+        status: 'succeeded',
+        paidAt: new Date()
+      });
+
+      // Update student account
+      await updateStudentBalance(metadata.studentId);
+
+      // Generate and send receipt
+      const receipt = await generateReceipt(event.data);
+      await sendReceiptByEmail(metadata.parentEmail, receipt);
+      await sendReceiptBySMS(metadata.parentPhone, receipt.summary);
+
+      // Notify school administration
+      await notifyAdministration(metadata.studentId, amount);
+    }
+
+    if (metadata.type === 'installment') {
+      await db.installments.update(metadata.installmentId, {
+        status: 'paid',
+        paidAt: new Date(),
+        paymentIntentId: event.data.id
+      });
+
+      // Check if all installments are paid
+      await checkInstallmentPlanCompletion(metadata.studentId);
+    }
+  }
+
+  res.json({ received: true });
+});
+```
+
+### 6. Receipt Generation
+
+Generate official payment receipts:
+
+```typescript
+interface PaymentReceipt {
+  receiptNumber: string;
+  date: Date;
+  studentName: string;
+  studentId: string;
+  class: string;
+  academicYear: string;
+  fees: { name: string; amount: number }[];
+  totalAmount: number;
+  paymentMethod: string;
+  transactionId: string;
+}
+
+async function generateReceipt(paymentData: any): Promise<PaymentReceipt> {
+  const receiptNumber = `REC-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+  const receipt: PaymentReceipt = {
+    receiptNumber,
+    date: new Date(),
+    studentName: paymentData.metadata.studentName,
+    studentId: paymentData.metadata.studentId,
+    class: paymentData.metadata.class,
+    academicYear: paymentData.metadata.academicYear,
+    fees: JSON.parse(paymentData.metadata.feeDetails),
+    totalAmount: paymentData.amount,
+    paymentMethod: 'Mobile Money',
+    transactionId: paymentData.id
+  };
+
+  // Save receipt to database
+  await db.receipts.create(receipt);
+
+  return receipt;
+}
+```
+
+### 7. Reporting Dashboard
+
+Track fee collection progress:
+
+```typescript
+async function getFeeCollectionReport(academicYear: string) {
+  const students = await db.students.findByAcademicYear(academicYear);
+
+  const report = {
+    academicYear,
+    totalStudents: students.length,
+    totalExpected: 0,
+    totalCollected: 0,
+    collectionRate: 0,
+    byClass: {} as Record<string, { expected: number; collected: number; students: number }>,
+    overdueAccounts: [] as any[]
+  };
+
+  for (const student of students) {
+    const account = await getStudentFeeAccount(student.id);
+
+    report.totalExpected += account.totalDue;
+    report.totalCollected += account.totalPaid;
+
+    // Group by class
+    if (!report.byClass[student.class]) {
+      report.byClass[student.class] = { expected: 0, collected: 0, students: 0 };
+    }
+    report.byClass[student.class].expected += account.totalDue;
+    report.byClass[student.class].collected += account.totalPaid;
+    report.byClass[student.class].students += 1;
+
+    // Track overdue accounts
+    if (account.balance > 0) {
+      report.overdueAccounts.push({
+        studentId: student.id,
+        studentName: account.studentName,
+        class: student.class,
+        balance: account.balance
+      });
+    }
+  }
+
+  report.collectionRate = (report.totalCollected / report.totalExpected) * 100;
+
+  return report;
+}
+```
+
+## Payment Flow
+
+<Steps>
+  <Step title="Parent Accesses Portal">
+    Parent logs into the school portal and views their child's fee account.
+  </Step>
+  <Step title="Select Fees to Pay">
+    Parent selects which fees to pay (full amount or specific items).
+  </Step>
+  <Step title="Choose Payment Plan">
+    Parent selects full payment or installment plan if available.
+  </Step>
+  <Step title="Enter Payment Details">
+    Parent enters their mobile money number (MTN or Airtel).
+  </Step>
+  <Step title="Confirm Payment">
+    Parent confirms the payment on their mobile phone.
+  </Step>
+  <Step title="Receive Receipt">
+    Parent receives an official receipt via email and SMS.
+  </Step>
+  <Step title="Account Updated">
+    Student's fee account is updated automatically.
+  </Step>
+</Steps>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Payment Reminders">
+    Send automated reminders before installment due dates (7 days, 3 days, 1 day before).
+  </Accordion>
+  <Accordion title="Multi-Child Discount">
+    Implement sibling discounts for families with multiple children enrolled.
+  </Accordion>
+  <Accordion title="Late Payment Fees">
+    Consider grace periods before applying late payment penalties.
+  </Accordion>
+  <Accordion title="Scholarship Integration">
+    Support scholarship and financial aid deductions from total fees.
+  </Accordion>
+</AccordionGroup>
+
+## SMS Notification Templates
+
+```typescript
+const SMS_TEMPLATES = {
+  paymentReceived: (data: any) =>
+    `School Fee Payment Received. Amount: ${data.amount} XAF for ${data.studentName}. Receipt: ${data.receiptNumber}. Balance: ${data.balance} XAF.`,
+
+  installmentReminder: (data: any) =>
+    `Reminder: Installment ${data.number} of ${data.total} (${data.amount} XAF) for ${data.studentName} is due on ${data.dueDate}. Pay via school portal.`,
+
+  overdueNotice: (data: any) =>
+    `Notice: Outstanding balance of ${data.balance} XAF for ${data.studentName}. Please settle to avoid service interruption.`
+};
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Hosted Checkout" icon="browser" href="/en/payments/checkout-page/intro">
+    Use hosted checkout for simpler integration
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/en/developer-tools/webhook/overview">
+    Set up payment notifications
+  </Card>
+</CardGroup>

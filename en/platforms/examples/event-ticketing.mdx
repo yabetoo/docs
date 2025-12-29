@@ -1,0 +1,554 @@
+---
+title: Event Ticketing
+description: How to integrate Yabetoo for ticket sales for concerts, conferences, and events.
+icon: "ticket"
+---
+
+Learn how to build a complete event ticketing platform using Yabetoo. This guide covers ticket sales, multiple ticket types, capacity management, and attendee check-in.
+
+## Overview
+
+Event ticketing platforms need to handle:
+- Multiple ticket types and pricing tiers
+- Early bird and promotional pricing
+- Capacity limits and sold-out management
+- QR code ticket generation
+- Attendee check-in and validation
+- Refund processing
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Ticketing Platform] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> A
+    A --> D[QR Tickets]
+```
+
+## Implementation
+
+### 1. Event and Ticket Setup
+
+Define your event structure:
+
+```typescript
+// event-types.ts
+interface Event {
+  id: string;
+  name: string;
+  description: string;
+  venue: string;
+  date: Date;
+  endDate?: Date;
+  imageUrl: string;
+  organizerId: string;
+  status: 'draft' | 'published' | 'soldout' | 'completed' | 'cancelled';
+  ticketTypes: TicketType[];
+}
+
+interface TicketType {
+  id: string;
+  eventId: string;
+  name: string;
+  description: string;
+  price: number;
+  quantity: number;
+  sold: number;
+  maxPerOrder: number;
+  salesStart: Date;
+  salesEnd: Date;
+  benefits: string[];
+}
+
+// Example event
+const sampleEvent: Event = {
+  id: 'evt_concert_2024',
+  name: 'Afrobeats Night 2024',
+  description: 'The biggest Afrobeats concert of the year',
+  venue: 'Palais des Congrès, Brazzaville',
+  date: new Date('2024-12-31T20:00:00'),
+  imageUrl: '/events/afrobeats-2024.jpg',
+  organizerId: 'org_123',
+  status: 'published',
+  ticketTypes: [
+    {
+      id: 'tt_vip',
+      eventId: 'evt_concert_2024',
+      name: 'VIP',
+      description: 'Front row seats with backstage access',
+      price: 50000,
+      quantity: 100,
+      sold: 45,
+      maxPerOrder: 4,
+      salesStart: new Date('2024-10-01'),
+      salesEnd: new Date('2024-12-30'),
+      benefits: ['Front row seats', 'Backstage access', 'Meet & greet', 'Free drinks']
+    },
+    {
+      id: 'tt_standard',
+      eventId: 'evt_concert_2024',
+      name: 'Standard',
+      description: 'General admission',
+      price: 15000,
+      quantity: 500,
+      sold: 320,
+      maxPerOrder: 10,
+      salesStart: new Date('2024-10-01'),
+      salesEnd: new Date('2024-12-30'),
+      benefits: ['General admission', 'Standing area']
+    },
+    {
+      id: 'tt_early',
+      eventId: 'evt_concert_2024',
+      name: 'Early Bird',
+      description: 'Limited early bird pricing',
+      price: 10000,
+      quantity: 200,
+      sold: 200, // Sold out
+      maxPerOrder: 5,
+      salesStart: new Date('2024-09-01'),
+      salesEnd: new Date('2024-09-30'),
+      benefits: ['General admission', 'Early entry']
+    }
+  ]
+};
+```
+
+### 2. Ticket Purchase Flow
+
+Handle ticket orders:
+
+```typescript
+import Yabetoo from 'yabetoo';
+import { v4 as uuidv4 } from 'uuid';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+interface OrderItem {
+  ticketTypeId: string;
+  quantity: number;
+}
+
+interface Order {
+  id: string;
+  eventId: string;
+  items: OrderItem[];
+  totalAmount: number;
+  buyerInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  };
+  status: 'pending' | 'paid' | 'cancelled' | 'refunded';
+  paymentIntentId?: string;
+  createdAt: Date;
+}
+
+async function createTicketOrder(
+  eventId: string,
+  items: OrderItem[],
+  buyerInfo: Order['buyerInfo']
+) {
+  const event = await db.events.findById(eventId);
+  if (!event) throw new Error('Event not found');
+
+  // Validate availability
+  for (const item of items) {
+    const ticketType = event.ticketTypes.find(t => t.id === item.ticketTypeId);
+    if (!ticketType) throw new Error(`Ticket type ${item.ticketTypeId} not found`);
+
+    const available = ticketType.quantity - ticketType.sold;
+    if (item.quantity > available) {
+      throw new Error(`Only ${available} tickets available for ${ticketType.name}`);
+    }
+
+    if (item.quantity > ticketType.maxPerOrder) {
+      throw new Error(`Maximum ${ticketType.maxPerOrder} tickets per order for ${ticketType.name}`);
+    }
+
+    // Check sales period
+    const now = new Date();
+    if (now < ticketType.salesStart || now > ticketType.salesEnd) {
+      throw new Error(`Sales not open for ${ticketType.name}`);
+    }
+  }
+
+  // Calculate total
+  const totalAmount = items.reduce((sum, item) => {
+    const ticketType = event.ticketTypes.find(t => t.id === item.ticketTypeId)!;
+    return sum + (ticketType.price * item.quantity);
+  }, 0);
+
+  // Create order
+  const order: Order = {
+    id: uuidv4(),
+    eventId,
+    items,
+    totalAmount,
+    buyerInfo,
+    status: 'pending',
+    createdAt: new Date()
+  };
+
+  // Reserve tickets temporarily (15 min hold)
+  await reserveTickets(order);
+
+  // Create payment intent
+  const intent = await yabetoo.payments.create({
+    amount: totalAmount,
+    currency: 'XAF',
+    description: `Tickets for ${event.name}`,
+    metadata: {
+      orderId: order.id,
+      eventId,
+      eventName: event.name,
+      eventDate: event.date.toISOString(),
+      ticketDetails: JSON.stringify(items),
+      buyerEmail: buyerInfo.email,
+      buyerPhone: buyerInfo.phone,
+      type: 'event_ticket'
+    }
+  });
+
+  order.paymentIntentId = intent.id;
+  await db.orders.create(order);
+
+  return { order, paymentIntent: intent };
+}
+```
+
+### 3. QR Code Ticket Generation
+
+Generate unique QR codes for each ticket:
+
+```typescript
+import QRCode from 'qrcode';
+import crypto from 'crypto';
+
+interface Ticket {
+  id: string;
+  orderId: string;
+  eventId: string;
+  ticketTypeId: string;
+  ticketTypeName: string;
+  holderName: string;
+  qrCode: string;
+  qrCodeData: string;
+  status: 'valid' | 'used' | 'cancelled';
+  usedAt?: Date;
+}
+
+async function generateTickets(order: Order, event: Event): Promise<Ticket[]> {
+  const tickets: Ticket[] = [];
+
+  for (const item of order.items) {
+    const ticketType = event.ticketTypes.find(t => t.id === item.ticketTypeId)!;
+
+    for (let i = 0; i < item.quantity; i++) {
+      const ticketId = `TKT-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+
+      // Create secure QR code data
+      const qrData = {
+        ticketId,
+        eventId: event.id,
+        ticketTypeId: item.ticketTypeId,
+        timestamp: Date.now(),
+        signature: crypto
+          .createHmac('sha256', process.env.TICKET_SECRET!)
+          .update(`${ticketId}:${event.id}`)
+          .digest('hex')
+      };
+
+      const qrCodeData = JSON.stringify(qrData);
+      const qrCodeImage = await QRCode.toDataURL(qrCodeData, {
+        width: 300,
+        margin: 2,
+        color: { dark: '#001C6B', light: '#FFFFFF' }
+      });
+
+      const ticket: Ticket = {
+        id: ticketId,
+        orderId: order.id,
+        eventId: event.id,
+        ticketTypeId: item.ticketTypeId,
+        ticketTypeName: ticketType.name,
+        holderName: `${order.buyerInfo.firstName} ${order.buyerInfo.lastName}`,
+        qrCode: qrCodeImage,
+        qrCodeData,
+        status: 'valid'
+      };
+
+      tickets.push(ticket);
+    }
+  }
+
+  // Save tickets to database
+  await db.tickets.createMany(tickets);
+
+  return tickets;
+}
+```
+
+### 4. Webhook Handler
+
+Process ticket purchases:
+
+```typescript
+app.post('/webhooks/yabetoo', async (req, res) => {
+  const event = req.body;
+
+  if (event.type === 'payment_intent.succeeded') {
+    const { metadata } = event.data;
+
+    if (metadata.type === 'event_ticket') {
+      const order = await db.orders.findById(metadata.orderId);
+
+      // Update order status
+      await db.orders.update(order.id, { status: 'paid' });
+
+      // Confirm ticket reservations
+      await confirmTicketReservations(order);
+
+      // Update sold count
+      for (const item of order.items) {
+        await db.ticketTypes.incrementSold(item.ticketTypeId, item.quantity);
+      }
+
+      // Generate tickets
+      const eventData = await db.events.findById(order.eventId);
+      const tickets = await generateTickets(order, eventData);
+
+      // Send tickets to buyer
+      await sendTicketsByEmail(order.buyerInfo.email, tickets, eventData);
+      await sendTicketsBySMS(order.buyerInfo.phone, tickets, eventData);
+
+      // Check if event is sold out
+      await checkSoldOutStatus(order.eventId);
+    }
+  }
+
+  if (event.type === 'payment_intent.failed') {
+    const { metadata } = event.data;
+
+    if (metadata.type === 'event_ticket') {
+      // Release reserved tickets
+      await releaseTicketReservations(metadata.orderId);
+      await db.orders.update(metadata.orderId, { status: 'cancelled' });
+    }
+  }
+
+  res.json({ received: true });
+});
+```
+
+### 5. Ticket Validation (Check-in)
+
+Validate tickets at the event entrance:
+
+```typescript
+interface ValidationResult {
+  valid: boolean;
+  ticket?: Ticket;
+  message: string;
+  ticketType?: string;
+}
+
+async function validateTicket(qrCodeData: string): Promise<ValidationResult> {
+  try {
+    const data = JSON.parse(qrCodeData);
+
+    // Verify signature
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.TICKET_SECRET!)
+      .update(`${data.ticketId}:${data.eventId}`)
+      .digest('hex');
+
+    if (data.signature !== expectedSignature) {
+      return { valid: false, message: 'Invalid ticket signature' };
+    }
+
+    // Find ticket
+    const ticket = await db.tickets.findById(data.ticketId);
+
+    if (!ticket) {
+      return { valid: false, message: 'Ticket not found' };
+    }
+
+    if (ticket.status === 'used') {
+      return {
+        valid: false,
+        ticket,
+        message: `Ticket already used at ${ticket.usedAt?.toLocaleString()}`
+      };
+    }
+
+    if (ticket.status === 'cancelled') {
+      return { valid: false, ticket, message: 'Ticket has been cancelled' };
+    }
+
+    // Mark as used
+    await db.tickets.update(ticket.id, {
+      status: 'used',
+      usedAt: new Date()
+    });
+
+    return {
+      valid: true,
+      ticket,
+      message: 'Ticket validated successfully',
+      ticketType: ticket.ticketTypeName
+    };
+  } catch (error) {
+    return { valid: false, message: 'Invalid QR code format' };
+  }
+}
+
+// Check-in API endpoint
+app.post('/api/check-in', async (req, res) => {
+  const { qrCodeData } = req.body;
+  const result = await validateTicket(qrCodeData);
+  res.json(result);
+});
+```
+
+### 6. Refund Processing
+
+Handle ticket refunds:
+
+```typescript
+async function processRefund(orderId: string, reason: string) {
+  const order = await db.orders.findById(orderId);
+
+  if (order.status !== 'paid') {
+    throw new Error('Order is not eligible for refund');
+  }
+
+  const event = await db.events.findById(order.eventId);
+
+  // Check refund policy (e.g., no refunds 48 hours before event)
+  const hoursUntilEvent = (event.date.getTime() - Date.now()) / (1000 * 60 * 60);
+  if (hoursUntilEvent < 48) {
+    throw new Error('Refunds not available within 48 hours of event');
+  }
+
+  // Cancel all tickets
+  await db.tickets.updateMany(
+    { orderId },
+    { status: 'cancelled' }
+  );
+
+  // Release ticket inventory
+  for (const item of order.items) {
+    await db.ticketTypes.decrementSold(item.ticketTypeId, item.quantity);
+  }
+
+  // Create disbursement for refund
+  const disbursement = await yabetoo.disbursements.create({
+    amount: order.totalAmount,
+    currency: 'XAF',
+    firstName: order.buyerInfo.firstName,
+    lastName: order.buyerInfo.lastName,
+    paymentMethodData: {
+      type: 'momo',
+      momo: {
+        msisdn: order.buyerInfo.phone,
+        country: 'cg',
+        operatorName: 'mtn' // Detect from original payment
+      }
+    }
+  });
+
+  // Update order
+  await db.orders.update(orderId, {
+    status: 'refunded',
+    refundReason: reason,
+    refundId: disbursement.id
+  });
+
+  // Notify buyer
+  await sendRefundConfirmation(order.buyerInfo.email, order, disbursement);
+
+  return disbursement;
+}
+```
+
+## Ticket Purchase Flow
+
+<Steps>
+  <Step title="Browse Events">
+    User browses available events and selects one.
+  </Step>
+  <Step title="Select Tickets">
+    User chooses ticket type and quantity.
+  </Step>
+  <Step title="Enter Details">
+    User provides contact information (name, email, phone).
+  </Step>
+  <Step title="Payment">
+    User pays via mobile money (MTN or Airtel).
+  </Step>
+  <Step title="Receive Tickets">
+    User receives QR code tickets via email and SMS.
+  </Step>
+  <Step title="Event Day">
+    User presents QR code at venue for scanning and entry.
+  </Step>
+</Steps>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Ticket Reservation">
+    Hold tickets for 15 minutes during checkout to prevent overselling.
+  </Accordion>
+  <Accordion title="Fraud Prevention">
+    Use cryptographic signatures on QR codes to prevent counterfeiting.
+  </Accordion>
+  <Accordion title="Offline Check-in">
+    Support offline ticket validation with periodic sync for remote venues.
+  </Accordion>
+  <Accordion title="Capacity Alerts">
+    Send alerts to organizers when tickets are 80%, 95%, and 100% sold.
+  </Accordion>
+</AccordionGroup>
+
+## Email Template Example
+
+```typescript
+const ticketEmailTemplate = (buyer: any, tickets: Ticket[], event: Event) => `
+  <h1>Your Tickets for ${event.name}</h1>
+  <p>Dear ${buyer.firstName},</p>
+  <p>Thank you for your purchase! Here are your tickets:</p>
+
+  <div style="background: #f5f5f5; padding: 20px; margin: 20px 0;">
+    <h2>${event.name}</h2>
+    <p><strong>Date:</strong> ${event.date.toLocaleDateString()}</p>
+    <p><strong>Venue:</strong> ${event.venue}</p>
+    <p><strong>Tickets:</strong> ${tickets.length}</p>
+  </div>
+
+  ${tickets.map(ticket => `
+    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0;">
+      <h3>${ticket.ticketTypeName}</h3>
+      <p>Ticket ID: ${ticket.id}</p>
+      <img src="${ticket.qrCode}" alt="QR Code" width="200" />
+    </div>
+  `).join('')}
+
+  <p>Present this QR code at the entrance for entry.</p>
+`;
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Disbursements" icon="money-bill-transfer" href="/en/payments/disbursement/overview">
+    Process refunds to customers
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/en/developer-tools/webhook/overview">
+    Handle payment notifications
+  </Card>
+</CardGroup>

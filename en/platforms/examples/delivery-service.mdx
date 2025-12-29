@@ -1,0 +1,575 @@
+---
+title: Delivery Service
+description: How to integrate Yabetoo for payment collection and driver payouts in delivery platforms.
+icon: "truck"
+---
+
+Learn how to build a complete delivery platform with Yabetoo, handling customer payments, driver payouts, and commission management.
+
+## Overview
+
+Delivery platforms need to handle:
+- Customer payment collection (cash on delivery or prepaid)
+- Driver/courier payouts
+- Platform commission management
+- Real-time payment tracking
+- Split payments between multiple parties
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Customer App] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> D[Delivery Platform]
+    D --> B
+    B --> E[Driver/Merchant]
+```
+
+## Implementation
+
+### 1. Order and Payment Models
+
+Define your order structure:
+
+```typescript
+// types.ts
+interface DeliveryOrder {
+  id: string;
+  customerId: string;
+  merchantId: string;
+  driverId?: string;
+  items: OrderItem[];
+  subtotal: number;
+  deliveryFee: number;
+  platformFee: number;
+  total: number;
+  paymentMethod: 'prepaid' | 'cash_on_delivery';
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  orderStatus: 'created' | 'accepted' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
+  deliveryAddress: Address;
+  createdAt: Date;
+  deliveredAt?: Date;
+}
+
+interface OrderItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface Address {
+  street: string;
+  city: string;
+  coordinates: { lat: number; lng: number };
+  instructions?: string;
+}
+
+interface Driver {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  operatorName: 'mtn' | 'airtel';
+  vehicleType: 'motorcycle' | 'car' | 'bicycle';
+  rating: number;
+  totalDeliveries: number;
+  balance: number; // Pending earnings
+  status: 'online' | 'offline' | 'busy';
+}
+```
+
+### 2. Prepaid Order Flow
+
+Handle prepaid orders from customers:
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+// Fee configuration
+const PLATFORM_FEE_PERCENT = 15; // 15% platform fee
+const DRIVER_SHARE_PERCENT = 80; // Driver gets 80% of delivery fee
+
+async function createPrepaidOrder(
+  customerId: string,
+  merchantId: string,
+  items: OrderItem[],
+  deliveryAddress: Address
+) {
+  const customer = await db.customers.findById(customerId);
+  const merchant = await db.merchants.findById(merchantId);
+
+  // Calculate amounts
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const deliveryFee = calculateDeliveryFee(merchant.address, deliveryAddress);
+  const platformFee = Math.round(subtotal * (PLATFORM_FEE_PERCENT / 100));
+  const total = subtotal + deliveryFee;
+
+  // Create order
+  const order: DeliveryOrder = {
+    id: generateOrderId(),
+    customerId,
+    merchantId,
+    items,
+    subtotal,
+    deliveryFee,
+    platformFee,
+    total,
+    paymentMethod: 'prepaid',
+    paymentStatus: 'pending',
+    orderStatus: 'created',
+    deliveryAddress,
+    createdAt: new Date()
+  };
+
+  await db.orders.create(order);
+
+  // Create payment intent
+  const intent = await yabetoo.payments.create({
+    amount: total,
+    currency: 'XAF',
+    description: `Order #${order.id} - ${merchant.name}`,
+    metadata: {
+      orderId: order.id,
+      customerId,
+      merchantId,
+      subtotal: subtotal.toString(),
+      deliveryFee: deliveryFee.toString(),
+      platformFee: platformFee.toString(),
+      type: 'delivery_order'
+    }
+  });
+
+  return { order, paymentIntent: intent };
+}
+
+function calculateDeliveryFee(from: Address, to: Address): number {
+  // Calculate distance-based fee
+  const distance = calculateDistance(from.coordinates, to.coordinates);
+  const baseFee = 1000; // 1,000 XAF base
+  const perKmFee = 500;  // 500 XAF per km
+
+  return Math.round(baseFee + (distance * perKmFee));
+}
+```
+
+### 3. Driver Assignment and Tracking
+
+Assign drivers and track deliveries:
+
+```typescript
+async function assignDriver(orderId: string, driverId: string) {
+  const order = await db.orders.findById(orderId);
+  const driver = await db.drivers.findById(driverId);
+
+  // Update order
+  await db.orders.update(orderId, {
+    driverId,
+    orderStatus: 'accepted'
+  });
+
+  // Update driver status
+  await db.drivers.update(driverId, { status: 'busy' });
+
+  // Notify customer
+  await sendNotification(order.customerId, {
+    type: 'driver_assigned',
+    message: `${driver.firstName} is on the way to pick up your order!`,
+    driverInfo: {
+      name: `${driver.firstName} ${driver.lastName}`,
+      phone: driver.phone,
+      vehicleType: driver.vehicleType
+    }
+  });
+
+  // Notify driver
+  await sendNotification(driverId, {
+    type: 'new_delivery',
+    orderId,
+    pickupAddress: await getMerchantAddress(order.merchantId),
+    deliveryAddress: order.deliveryAddress,
+    estimatedEarnings: calculateDriverEarnings(order.deliveryFee)
+  });
+
+  return { order, driver };
+}
+
+function calculateDriverEarnings(deliveryFee: number): number {
+  return Math.round(deliveryFee * (DRIVER_SHARE_PERCENT / 100));
+}
+```
+
+### 4. Order Status Updates
+
+Track order progression:
+
+```typescript
+async function updateOrderStatus(
+  orderId: string,
+  newStatus: DeliveryOrder['orderStatus'],
+  driverId: string
+) {
+  const order = await db.orders.findById(orderId);
+
+  // Validate status transition
+  const validTransitions: Record<string, string[]> = {
+    'created': ['accepted', 'cancelled'],
+    'accepted': ['picked_up', 'cancelled'],
+    'picked_up': ['in_transit', 'cancelled'],
+    'in_transit': ['delivered', 'cancelled'],
+  };
+
+  if (!validTransitions[order.orderStatus]?.includes(newStatus)) {
+    throw new Error(`Invalid status transition from ${order.orderStatus} to ${newStatus}`);
+  }
+
+  // Update order
+  const updates: Partial<DeliveryOrder> = { orderStatus: newStatus };
+
+  if (newStatus === 'delivered') {
+    updates.deliveredAt = new Date();
+
+    // Process driver payout for prepaid orders
+    if (order.paymentMethod === 'prepaid' && order.paymentStatus === 'paid') {
+      await processDriverPayout(order, driverId);
+    }
+  }
+
+  await db.orders.update(orderId, updates);
+
+  // Notify customer
+  await sendOrderStatusNotification(order.customerId, orderId, newStatus);
+
+  return { ...order, ...updates };
+}
+```
+
+### 5. Driver Payout System
+
+Pay drivers for completed deliveries:
+
+```typescript
+interface DriverPayout {
+  id: string;
+  driverId: string;
+  orderId: string;
+  amount: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  disbursementId?: string;
+  createdAt: Date;
+  processedAt?: Date;
+}
+
+async function processDriverPayout(order: DeliveryOrder, driverId: string) {
+  const driver = await db.drivers.findById(driverId);
+  const earnings = calculateDriverEarnings(order.deliveryFee);
+
+  // Create payout record
+  const payout: DriverPayout = {
+    id: generatePayoutId(),
+    driverId,
+    orderId: order.id,
+    amount: earnings,
+    status: 'pending',
+    createdAt: new Date()
+  };
+
+  await db.driverPayouts.create(payout);
+
+  // Add to driver balance (for batch payouts)
+  await db.drivers.incrementBalance(driverId, earnings);
+
+  return payout;
+}
+
+// Batch payout - run daily or on-demand
+async function processBatchPayouts() {
+  const drivers = await db.drivers.findWithPendingBalance();
+
+  for (const driver of drivers) {
+    if (driver.balance < 5000) continue; // Minimum payout threshold
+
+    try {
+      const disbursement = await yabetoo.disbursements.create({
+        amount: driver.balance,
+        currency: 'XAF',
+        firstName: driver.firstName,
+        lastName: driver.lastName,
+        paymentMethodData: {
+          type: 'momo',
+          momo: {
+            msisdn: driver.phone,
+            country: 'cg',
+            operatorName: driver.operatorName
+          }
+        }
+      });
+
+      // Update driver
+      await db.drivers.update(driver.id, { balance: 0 });
+
+      // Record payout
+      await db.payoutHistory.create({
+        driverId: driver.id,
+        amount: driver.balance,
+        disbursementId: disbursement.id,
+        status: 'completed',
+        processedAt: new Date()
+      });
+
+      // Notify driver
+      await sendNotification(driver.id, {
+        type: 'payout_sent',
+        amount: driver.balance,
+        message: `Your earnings of ${driver.balance} XAF have been sent to your mobile money account.`
+      });
+
+    } catch (error) {
+      console.error(`Payout failed for driver ${driver.id}:`, error);
+      await notifyAdminOfPayoutFailure(driver.id, error);
+    }
+  }
+}
+
+// Instant payout on demand
+async function requestInstantPayout(driverId: string) {
+  const driver = await db.drivers.findById(driverId);
+
+  if (driver.balance < 1000) {
+    throw new Error('Minimum balance for instant payout is 1,000 XAF');
+  }
+
+  // Apply instant payout fee (e.g., 2%)
+  const fee = Math.round(driver.balance * 0.02);
+  const payoutAmount = driver.balance - fee;
+
+  const disbursement = await yabetoo.disbursements.create({
+    amount: payoutAmount,
+    currency: 'XAF',
+    firstName: driver.firstName,
+    lastName: driver.lastName,
+    paymentMethodData: {
+      type: 'momo',
+      momo: {
+        msisdn: driver.phone,
+        country: 'cg',
+        operatorName: driver.operatorName
+      }
+    }
+  });
+
+  await db.drivers.update(driverId, { balance: 0 });
+
+  return disbursement;
+}
+```
+
+### 6. Merchant Settlement
+
+Settle payments with merchants:
+
+```typescript
+interface MerchantSettlement {
+  id: string;
+  merchantId: string;
+  period: { start: Date; end: Date };
+  totalOrders: number;
+  grossAmount: number;
+  platformFees: number;
+  netAmount: number;
+  status: 'pending' | 'processing' | 'completed';
+  disbursementId?: string;
+}
+
+async function generateMerchantSettlement(
+  merchantId: string,
+  startDate: Date,
+  endDate: Date
+) {
+  const orders = await db.orders.findMany({
+    where: {
+      merchantId,
+      paymentStatus: 'paid',
+      orderStatus: 'delivered',
+      deliveredAt: { gte: startDate, lte: endDate }
+    }
+  });
+
+  const grossAmount = orders.reduce((sum, o) => sum + o.subtotal, 0);
+  const platformFees = orders.reduce((sum, o) => sum + o.platformFee, 0);
+  const netAmount = grossAmount - platformFees;
+
+  const settlement: MerchantSettlement = {
+    id: generateSettlementId(),
+    merchantId,
+    period: { start: startDate, end: endDate },
+    totalOrders: orders.length,
+    grossAmount,
+    platformFees,
+    netAmount,
+    status: 'pending'
+  };
+
+  await db.merchantSettlements.create(settlement);
+
+  return settlement;
+}
+
+async function processMerchantSettlement(settlementId: string) {
+  const settlement = await db.merchantSettlements.findById(settlementId);
+  const merchant = await db.merchants.findById(settlement.merchantId);
+
+  const disbursement = await yabetoo.disbursements.create({
+    amount: settlement.netAmount,
+    currency: 'XAF',
+    firstName: merchant.ownerFirstName,
+    lastName: merchant.ownerLastName,
+    paymentMethodData: {
+      type: 'momo',
+      momo: {
+        msisdn: merchant.phone,
+        country: 'cg',
+        operatorName: merchant.operatorName
+      }
+    }
+  });
+
+  await db.merchantSettlements.update(settlementId, {
+    status: 'completed',
+    disbursementId: disbursement.id
+  });
+
+  await sendSettlementReport(merchant.email, settlement);
+
+  return disbursement;
+}
+```
+
+### 7. Webhook Handler
+
+Process payment events:
+
+```typescript
+app.post('/webhooks/yabetoo', async (req, res) => {
+  const event = req.body;
+
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      if (event.data.metadata.type === 'delivery_order') {
+        await handleOrderPaymentSuccess(event.data);
+      }
+      break;
+
+    case 'payment_intent.failed':
+      if (event.data.metadata.type === 'delivery_order') {
+        await handleOrderPaymentFailure(event.data);
+      }
+      break;
+
+    case 'disbursement.completed':
+      await handleDisbursementComplete(event.data);
+      break;
+
+    case 'disbursement.failed':
+      await handleDisbursementFailure(event.data);
+      break;
+  }
+
+  res.json({ received: true });
+});
+
+async function handleOrderPaymentSuccess(data: any) {
+  const { orderId } = data.metadata;
+
+  await db.orders.update(orderId, { paymentStatus: 'paid' });
+
+  // Notify merchant of new order
+  const order = await db.orders.findById(orderId);
+  await notifyMerchant(order.merchantId, {
+    type: 'new_order',
+    orderId,
+    items: order.items,
+    total: order.total
+  });
+
+  // Start driver matching
+  await findAvailableDriver(orderId);
+}
+```
+
+## Order Flow
+
+<Steps>
+  <Step title="Customer Orders">
+    Customer selects items, enters delivery address, and chooses payment method.
+  </Step>
+  <Step title="Payment">
+    For prepaid orders, customer pays via mobile money.
+  </Step>
+  <Step title="Merchant Accepts">
+    Merchant receives order notification and prepares items.
+  </Step>
+  <Step title="Driver Assignment">
+    Platform assigns nearest available driver.
+  </Step>
+  <Step title="Pickup">
+    Driver picks up order from merchant.
+  </Step>
+  <Step title="Delivery">
+    Driver delivers to customer and marks as complete.
+  </Step>
+  <Step title="Payouts">
+    Driver receives earnings, merchant receives settlement.
+  </Step>
+</Steps>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Real-time Tracking">
+    Implement GPS tracking for transparency and accurate ETAs.
+  </Accordion>
+  <Accordion title="Fraud Prevention">
+    Verify delivery with photo proof or customer signature.
+  </Accordion>
+  <Accordion title="Peak Hour Pricing">
+    Implement surge pricing during high-demand periods.
+  </Accordion>
+  <Accordion title="Driver Incentives">
+    Offer bonuses for completing X deliveries per day/week.
+  </Accordion>
+</AccordionGroup>
+
+## Financial Summary Dashboard
+
+```typescript
+async function getPlatformFinancials(period: { start: Date; end: Date }) {
+  const orders = await db.orders.findDeliveredInPeriod(period);
+
+  return {
+    totalOrders: orders.length,
+    grossMerchandiseValue: orders.reduce((s, o) => s + o.subtotal, 0),
+    deliveryFeesCollected: orders.reduce((s, o) => s + o.deliveryFee, 0),
+    platformFeesEarned: orders.reduce((s, o) => s + o.platformFee, 0),
+    driverPayouts: await db.driverPayouts.sumForPeriod(period),
+    merchantSettlements: await db.merchantSettlements.sumForPeriod(period),
+    netRevenue: orders.reduce((s, o) => s + o.platformFee, 0) +
+                orders.reduce((s, o) => s + o.deliveryFee * 0.2, 0) // 20% of delivery fees
+  };
+}
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Disbursements" icon="money-bill-transfer" href="/en/payments/disbursement/overview">
+    Learn about sending payouts
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/en/developer-tools/webhook/overview">
+    Handle payment events
+  </Card>
+</CardGroup>

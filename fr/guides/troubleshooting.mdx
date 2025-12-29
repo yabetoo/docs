@@ -1,0 +1,199 @@
+---
+title: Erreurs Courantes
+description: Problèmes courants et solutions lors de l'intégration de Yabetoo.
+icon: "wrench"
+---
+
+Ce guide couvre les problèmes courants que vous pourriez rencontrer lors de l'intégration de Yabetoo et comment les résoudre.
+
+## Erreurs d'authentification
+
+### 401 Non autorisé
+
+**Problème :** Votre requête API retourne une erreur `401 Unauthorized`.
+
+**Causes :**
+- Clé API invalide
+- En-tête `Authorization` manquant
+- Utilisation d'une clé de test en production ou vice versa
+
+**Solutions :**
+
+```javascript
+// Assurez-vous d'inclure l'en-tête Authorization
+const response = await fetch("https://pay.sandbox.yabetoopay.com/v1/payment-intents", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX", // N'oubliez pas "Bearer "
+  },
+  body: JSON.stringify({ amount: 5000, currency: "xaf" }),
+});
+```
+
+<Warning>
+  Assurez-vous d'utiliser les clés `sk_test_` pour le sandbox et `sk_live_` pour la production.
+</Warning>
+
+## Erreurs de paiement
+
+### Paiement bloqué en "Processing"
+
+**Problème :** Le paiement reste au statut `processing` pendant longtemps.
+
+**Causes :**
+- Le client n'a pas reçu la notification
+- Le client n'a pas entré son PIN
+- Problèmes réseau avec le fournisseur Mobile Money
+
+**Solutions :**
+1. Demandez au client de vérifier les notifications sur son téléphone
+2. Assurez-vous que le numéro de téléphone est correct
+3. Attendez jusqu'à 90 secondes avant le délai d'expiration
+4. Permettez au client de réessayer
+
+### PAYEE_NOT_FOUND
+
+**Problème :** Le paiement échoue avec l'erreur `PAYEE_NOT_FOUND`.
+
+**Causes :**
+- Le numéro de téléphone n'est pas enregistré chez l'opérateur Mobile Money
+- Mauvais opérateur sélectionné
+
+**Solutions :**
+1. Vérifiez le format du numéro de téléphone (doit être international : `+242XXXXXXXXX`)
+2. Confirmez que le client utilise le bon opérateur (MTN ou Airtel)
+3. Demandez au client de vérifier son inscription Mobile Money
+
+### LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED
+
+**Problème :** Le paiement échoue pour fonds insuffisants, limite de transaction atteinte, ou transaction non autorisée.
+
+**Causes :**
+- Fonds insuffisants dans le compte Mobile Money
+- Limite de transaction quotidienne ou mensuelle atteinte
+- Transaction bloquée par l'opérateur Mobile Money
+
+**Solutions :**
+1. Affichez un message clair au client expliquant la raison de l'échec
+2. Suggérez-lui de recharger son compte Mobile Money
+3. Demandez-lui de vérifier ses limites de transaction avec son opérateur
+4. Permettez-lui de réessayer après avoir résolu le problème
+
+## Problèmes de webhooks
+
+### Webhooks non reçus
+
+**Problème :** Votre endpoint webhook ne reçoit pas les événements.
+
+**Causes :**
+- URL du webhook non configurée dans le tableau de bord
+- Endpoint non accessible publiquement
+- Pare-feu bloquant les requêtes
+- Serveur retournant un statut non-200
+
+**Solutions :**
+
+1. **Vérifiez l'URL du webhook dans le tableau de bord :**
+   - Allez sur [app.yabetoo.com/developers](https://app.yabetoo.com/developers)
+   - Vérifiez l'onglet Webhooks
+   - Assurez-vous que l'URL est correcte et utilise HTTPS
+
+2. **Assurez-vous que l'endpoint est accessible :**
+   ```bash
+   curl -X POST https://votre-domaine.com/webhook/yabetoo \
+     -H "Content-Type: application/json" \
+     -d '{"test": true}'
+   ```
+
+3. **Retournez un statut 200 :**
+   ```javascript
+   app.post("/webhook", (req, res) => {
+     // Traiter le webhook
+     res.status(200).send("OK"); // Toujours retourner 200
+   });
+   ```
+
+### Signature webhook invalide
+
+**Problème :** La vérification de la signature du webhook échoue.
+
+**Solutions :**
+1. Assurez-vous d'utiliser le bon secret webhook
+2. Utilisez le corps de la requête brut (pas le JSON parsé) pour la vérification de signature
+3. Vérifiez que le timestamp n'est pas trop ancien
+
+```javascript
+const crypto = require("crypto");
+
+function verifyWebhook(payload, signature, timestamp, secret) {
+  const signedPayload = `${timestamp}.${payload}`; // payload doit être une chaîne brute
+  const expectedSig = crypto
+    .createHmac("sha256", secret)
+    .update(signedPayload)
+    .digest("hex");
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSig)
+  );
+}
+```
+
+## Problèmes de requêtes API
+
+### 400 Bad Request
+
+**Problème :** L'API retourne des erreurs de validation.
+
+**Causes courantes et corrections :**
+
+| Erreur | Cause | Correction |
+|--------|-------|------------|
+| `currency required` | Champ currency manquant | Ajouter `"currency": "xaf"` |
+| `amount required` | Montant manquant | Ajouter le montant en plus petite unité |
+| `invalid phone` | Mauvais format de téléphone | Utiliser le format international |
+
+### Délai d'expiration de la requête
+
+**Problème :** Les requêtes API expirent.
+
+**Solutions :**
+1. Augmentez le timeout de votre client (recommandé : 30-60 secondes)
+2. Vérifiez votre connexion réseau
+3. Vérifiez que vous utilisez la bonne URL d'endpoint
+
+## Sandbox vs Production
+
+### Les paiements fonctionnent en sandbox mais pas en production
+
+**Liste de vérification :**
+- [ ] Utilisation de la clé `sk_live_` (pas `sk_test_`)
+- [ ] Utilisation de l'URL de production : `https://pay.api.yabetoopay.com`
+- [ ] Compte activé pour les paiements en direct
+- [ ] Utilisation de vrais numéros de téléphone (pas les numéros de test)
+
+### Les numéros de test ne fonctionnent pas
+
+**Problème :** Les numéros de test ne se comportent pas comme prévu.
+
+**Solutions :**
+1. Vérifiez que vous utilisez l'environnement sandbox
+2. Vérifiez que vous utilisez le bon numéro de test pour le résultat souhaité
+3. Consultez le [guide de test](/fr/developer-tools/test/overview) pour les numéros de test valides
+
+## Obtenir de l'aide
+
+Si vous avez toujours des problèmes :
+
+1. **Vérifiez la réponse de l'API** - Les messages d'erreur contiennent souvent des détails utiles
+2. **Examinez les logs** - Vérifiez les logs de votre serveur pour les erreurs
+3. **Testez d'abord en sandbox** - Vérifiez que votre intégration fonctionne en sandbox
+4. **Contactez le support** - Envoyez un email à support@yabetoopay.com avec :
+   - Votre ID de compte
+   - Les détails de la requête/réponse
+   - Les étapes pour reproduire le problème
+
+<Note>
+  Lors du contact avec le support, incluez l'ID de l'intention de paiement ou l'ID de transaction pour nous aider à investiguer plus rapidement.
+</Note>

@@ -1,5 +1,221 @@
 ---
 title: Java
-description: Bibliothèque pour interagir avec votre intégration Yabetoo en Java.
+description: Library for interacting with your Yabetoo integration in Java.
 icon: "java"
 ---
+
+This SDK allows you to easily integrate Yabetoo's secure payment system into your Java applications. Whether you're developing a web, mobile, or desktop application, this SDK provides a simple and intuitive interface for interacting with the Yabetoo API.
+
+## Installation
+
+### Prerequisites
+
+- Java 8 or higher
+- Maven or Gradle
+- An active Yabetoo account
+- Your Yabetoo API keys
+
+### Installation with Maven
+
+Add the following dependency to your `pom.xml` file:
+
+```xml
+<dependency>
+    <groupId>com.yabetoo</groupId>
+    <artifactId>yabetoo-java</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+### Installation with Gradle
+
+Add the following dependency to your `build.gradle` file:
+
+```groovy
+implementation 'com.yabetoo:yabetoo-java:1.0.0'
+```
+
+## Configuration
+
+### SDK Initialization
+
+```java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX");
+
+Yabetoo yabetoo = new Yabetoo(config);
+```
+
+## Payment Management
+
+### Create a Payment Intent
+
+```java
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.request.PaymentIntentRequest;
+
+PaymentIntentRequest request = PaymentIntentRequest.builder()
+    .amount(5000)
+    .currency("XAF")
+    .description("Yabetoo services purchase")
+    .putMetadata("order_id", "6735")
+    .putMetadata("customer_id", "12345")
+    .build();
+
+PaymentIntent paymentIntent = yabetoo.paymentIntents().create(request);
+System.out.println("Payment ID: " + paymentIntent.getId());
+```
+
+### Confirm a Payment Intent
+
+```java
+import com.yabetoo.model.PaymentMethod;
+
+PaymentMethod.MomoDetails momoDetails = PaymentMethod.MomoDetails.builder()
+    .msisdn("242066594470")
+    .country("CG")
+    .operatorName("mtn")
+    .build();
+
+PaymentMethod paymentMethod = PaymentMethod.builder()
+    .type("momo")
+    .momoDetails(momoDetails)
+    .build();
+
+PaymentIntent confirmedPayment = yabetoo.paymentIntents().confirm(
+    paymentIntent.getId(),
+    PaymentIntentConfirmRequest.builder()
+        .clientSecret(paymentIntent.getClientSecret())
+        .firstName("John")
+        .lastName("Doe")
+        .email("john.doe@example.com")
+        .paymentMethod(paymentMethod)
+        .build()
+);
+```
+
+### Error Handling
+
+```java
+try {
+    PaymentIntent payment = yabetoo.paymentIntents().confirm(/* ... */);
+} catch (YabetooException e) {
+    System.err.println("Error code: " + e.getCode());
+    System.err.println("Message: " + e.getMessage());
+    System.err.println("Details: " + e.getDetails());
+}
+```
+
+## Checkout Sessions
+
+### Create a Session
+
+```java
+import com.yabetoo.model.Session;
+import com.yabetoo.request.SessionCreateRequest;
+
+SessionCreateRequest request = SessionCreateRequest.builder()
+    .successUrl("https://your-site.com/success")
+    .cancelUrl("https://your-site.com/cancel")
+    .addLineItem(LineItem.builder()
+        .productId("prod_12345")
+        .quantity(1)
+        .price(200000)
+        .productName("HD Monitor")
+        .build())
+    .currency("XAF")
+    .build();
+
+Session session = yabetoo.sessions().create(request);
+String checkoutUrl = session.getUrl();
+```
+
+### Retrieve a Session
+
+```java
+Session session = yabetoo.sessions().retrieve("cs_123456789");
+```
+
+## Webhooks
+
+### Verify a Webhook Signature
+
+```java
+String payload = "..."; // Webhook request body
+String signature = request.getHeader("X-Yabetoo-Webhook-Signature");
+String secret = "whsec_..."; // Your webhook secret key
+
+try {
+    Event event = Webhook.constructEvent(payload, signature, secret);
+    // Handle the event based on its type
+    switch (event.getType()) {
+        case "payment_intent.succeeded":
+            PaymentIntent payment = (PaymentIntent) event.getData();
+            handleSuccessfulPayment(payment);
+            break;
+        // Handle other event types...
+    }
+} catch (YabetooException e) {
+    // Handle invalid signature error
+    System.err.println("Invalid webhook signature");
+}
+```
+
+## Advanced Configuration
+
+### Custom Timeouts
+
+```java
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+    .setConnectTimeout(30000)  // 30 seconds
+    .setReadTimeout(30000);    // 30 seconds
+
+Yabetoo yabetoo = new Yabetoo(config);
+```
+
+### HTTP Proxy
+
+```java
+Proxy proxy = new Proxy(Proxy.Type.HTTP,
+    new InetSocketAddress("proxy.example.com", 8080));
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+    .setProxy(proxy);
+
+Yabetoo yabetoo = new Yabetoo(config);
+```
+
+## Best Practices
+
+1. **Secret Management**
+   - Never store API keys directly in code
+   - Use environment variables or a secrets manager
+
+2. **Error Handling**
+   - Implement comprehensive error handling
+   - Log errors for debugging
+   - Provide appropriate error messages to users
+
+3. **Validation**
+   - Validate all user inputs before sending to the API
+   - Check amounts and currencies
+   - Validate phone numbers and emails
+
+4. **Security**
+   - Use HTTPS for all communications
+   - Always verify webhook signatures
+   - Double-check successful payments
+
+## Conclusion
+
+The Yabetoo Java SDK simplifies payment integration into your Java applications. Its object-oriented design and fluent API make code more readable and maintainable. For more information and detailed examples, check our [complete documentation](https://docs.yabetoo.com).
+
+<Note>
+  For any questions or technical assistance, feel free to contact our support
+  team at support@yabetoopay.com
+</Note>

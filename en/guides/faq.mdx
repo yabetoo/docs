@@ -1,0 +1,135 @@
+---
+title: FAQ
+description: Frequently asked questions about Yabetoo.
+icon: "circle-question"
+---
+
+## General Questions
+
+<AccordionGroup>
+  <Accordion title="What is Yabetoo?">
+    Yabetoo is a payment platform that enables businesses to accept Mobile Money payments in Central Africa. We provide APIs and tools to integrate payments into your applications.
+  </Accordion>
+
+  <Accordion title="Which countries does Yabetoo support?">
+    Currently, Yabetoo operates in Congo-Brazzaville. We support MTN Mobile Money and Airtel Money.
+  </Accordion>
+
+  <Accordion title="What currencies are supported?">
+    We currently support the CFA Franc (XAF), the currency used in CEMAC countries.
+  </Accordion>
+
+  <Accordion title="How do I get started?">
+    1. Create an account at [app.yabetoo.com](https://app.yabetoo.com)
+    2. Get your API keys from the [Developers section](https://app.yabetoo.com/developers)
+    3. Follow our [Quickstart guide](/en/quickstart) to make your first payment
+  </Accordion>
+</AccordionGroup>
+
+## Technical Questions
+
+<AccordionGroup>
+  <Accordion title="What's the difference between Payment Intents and Checkout Sessions?">
+    **Payment Intents** give you full control over the payment UI. You collect customer information and call the API directly.
+
+    **Checkout Sessions** provide a hosted payment page. Yabetoo handles the UI, and you redirect customers to complete payment.
+
+    Use Checkout Sessions for simpler integration, and Payment Intents for custom payment flows.
+  </Accordion>
+
+  <Accordion title="How do I test payments without real money?">
+    Use the sandbox environment with test API keys (`sk_test_`). We provide test phone numbers that simulate different payment outcomes. See our [Testing guide](/en/developer-tools/test/overview).
+  </Accordion>
+
+  <Accordion title="How long do payments take to process?">
+    Mobile Money payments typically complete within 10-60 seconds. The customer needs to:
+    1. Receive the notification on their phone
+    2. Enter their PIN to confirm
+
+    If the customer doesn't respond, the payment times out after about 90 seconds.
+  </Accordion>
+
+  <Accordion title="What happens if a payment fails?">
+    When a payment fails, you receive a `failed` status with a `failure_message` explaining the reason. Common reasons include:
+    - Insufficient funds
+    - Customer rejected the payment
+    - Invalid phone number
+    - Timeout (customer didn't respond)
+
+    You can allow customers to retry failed payments.
+  </Accordion>
+
+  <Accordion title="Do I need to verify webhook signatures?">
+    Yes, you should always verify webhook signatures to ensure requests are genuinely from Yabetoo. This prevents malicious actors from sending fake payment confirmations to your server.
+  </Accordion>
+
+  <Accordion title="Can I refund a payment?">
+    Contact our support team at support@yabetoopay.com to process refunds. We'll work with you to return funds to the customer.
+  </Accordion>
+</AccordionGroup>
+
+## Account & Security
+
+<AccordionGroup>
+  <Accordion title="How do I keep my API keys secure?">
+    - Never expose secret keys in client-side code
+    - Store keys in environment variables
+    - Use different keys for development and production
+    - Regenerate keys if you suspect they've been compromised
+  </Accordion>
+
+  <Accordion title="What's the difference between test and live keys?">
+    **Test keys** (`sk_test_`, `pk_test_`) work only in the sandbox environment. No real money is moved.
+
+    **Live keys** (`sk_live_`, `pk_live_`) process real payments in production. Keep these extra secure.
+  </Accordion>
+
+  <Accordion title="How do I switch from sandbox to production?">
+    1. Verify your account is activated for live payments
+    2. Replace your test API key with your live key
+    3. Update the API URL from `pay.sandbox.yabetoopay.com` to `pay.api.yabetoopay.com`
+    4. Test with a small real payment before going fully live
+  </Accordion>
+
+  <Accordion title="Where do I find my account ID?">
+    Your account ID is available in your [dashboard](https://app.yabetoo.com/developers). It's required for some API calls like creating checkout sessions.
+  </Accordion>
+</AccordionGroup>
+
+## Disbursements & Remittances
+
+<AccordionGroup>
+  <Accordion title="What's the difference between disbursements and remittances?">
+    **Disbursements** are payouts from your Yabetoo account to a customer's Mobile Money account.
+
+    **Remittances** are transfers, typically used for cross-border or scheduled payments.
+  </Accordion>
+
+  <Accordion title="How quickly are disbursements processed?">
+    Disbursements are typically processed within a few minutes. The recipient receives the funds directly in their Mobile Money account.
+  </Accordion>
+
+  <Accordion title="Is there a limit on disbursement amounts?">
+    Limits depend on your account configuration and the Mobile Money provider's limits. Contact support for details about your specific limits.
+  </Accordion>
+</AccordionGroup>
+
+## Pricing & Fees
+
+<AccordionGroup>
+  <Accordion title="What are Yabetoo's fees?">
+    Contact our sales team or visit [yabetoo.com](https://yabetoo.com) for current pricing information. Fees vary based on transaction volume and type.
+  </Accordion>
+
+  <Accordion title="When do I get paid?">
+    Payouts are processed according to your settlement schedule. Check your dashboard for payout details or contact support.
+  </Accordion>
+</AccordionGroup>
+
+## Still Have Questions?
+
+If your question isn't answered here:
+
+- Check our [Troubleshooting guide](/en/guides/troubleshooting) for common issues
+- Browse our [API Reference](/en/api-reference/introduction) for technical details
+- Contact support at support@yabetoopay.com

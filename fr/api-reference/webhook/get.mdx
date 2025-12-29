@@ -1,5 +1,136 @@
 ---
-title: Récupérer un webhook
-description: Récupérez les détails d'un webhook existant.
-openapi: "GET /v1/account/{accountId}/webhooks/{id}"
+title: "Récupérer un webhook"
+description: "Récupérez les détails d'un webhook existant."
 ---
+
+## Endpoint
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/account/{accountId}/webhooks/{id}   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/account/{accountId}/webhooks/{id}       # Production
+```
+
+## Authentification
+
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Paramètres de chemin
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `accountId` | `string` | Votre ID de compte |
+| `id` | `string` | L'ID du webhook |
+
+## Exemple de requête
+
+<CodeGroup>
+```bash cURL
+curl https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks/whk_123456789 \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const webhook = await yabetoo.webhooks.retrieve("whk_123456789");
+```
+
+```python Python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
+
+webhook = yabetoo.webhooks.retrieve("whk_123456789")
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$webhook = $yabetoo->webhooks->retrieve("whk_123456789");
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Webhook;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+Webhook webhook = yabetoo.webhooks().retrieve("whk_123456789");
+```
+</CodeGroup>
+
+## Réponse
+
+### 200 OK
+
+```json
+{
+  "id": "whk_123456789",
+  "object": "webhook",
+  "url": "https://example.com/webhooks",
+  "description": "Webhook de production",
+  "status": "active",
+  "enabled_events": [
+    "intent.completed",
+    "disbursement.completed"
+  ],
+  "metadata": {
+    "environment": "production"
+  },
+  "created_at": "2023-05-12T10:12:32Z",
+  "last_error": null,
+  "stats": {
+    "successful_deliveries": 150,
+    "failed_deliveries": 2,
+    "average_response_time": 245
+  }
+}
+```
+
+### Statuts du webhook
+
+| Statut | Description |
+|--------|-------------|
+| `active` | Webhook actif et fonctionnel |
+| `disabled` | Webhook désactivé manuellement |
+| `failed` | Webhook désactivé après trop d'échecs |
+
+### Types d'erreurs
+
+| Type | Description |
+|------|-------------|
+| `connection_error` | Impossible de se connecter à l'URL |
+| `timeout_error` | Délai de réponse dépassé |
+| `invalid_response` | Réponse non valide (code != 200) |
+| `ssl_error` | Erreur de certificat SSL |
+
+### 404 Not Found
+
+```json
+{
+  "message": "Webhook not found"
+}
+```
+
+### 401 Non autorisé
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

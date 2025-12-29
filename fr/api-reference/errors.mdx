@@ -1,0 +1,50 @@
+---
+title: Gestion des erreurs
+description: Comprendre et gérer efficacement les erreurs de l'API.
+---
+
+L'API Yabetoo utilise des codes de réponse HTTP conventionnels pour indiquer le succès ou l'échec d'une requête API.
+
+## Codes de statut HTTP
+
+| Code | Statut | Description |
+|------|--------|-------------|
+| `200` | OK | Requête réussie |
+| `201` | Created | Ressource créée avec succès |
+| `400` | Bad Request | Paramètres de requête invalides |
+| `401` | Unauthorized | Clé API invalide ou manquante |
+| `403` | Forbidden | Permissions insuffisantes |
+| `404` | Not Found | Ressource inexistante |
+| `429` | Too Many Requests | Limite de requêtes dépassée |
+| `500` | Internal Server Error | Erreur côté serveur |
+
+## Codes d'erreur de paiement
+
+Lorsqu'un paiement échoue, l'API renvoie des codes d'erreur spécifiques pour vous aider à comprendre ce qui s'est passé :
+
+| Code | Description |
+|------|-------------|
+| `LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED` | Le client n'a pas assez de fonds, a atteint sa limite de transaction, ou la transaction n'est pas autorisée par l'opérateur |
+| `TIMEOUT` | Le client n'a pas confirmé le paiement à temps (n'a pas entré son code PIN) |
+
+### Exemple de réponse d'erreur
+
+```json
+{
+  "error": {
+    "message": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED",
+    "code": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED"
+  }
+}
+```
+
+## Bonnes pratiques
+
+1. **Gérez toujours les erreurs gracieusement** - N'exposez jamais les messages d'erreur bruts aux utilisateurs finaux
+2. **Journalisez les erreurs pour le débogage** - Stockez les détails d'erreur pour le dépannage
+3. **Implémentez une logique de retry** - Pour les limites de taux et les échecs temporaires
+4. **Validez avant d'envoyer** - Vérifiez les paramètres côté client pour réduire les erreurs
+
+<Note>
+  Si vous rencontrez des erreurs persistantes, contactez support@yabetoopay.com avec les détails de l'erreur.
+</Note>

@@ -1,0 +1,106 @@
+---
+title: Glossary
+description: Definitions of key terms used in the Yabetoo documentation.
+icon: "book"
+---
+
+This glossary defines the key terms and concepts you'll encounter when working with Yabetoo.
+
+## A
+
+### API Key
+A unique identifier used to authenticate requests to the Yabetoo API. There are two types:
+- **Secret Key** (`sk_test_` or `sk_live_`): Used server-side, must be kept confidential
+- **Public Key** (`pk_test_` or `pk_live_`): Can be used client-side
+
+### Account ID
+Your unique merchant identifier in Yabetoo. Found in your [dashboard](https://app.yabetoo.com/developers) and required for some API calls.
+
+## C
+
+### Checkout Session
+A hosted payment page created by Yabetoo. You redirect customers to this page to complete payment, and they're redirected back to your site afterward.
+
+### Client Secret
+A unique token associated with a Payment Intent. Used to confirm the payment and prevent unauthorized modifications.
+
+### Confirm
+The action of finalizing a Payment Intent by providing the customer's payment method details. This triggers the actual payment.
+
+## D
+
+### Disbursement
+A payout from your Yabetoo account to a customer's Mobile Money account. Used to send money to recipients (refunds, payouts, rewards, etc.).
+
+## I
+
+### Intent
+See [Payment Intent](#payment-intent).
+
+## M
+
+### Mobile Money (MoMo)
+A digital payment service that allows users to store, send, and receive money using their mobile phone. Supported operators: MTN and Airtel.
+
+### MSISDN
+Mobile Station International Subscriber Directory Number. The full phone number in international format (e.g., `+242066594470`).
+
+## O
+
+### Operator
+The Mobile Money service provider. Yabetoo supports:
+- **MTN** (`mtn`): MTN Mobile Money
+- **Airtel** (`airtel`): Airtel Money
+
+## P
+
+### Payment Intent
+An object that represents your intention to collect a payment. It tracks the payment lifecycle from creation to confirmation.
+
+### Payment Method
+The means by which a customer pays. In Yabetoo, this is typically Mobile Money (`momo`).
+
+### Production (Live)
+The real environment where actual payments are processed. Use `sk_live_` keys and real phone numbers.
+
+## R
+
+### Remittance
+A transfer of funds, typically for cross-border or scheduled payments. Similar to disbursements but may have different processing rules.
+
+## S
+
+### Sandbox
+The test environment for development and testing. No real money is processed. Use `sk_test_` keys and test phone numbers.
+
+### Secret Key
+Your confidential API key used for server-side authentication. Never expose this in client-side code. Prefixed with `sk_test_` (sandbox) or `sk_live_` (production).
+
+### Session
+See [Checkout Session](#checkout-session).
+
+### Status
+The current state of a payment or transfer. Common statuses:
+- `pending`: Waiting to be processed
+- `processing`: Being processed
+- `succeeded`: Completed successfully
+- `failed`: Failed to complete
+
+## W
+
+### Webhook
+An HTTP callback that Yabetoo sends to your server when events occur (e.g., payment completed). Used for reliable event notifications.
+
+### Webhook Secret
+A secret key used to verify that webhook requests genuinely come from Yabetoo. Found in your dashboard webhook settings.
+
+## X
+
+### XAF
+The ISO 4217 currency code for the Central African CFA Franc. The currency used in CEMAC countries including Congo-Brazzaville.
+
+---
+
+<Note>
+  Can't find a term? Contact us at support@yabetoopay.com and we'll help clarify and potentially add it to this glossary.
+</Note>

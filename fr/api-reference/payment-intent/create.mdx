@@ -1,5 +1,144 @@
 ---
-title: Créer une intention
-description: Créez une nouvelle intention de paiement.
-openapi: "POST /v1/payment-intents"
+title: "Créer une intention de paiement"
+description: "Créez une intention de paiement pour traiter un paiement."
 ---
+
+## Endpoint
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/payment-intents   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
+```
+
+## Authentification
+
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Corps de la requête
+
+| Paramètre | Type | Obligatoire | Description |
+|-----------|------|-------------|-------------|
+| `amount` | `number` | Oui | Le montant à payer (dans la plus petite unité de devise) |
+| `currency` | `string` | Oui | Code devise (ex: `xaf`, `xof`) |
+| `description` | `string` | Non | Description du paiement |
+| `metadata` | `object` | Non | Données personnalisées pour votre référence |
+
+## Exemple de requête
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "amount": 2000,
+    "currency": "xaf",
+    "description": "Paiement pour produit",
+    "metadata": { "orderId": "1234" }
+  }'
+```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const paymentIntent = await yabetoo.payments.create({
+  amount: 2000,
+  currency: "xaf",
+  description: "Paiement pour produit",
+  metadata: { orderId: "1234" },
+});
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.payment import CreateIntentRequest
+
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
+
+payment_intent = yabetoo.payments.create(CreateIntentRequest(
+    amount=2000,
+    currency="xaf",
+    description="Paiement pour produit",
+    metadata={"orderId": "1234"}
+))
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$paymentIntent = $yabetoo->payments->create([
+    "amount" => 2000,
+    "currency" => "xaf",
+    "description" => "Paiement pour produit",
+    "metadata" => ["orderId" => "1234"],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.request.PaymentIntentRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+PaymentIntentRequest request = PaymentIntentRequest.builder()
+    .amount(2000)
+    .currency("xaf")
+    .description("Paiement pour produit")
+    .putMetadata("orderId", "1234")
+    .build();
+
+PaymentIntent paymentIntent = yabetoo.paymentIntents().create(request);
+```
+</CodeGroup>
+
+## Réponse
+
+### 200 OK
+
+```json
+{
+  "amount": 2000,
+  "currency": "xaf",
+  "label": "payment_intent",
+  "id": "pi_XdLeavDjiiaEx2y5nRz0",
+  "client_secret": ""
+}
+```
+
+### 422 Bad Request
+
+```json
+{
+  "errors": [
+    {
+      "rule": "required",
+      "field": "currency",
+      "message": "required validation failed"
+    }
+  ]
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Unauthorized"
+}
+```

@@ -1,0 +1,118 @@
+---
+title: Authentification
+description: Apprenez à authentifier vos requêtes API avec Yabetoo.
+---
+
+L'API Yabetoo utilise des clés API pour authentifier les requêtes. Ce guide explique comment obtenir, utiliser et sécuriser vos clés API.
+
+## Types de clés API
+
+Yabetoo fournit deux types de clés API :
+
+| Type de clé | Préfixe | Environnement | Utilisation |
+|-------------|---------|---------------|-------------|
+| Clé de test | `sk_test_` | Sandbox | Développement et tests |
+| Clé de production | `sk_live_` | Production | Transactions réelles |
+
+<Warning>
+  N'utilisez jamais votre clé API de production dans des environnements de test et ne l'exposez jamais dans le code côté client.
+</Warning>
+
+## Obtenir vos clés API
+
+1. Connectez-vous à votre [tableau de bord Yabetoo](https://app.yabetoo.com)
+2. Accédez à **Developers** ou allez directement sur [app.yabetoo.com/developers](https://app.yabetoo.com/developers)
+3. Copiez votre clé de test ou de production
+
+## Utilisation des clés API
+
+Incluez votre clé API dans l'en-tête `Authorization` de chaque requête :
+
+```bash
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 5000, "currency": "xaf"}'
+```
+
+### Exemples avec les SDKs
+
+<CodeGroup>
+```javascript JavaScript
+import Yabetoo from '@yabetoo/sdk';
+
+const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+```
+
+```python Python
+import yabetoo
+
+yabetoo.api_key = 'sk_test_XXXXXXXXXXXXXXXXXXXXXXXX'
+```
+
+```php PHP
+<?php
+\Yabetoo\Yabetoo::setApiKey('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+
+Yabetoo.apiKey = "sk_test_XXXXXXXXXXXXXXXXXXXXXXXX";
+```
+</CodeGroup>
+
+## Bonnes pratiques de sécurité
+
+### Stockage sécurisé des clés
+
+- Utilisez des variables d'environnement pour stocker les clés API
+- Ne commitez jamais les clés API dans le contrôle de version
+- Utilisez un gestionnaire de secrets en production (AWS Secrets Manager, HashiCorp Vault, etc.)
+
+```bash
+# Fichier .env (ne jamais commiter ce fichier)
+YABETOO_API_KEY=sk_test_XXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+```javascript
+// Accès depuis l'environnement
+const yabetoo = new Yabetoo(process.env.YABETOO_API_KEY);
+```
+
+### Restreindre l'accès aux clés
+
+- Ne donnez les clés API qu'aux membres de l'équipe qui en ont besoin
+- Utilisez des clés différentes pour différents environnements
+- Renouvelez les clés périodiquement
+
+## Régénérer les clés API
+
+Si vous suspectez que votre clé API a été compromise :
+
+1. Allez dans **Developers** dans votre [tableau de bord](https://app.yabetoo.com/developers)
+2. Cliquez sur **Régénérer** à côté de la clé compromise
+3. Mettez à jour votre application avec la nouvelle clé
+4. L'ancienne clé sera immédiatement invalidée
+
+<Warning>
+  La régénération d'une clé invalide immédiatement l'ancienne clé. Assurez-vous que votre application est mise à jour avant de régénérer.
+</Warning>
+
+## ID de compte
+
+Certains endpoints nécessitent un paramètre `accountId`. C'est l'identifiant de votre compte marchand, disponible dans votre [tableau de bord](https://app.yabetoo.com/developers).
+
+```javascript
+const session = await yabetoo.sessions.create({
+  total: 5000,
+  currency: 'XAF',
+  accountId: 'acct_XXXXXXXXXXXXXXXX', // Votre ID de compte
+  successUrl: 'https://exemple.com/success',
+  cancelUrl: 'https://exemple.com/cancel'
+});
+```
+
+<Note>
+  Pour toute question sur l'authentification, contactez notre équipe support à support@yabetoopay.com
+</Note>

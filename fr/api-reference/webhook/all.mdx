@@ -1,5 +1,149 @@
 ---
-title: Lister les webhooks
-description: Récupérez la liste de tous vos webhooks.
-openapi: "GET /v1/account/{accountId}/webhooks"
+title: "Lister les webhooks"
+description: "Récupérez la liste de tous vos webhooks."
 ---
+
+## Endpoint
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/account/{accountId}/webhooks   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/account/{accountId}/webhooks       # Production
+```
+
+## Authentification
+
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Paramètres de chemin
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `accountId` | `string` | Votre ID de compte |
+
+## Paramètres de requête
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `limit` | `integer` | Nombre d'éléments par page (défaut: 10, max: 100) |
+| `page` | `integer` | Numéro de la page (commence à 1) |
+| `status` | `string` | Filtrer par statut |
+
+## Exemple de requête
+
+<CodeGroup>
+```bash cURL
+curl "https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks?limit=10&page=1" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const webhooks = await yabetoo.webhooks.list({
+  limit: 10,
+  page: 1,
+});
+```
+
+```python Python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
+
+webhooks = yabetoo.webhooks.list(limit=10, page=1)
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$webhooks = $yabetoo->webhooks->all([
+    "limit" => 10,
+    "page" => 1,
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Webhook;
+import com.yabetoo.model.WebhookCollection;
+import com.yabetoo.request.WebhookListRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+WebhookListRequest request = WebhookListRequest.builder()
+    .setLimit(10L)
+    .setPage(1L)
+    .build();
+
+WebhookCollection webhooks = yabetoo.webhooks().list(request);
+```
+</CodeGroup>
+
+## Réponse
+
+### 200 OK
+
+```json
+{
+  "data": [
+    {
+      "id": "whk_123456789",
+      "object": "webhook",
+      "url": "https://example.com/webhooks",
+      "description": "Webhook de production",
+      "status": "active",
+      "enabled_events": [
+        "intent.completed",
+        "disbursement.completed"
+      ],
+      "metadata": {
+        "environment": "production"
+      },
+      "created_at": "2023-05-12T10:12:32Z",
+      "last_error": null,
+      "stats": {
+        "successful_deliveries": 150,
+        "failed_deliveries": 2,
+        "average_response_time": 245
+      }
+    }
+  ],
+  "meta": {
+    "total": 25,
+    "page": 1,
+    "limit": 10,
+    "pages": 3
+  }
+}
+```
+
+### Filtres de statut disponibles
+
+| Statut | Description |
+|--------|-------------|
+| `active` | Webhooks actifs |
+| `disabled` | Webhooks désactivés manuellement |
+| `failed` | Webhooks désactivés après échecs |
+
+### 401 Non autorisé
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

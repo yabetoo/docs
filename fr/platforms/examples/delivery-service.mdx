@@ -1,0 +1,305 @@
+---
+title: Service de livraison
+description: Comment intégrer Yabetoo pour la collecte de paiements et la rémunération des livreurs dans les plateformes de livraison.
+icon: "truck"
+---
+
+Apprenez à construire une plateforme de livraison complète avec Yabetoo, gérant les paiements clients, les rémunérations des livreurs et la gestion des commissions.
+
+## Aperçu
+
+Les plateformes de livraison doivent gérer :
+- La collecte des paiements clients (prépayé ou à la livraison)
+- Les paiements aux livreurs/coursiers
+- La gestion des commissions de la plateforme
+- Le suivi des paiements en temps réel
+- Les paiements partagés entre plusieurs parties
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[App Client] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> D[Plateforme Livraison]
+    D --> B
+    B --> E[Livreur/Marchand]
+```
+
+## Implémentation
+
+### 1. Modèles de commande et paiement
+
+Définissez la structure de vos commandes :
+
+```typescript
+interface DeliveryOrder {
+  id: string;
+  customerId: string;
+  merchantId: string;
+  driverId?: string;
+  items: OrderItem[];
+  subtotal: number;
+  deliveryFee: number;
+  platformFee: number;
+  total: number;
+  paymentMethod: 'prepaid' | 'cash_on_delivery';
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  orderStatus: 'created' | 'accepted' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
+  deliveryAddress: Address;
+  createdAt: Date;
+  deliveredAt?: Date;
+}
+
+// Configuration des frais
+const PLATFORM_FEE_PERCENT = 15; // 15% commission plateforme
+const DRIVER_SHARE_PERCENT = 80; // Livreur reçoit 80% des frais de livraison
+```
+
+### 2. Flux de commande prépayée
+
+Gérer les commandes prépayées :
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+async function createPrepaidOrder(
+  customerId: string,
+  merchantId: string,
+  items: OrderItem[],
+  deliveryAddress: Address
+) {
+  const customer = await db.customers.findById(customerId);
+  const merchant = await db.merchants.findById(merchantId);
+
+  // Calculer les montants
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const deliveryFee = calculateDeliveryFee(merchant.address, deliveryAddress);
+  const platformFee = Math.round(subtotal * (PLATFORM_FEE_PERCENT / 100));
+  const total = subtotal + deliveryFee;
+
+  // Créer la commande
+  const order: DeliveryOrder = {
+    id: generateOrderId(),
+    customerId,
+    merchantId,
+    items,
+    subtotal,
+    deliveryFee,
+    platformFee,
+    total,
+    paymentMethod: 'prepaid',
+    paymentStatus: 'pending',
+    orderStatus: 'created',
+    deliveryAddress,
+    createdAt: new Date()
+  };
+
+  await db.orders.create(order);
+
+  // Créer l'intention de paiement
+  const intent = await yabetoo.payments.create({
+    amount: total,
+    currency: 'XAF',
+    description: `Commande #${order.id} - ${merchant.name}`,
+    metadata: {
+      orderId: order.id,
+      customerId,
+      merchantId,
+      subtotal: subtotal.toString(),
+      deliveryFee: deliveryFee.toString(),
+      type: 'delivery_order'
+    }
+  });
+
+  return { order, paymentIntent: intent };
+}
+```
+
+### 3. Système de paiement des livreurs
+
+Payer les livreurs pour les livraisons effectuées :
+
+```typescript
+async function processDriverPayout(order: DeliveryOrder, driverId: string) {
+  const driver = await db.drivers.findById(driverId);
+  const earnings = Math.round(order.deliveryFee * (DRIVER_SHARE_PERCENT / 100));
+
+  // Ajouter au solde du livreur (pour paiements groupés)
+  await db.drivers.incrementBalance(driverId, earnings);
+
+  return { earnings };
+}
+
+// Paiement groupé - exécuté quotidiennement
+async function processBatchPayouts() {
+  const drivers = await db.drivers.findWithPendingBalance();
+
+  for (const driver of drivers) {
+    if (driver.balance < 5000) continue; // Seuil minimum de paiement
+
+    try {
+      const disbursement = await yabetoo.disbursements.create({
+        amount: driver.balance,
+        currency: 'XAF',
+        firstName: driver.firstName,
+        lastName: driver.lastName,
+        paymentMethodData: {
+          type: 'momo',
+          momo: {
+            msisdn: driver.phone,
+            country: 'cg',
+            operatorName: driver.operatorName
+          }
+        }
+      });
+
+      // Réinitialiser le solde
+      await db.drivers.update(driver.id, { balance: 0 });
+
+      // Notifier le livreur
+      await sendNotification(driver.id, {
+        type: 'payout_sent',
+        amount: driver.balance,
+        message: `Vos gains de ${driver.balance} XAF ont été envoyés sur votre compte mobile money.`
+      });
+
+    } catch (error) {
+      console.error(`Échec du paiement pour le livreur ${driver.id}:`, error);
+    }
+  }
+}
+
+// Paiement instantané à la demande
+async function requestInstantPayout(driverId: string) {
+  const driver = await db.drivers.findById(driverId);
+
+  if (driver.balance < 1000) {
+    throw new Error('Solde minimum pour paiement instantané: 1 000 XAF');
+  }
+
+  // Appliquer les frais de paiement instantané (2%)
+  const fee = Math.round(driver.balance * 0.02);
+  const payoutAmount = driver.balance - fee;
+
+  const disbursement = await yabetoo.disbursements.create({
+    amount: payoutAmount,
+    currency: 'XAF',
+    firstName: driver.firstName,
+    lastName: driver.lastName,
+    paymentMethodData: {
+      type: 'momo',
+      momo: {
+        msisdn: driver.phone,
+        country: 'cg',
+        operatorName: driver.operatorName
+      }
+    }
+  });
+
+  await db.drivers.update(driverId, { balance: 0 });
+
+  return disbursement;
+}
+```
+
+### 4. Règlement des marchands
+
+Régler les paiements aux marchands :
+
+```typescript
+async function processMerchantSettlement(
+  merchantId: string,
+  startDate: Date,
+  endDate: Date
+) {
+  const orders = await db.orders.findMany({
+    where: {
+      merchantId,
+      paymentStatus: 'paid',
+      orderStatus: 'delivered',
+      deliveredAt: { gte: startDate, lte: endDate }
+    }
+  });
+
+  const grossAmount = orders.reduce((sum, o) => sum + o.subtotal, 0);
+  const platformFees = orders.reduce((sum, o) => sum + o.platformFee, 0);
+  const netAmount = grossAmount - platformFees;
+
+  const merchant = await db.merchants.findById(merchantId);
+
+  const disbursement = await yabetoo.disbursements.create({
+    amount: netAmount,
+    currency: 'XAF',
+    firstName: merchant.ownerFirstName,
+    lastName: merchant.ownerLastName,
+    paymentMethodData: {
+      type: 'momo',
+      momo: {
+        msisdn: merchant.phone,
+        country: 'cg',
+        operatorName: merchant.operatorName
+      }
+    }
+  });
+
+  return { grossAmount, platformFees, netAmount, disbursement };
+}
+```
+
+## Flux de commande
+
+<Steps>
+  <Step title="Le client commande">
+    Le client sélectionne des articles, saisit l'adresse de livraison et choisit le mode de paiement.
+  </Step>
+  <Step title="Paiement">
+    Pour les commandes prépayées, le client paie via mobile money.
+  </Step>
+  <Step title="Le marchand accepte">
+    Le marchand reçoit la notification de commande et prépare les articles.
+  </Step>
+  <Step title="Attribution du livreur">
+    La plateforme attribue le livreur disponible le plus proche.
+  </Step>
+  <Step title="Enlèvement">
+    Le livreur récupère la commande chez le marchand.
+  </Step>
+  <Step title="Livraison">
+    Le livreur livre au client et marque la commande comme terminée.
+  </Step>
+  <Step title="Paiements">
+    Le livreur reçoit ses gains, le marchand reçoit son règlement.
+  </Step>
+</Steps>
+
+## Bonnes pratiques
+
+<AccordionGroup>
+  <Accordion title="Suivi en temps réel">
+    Implémentez le suivi GPS pour la transparence et des ETAs précis.
+  </Accordion>
+  <Accordion title="Prévention de la fraude">
+    Vérifiez la livraison avec photo ou signature du client.
+  </Accordion>
+  <Accordion title="Tarification dynamique">
+    Implémentez des prix majorés pendant les heures de pointe.
+  </Accordion>
+  <Accordion title="Incitations livreurs">
+    Offrez des bonus pour X livraisons complétées par jour/semaine.
+  </Accordion>
+</AccordionGroup>
+
+## Ressources associées
+
+<CardGroup cols={2}>
+  <Card title="Décaissements" icon="money-bill-transfer" href="/fr/payments/disbursement/overview">
+    Apprenez à envoyer des paiements
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/fr/developer-tools/webhook/overview">
+    Gérer les événements de paiement
+  </Card>
+</CardGroup>

@@ -1,4 +1,208 @@
 ---
 title: "Create Checkout Session"
-openapi: "POST /v1/sessions"
+description: "Create a new checkout session to accept payments."
 ---
+
+## Endpoint
+
+```bash
+POST https://buy.api.yabetoopay.com/v1/sessions
+```
+
+## Authentication
+
+Use your secret key in the `Authorization` header:
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `total` | `number` | Yes | Total amount in the smallest currency unit (e.g., 200000 = 200,000 XAF) |
+| `currency` | `string` | Yes | Currency code (e.g., `xaf`, `xof`) |
+| `accountId` | `string` | Yes | Your Yabetoo account ID |
+| `successUrl` | `string` | Yes | URL to redirect after successful payment |
+| `cancelUrl` | `string` | Yes | URL to redirect if payment is cancelled |
+| `items` | `array` | No | List of items being purchased |
+| `metadata` | `object` | No | Custom key-value data for your reference |
+
+### Item structure
+
+```json
+{
+  "productId": "prod_12345",
+  "productName": "HD Screen",
+  "quantity": 1,
+  "price": 200000
+}
+```
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://buy.api.yabetoopay.com/v1/sessions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "total": 200000,
+    "currency": "xaf",
+    "accountId": "acct_xxxxxxxx",
+    "successUrl": "https://your-site.com/checkout-success",
+    "cancelUrl": "https://your-site.com/checkout-cancel",
+    "metadata": { "orderId": "1234" },
+    "items": [
+      {
+        "productId": "prod_12345",
+        "quantity": 1,
+        "price": 200000,
+        "productName": "HD Screen"
+      }
+    ]
+  }'
+```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const session = await yabetoo.sessions.create({
+  accountId: "acct_xxxxxxxx",
+  total: 200000,
+  currency: "xaf",
+  successUrl: "https://your-site.com/checkout-success",
+  cancelUrl: "https://your-site.com/checkout-cancel",
+  metadata: { orderId: "1234" },
+  items: [
+    {
+      productId: "prod_12345",
+      quantity: 1,
+      price: 200000,
+      productName: "HD Screen",
+    },
+  ],
+});
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
+
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
+
+items = [
+    CheckoutItem(
+        product_id="prod_12345",
+        product_name="HD Screen",
+        quantity=1,
+        price=200000
+    )
+]
+
+session = yabetoo.sessions.create(CreateCheckoutSession(
+    account_id="acct_xxxxxxxx",
+    total=200000,
+    currency="xaf",
+    success_url="https://your-site.com/checkout-success",
+    cancel_url="https://your-site.com/checkout-cancel",
+    items=items,
+    metadata={"orderId": "1234"}
+))
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$session = $yabetoo->sessions->create([
+    "total" => 200000,
+    "currency" => "xaf",
+    "accountId" => "acct_xxxxxxxx",
+    "successUrl" => "https://your-site.com/checkout-success",
+    "cancelUrl" => "https://your-site.com/checkout-cancel",
+    "metadata" => ["orderId" => "1234"],
+    "items" => [
+        [
+            "productId" => "prod_12345",
+            "quantity" => 1,
+            "price" => 200000,
+            "productName" => "HD Screen",
+        ]
+    ],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Session;
+import com.yabetoo.request.SessionCreateRequest;
+import com.yabetoo.request.LineItem;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+SessionCreateRequest request = SessionCreateRequest.builder()
+    .successUrl("https://your-site.com/checkout-success")
+    .cancelUrl("https://your-site.com/checkout-cancel")
+    .addLineItem(LineItem.builder()
+        .productId("prod_12345")
+        .quantity(1)
+        .price(200000)
+        .productName("HD Screen")
+        .build())
+    .currency("xaf")
+    .build();
+
+Session session = yabetoo.sessions().create(request);
+```
+</CodeGroup>
+
+## Response
+
+### 200 OK
+
+```json
+{
+  "accountId": "acct_iNXIGeot1lqyhGI5eP7KL0LcWTCTgFLytfRa",
+  "successUrl": "https://your-site.com/checkout-success",
+  "cancelUrl": "https://your-site.com/checkout-cancel",
+  "orderId": "ord_KowaIWyMlD25Lhb8MyY3GQyvN8nFaxTZ7ji7",
+  "expiresAt": "2024-05-28T13:33:51.760+00:00",
+  "id": "session_ajrw3pQUUZD8UI2eFkWyUgLxJ4kGuXCoaQeb",
+  "createdAt": "2024-05-28T12:33:51.762+00:00",
+  "updatedAt": "2024-05-28T12:33:51.762+00:00"
+}
+```
+
+### 400 Bad Request
+
+```json
+{
+  "errors": [
+    {
+      "rule": "required",
+      "field": "currency",
+      "message": "required validation failed"
+    }
+  ]
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

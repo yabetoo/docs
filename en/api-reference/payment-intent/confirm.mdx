@@ -1,4 +1,252 @@
 ---
 title: "Confirm Payment Intent"
-openapi: "POST /v1/payment-intents/{id}/confirm"
+description: "Confirm a payment intent to process the payment."
 ---
+
+## Endpoint
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/payment-intents   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
+```
+
+## Authentication
+
+Use your secret key in the `Authorization` header:
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `client_secret` | `string` | Yes | The client secret of the payment intent |
+| `first_name` | `string` | No | Customer's first name |
+| `last_name` | `string` | No | Customer's last name |
+| `receipt_email` | `string` | No | Customer's email address |
+| `payment_method_data` | `object` | Yes | Payment method details |
+
+### payment_method_data structure
+
+```json
+{
+  "type": "momo",
+  "momo": {
+    "country": "cg",
+    "msisdn": "+242123456789",
+    "operator_name": "mtn"
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | Payment method type (`momo` for Mobile Money) |
+| `momo.country` | Country code (e.g., `cg`, `cm`) |
+| `momo.msisdn` | Phone number in international format |
+| `momo.operator_name` | Operator name (`mtn`, `airtel`) |
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "client_secret": "YOUR_CLIENT_SECRET",
+    "first_name": "John",
+    "last_name": "Doe",
+    "receipt_email": "john.doe@example.com",
+    "payment_method_data": {
+      "type": "momo",
+      "momo": {
+        "country": "cg",
+        "msisdn": "+242123456789",
+        "operator_name": "mtn"
+      }
+    }
+  }'
+```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const confirmation = await yabetoo.payments.confirm("PAYMENT_INTENT_ID", {
+  clientSecret: "YOUR_CLIENT_SECRET",
+  firstName: "John",
+  lastName: "Doe",
+  receiptEmail: "john.doe@example.com",
+  paymentMethodData: {
+    type: "momo",
+    momo: {
+      country: "cg",
+      msisdn: "+242123456789",
+      operatorName: "mtn",
+    },
+  },
+});
+```
+
+```python Python
+from yabetoo import Yabetoo
+from yabetoo.models.payment import ConfirmIntentRequest, PaymentMethodData, MomoData
+
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
+
+confirmation = yabetoo.payments.confirm(
+    payment_id="PAYMENT_INTENT_ID",
+    data=ConfirmIntentRequest(
+        client_secret="YOUR_CLIENT_SECRET",
+        first_name="John",
+        last_name="Doe",
+        receipt_email="john.doe@example.com",
+        payment_method_data=PaymentMethodData(
+            type="momo",
+            momo=MomoData(
+                country="cg",
+                msisdn="+242123456789",
+                operator_name="mtn"
+            )
+        )
+    )
+)
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$confirmation = $yabetoo->payments->confirm("PAYMENT_INTENT_ID", [
+    "client_secret" => "YOUR_CLIENT_SECRET",
+    "first_name" => "John",
+    "last_name" => "Doe",
+    "receipt_email" => "john.doe@example.com",
+    "payment_method_data" => [
+        "type" => "momo",
+        "momo" => [
+            "country" => "cg",
+            "msisdn" => "+242123456789",
+            "operator_name" => "mtn",
+        ],
+    ],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.PaymentIntent;
+import com.yabetoo.model.PaymentMethod;
+import com.yabetoo.request.PaymentIntentConfirmRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+PaymentMethod.MomoDetails momoDetails = PaymentMethod.MomoDetails.builder()
+    .msisdn("+242123456789")
+    .country("cg")
+    .operatorName("mtn")
+    .build();
+
+PaymentMethod paymentMethod = PaymentMethod.builder()
+    .type("momo")
+    .momoDetails(momoDetails)
+    .build();
+
+PaymentIntent confirmation = yabetoo.paymentIntents().confirm(
+    "PAYMENT_INTENT_ID",
+    PaymentIntentConfirmRequest.builder()
+        .clientSecret("YOUR_CLIENT_SECRET")
+        .firstName("John")
+        .lastName("Doe")
+        .email("john.doe@example.com")
+        .paymentMethod(paymentMethod)
+        .build()
+);
+```
+</CodeGroup>
+
+## Response
+
+### 200 OK
+
+```json
+{
+  "intent_id": "pi_9aATHBv8UXuD6H5qrSav",
+  "financial_transaction_id": "832546449",
+  "transaction_id": "3c043d55-e659-4a86-9fab-b377fea9ee6b",
+  "amount": 500,
+  "currency": "xaf",
+  "status": "succeeded",
+  "captured": true,
+  "external_id": "ext_3rxAagDtTSlN9XO96R1slJk14WENvxOlJbCu",
+  "id": "ch_1jro7CEishIEWadybzlm"
+}
+```
+
+### 422 Bad Request
+
+```json
+{
+  "error": {
+    "message": "E_CONFIRMED_INTENT_EXCEPTION: Intent already confirmed",
+    "code": "E_CONFIRMED_INTENT_EXCEPTION"
+  }
+}
+```
+
+### Payment Failed - Insufficient Balance
+
+```json
+{
+  "error": {
+    "message": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED",
+    "code": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED"
+  }
+}
+```
+
+This error occurs when:
+- The customer has insufficient funds in their Mobile Money account
+- The customer has reached their transaction limit
+- The transaction is not allowed by the operator
+
+### Payment Failed - Timeout
+
+```json
+{
+  "error": {
+    "message": "TIMEOUT",
+    "code": "TIMEOUT"
+  }
+}
+```
+
+This error occurs when the customer did not confirm the payment in time (did not enter their PIN on the Mobile Money prompt).
+
+### 401 Unauthorized
+
+```json
+{
+  "error": {
+    "message": "Unauthorized",
+    "code": "Unauthorized"
+  }
+}
+```
+
+<Warning>
+  Error handling is important, as confirmation can fail for various reasons
+  (insufficient funds, incorrect payment information, etc.).
+</Warning>

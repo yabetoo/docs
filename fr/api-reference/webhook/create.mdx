@@ -1,5 +1,191 @@
 ---
-title: Créer un webhook
-description: Créez un nouvel endpoint webhook pour recevoir des notifications.
-openapi: "POST /v1/account/{accountId}/webhooks"
+title: "Créer un webhook"
+description: "Créez un nouvel endpoint webhook pour recevoir des notifications."
 ---
+
+## Endpoint
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/account/{accountId}/webhooks   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/account/{accountId}/webhooks       # Production
+```
+
+## Authentification
+
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Paramètres de chemin
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `accountId` | `string` | Votre ID de compte |
+
+## Corps de la requête
+
+| Paramètre | Type | Obligatoire | Description |
+|-----------|------|-------------|-------------|
+| `url` | `string` | Oui | URL de l'endpoint webhook |
+| `description` | `string` | Non | Description du webhook |
+| `enabled_events` | `array` | Oui | Liste des événements à recevoir |
+| `metadata` | `object` | Non | Données personnalisées |
+
+## Exemple de requête
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -d '{
+    "url": "https://example.com/webhooks",
+    "description": "Webhook de production",
+    "enabled_events": [
+      "intent.completed",
+      "disbursement.completed"
+    ],
+    "metadata": {
+      "environment": "production"
+    }
+  }'
+```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const webhook = await yabetoo.webhooks.create({
+  url: "https://example.com/webhooks",
+  description: "Webhook de production",
+  enabledEvents: [
+    "intent.completed",
+    "disbursement.completed"
+  ],
+  metadata: {
+    environment: "production",
+  },
+});
+```
+
+```python Python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
+
+webhook = yabetoo.webhooks.create(
+    url="https://example.com/webhooks",
+    description="Webhook de production",
+    enabled_events=[
+        "intent.completed",
+        "disbursement.completed"
+    ],
+    metadata={
+        "environment": "production",
+    }
+)
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$webhook = $yabetoo->webhooks->create([
+    "url" => "https://example.com/webhooks",
+    "description" => "Webhook de production",
+    "enabled_events" => [
+        "intent.completed",
+        "disbursement.completed"
+    ],
+    "metadata" => [
+        "environment" => "production",
+    ],
+]);
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Webhook;
+import com.yabetoo.request.WebhookCreateRequest;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+WebhookCreateRequest request = WebhookCreateRequest.builder()
+    .setUrl("https://example.com/webhooks")
+    .setDescription("Webhook de production")
+    .addEnabledEvent("intent.completed")
+    .addEnabledEvent("disbursement.completed")
+    .putMetadata("environment", "production")
+    .build();
+
+Webhook webhook = yabetoo.webhooks().create(request);
+```
+</CodeGroup>
+
+## Réponse
+
+### 200 OK
+
+```json
+{
+  "id": "whk_123456789",
+  "object": "webhook",
+  "url": "https://example.com/webhooks",
+  "description": "Webhook de production",
+  "status": "active",
+  "secret": "whsec_XXXXXXXXXXXXXXXXXXXXXXXX",
+  "enabled_events": [
+    "intent.completed",
+    "disbursement.completed"
+  ],
+  "metadata": {
+    "environment": "production"
+  },
+  "created_at": "2023-05-12T10:12:32Z"
+}
+```
+
+### Événements disponibles
+
+| Événement | Description |
+|-----------|-------------|
+| `intent.completed` | Paiement reçu avec succès |
+| `disbursement.completed` | Décaissement traité avec succès |
+
+### 400 Mauvaise requête
+
+```json
+{
+  "errors": [
+    {
+      "rule": "required",
+      "field": "url",
+      "message": "required validation failed"
+    }
+  ]
+}
+```
+
+### 401 Non autorisé
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+<Note>
+  Conservez précieusement le `secret` du webhook. Il est nécessaire pour
+  vérifier l'authenticité des notifications reçues.
+</Note>

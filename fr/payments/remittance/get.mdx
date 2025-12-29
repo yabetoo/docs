@@ -1,0 +1,100 @@
+---
+title: "Récupérer un transfert"
+description: "Récupérez un transfert par son ID pour vérifier son statut et ses détails."
+---
+
+## Préparer votre requête
+
+Pour récupérer un transfert, utilisez l'endpoint suivant :
+
+- **Sandbox** : `GET https://pay.sandbox.yabetoopay.com/v1/remittance/{id}`
+- **Production** : `GET https://pay.api.yabetoopay.com/v1/remittance/{id}`
+
+<Note>
+  <strong>Sécurité de la clé secrète :</strong> Votre clé secrète (<code>secret_key</code>)
+  doit rester confidentielle et ne jamais être exposée dans le code frontend ou côté client.
+  Elle doit uniquement être utilisée côté serveur.
+</Note>
+
+1. Authentifiez votre requête en utilisant votre clé secrète dans l'en-tête `Authorization`.
+2. Incluez l'ID du transfert dans le chemin de l'URL.
+
+### Paramètres
+
+| Paramètre | Type     | Emplacement | Description                      |
+| --------- | -------- | ----------- | -------------------------------- |
+| `id`      | `string` | Chemin      | L'ID unique du transfert         |
+
+## Effectuer la requête
+
+```javascript
+const remittanceId = "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ";
+
+const response = await fetch(
+  `https://pay.sandbox.yabetoopay.com/v1/remittance/${remittanceId}`,
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${secret_key}`,
+    },
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+## Réponse
+
+### 200 OK
+
+Lorsque le transfert est récupéré avec succès, l'API retourne :
+
+```json
+{
+  "id": "rem_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "object": "remittance",
+  "amount": 1000,
+  "currency": "xaf",
+  "status": "succeeded",
+  "firstName": "John",
+  "lastName": "Doe",
+  "operatorName": "mtn",
+  "country": "cg",
+  "phone": "242066594470",
+  "type": 1,
+  "shouldExecutedAt": "2025-03-18T09:24:57.555Z",
+  "createdAt": "2025-03-17T10:24:57.559+01:00",
+  "updatedAt": "2025-03-17T10:24:57.559+01:00"
+}
+```
+
+### Statuts du transfert
+
+| Statut       | Description                              |
+| ------------ | ---------------------------------------- |
+| `pending`    | Le transfert est en attente de traitement |
+| `processing` | Le transfert est en cours de traitement   |
+| `succeeded`  | Le transfert a réussi                     |
+| `failed`     | Le transfert a échoué                     |
+
+### 404 Not Found
+
+Lorsque l'ID du transfert n'existe pas :
+
+```json
+{
+  "message": "Remittance not found"
+}
+```
+
+### 401 Unauthorized
+
+Lorsque la clé secrète est invalide :
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

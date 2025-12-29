@@ -1,0 +1,522 @@
+---
+title: Python
+description: Bibliothèque Python pour intégrer les paiements Yabetoo dans vos applications.
+icon: "python"
+---
+
+Ce SDK vous permet d'intégrer facilement le système de paiement sécurisé de Yabetoo dans vos applications Python. Que vous souhaitiez accepter des paiements en ligne, gérer des sessions de paiement ou consulter les transactions effectuées, ce SDK vous fournit une interface simple et intuitive pour interagir avec l'API de Yabetoo.
+
+## Installation
+
+### Prérequis
+
+- Python 3.7 ou supérieur
+- pip (gestionnaire de paquets Python)
+- Accès à l'API Yabetoo (clés API)
+- Un compte Yabetoo actif
+
+### Installation via pip
+
+Pour installer le SDK, utilisez pip. Exécutez la commande suivante dans votre projet :
+
+```bash
+pip install yabetoo
+```
+
+## Configuration
+
+### Initialisation du SDK
+
+Avant d'utiliser le SDK, vous devez initialiser une instance de la classe `Yabetoo`. Fournissez simplement votre clé API lors de l'initialisation. Le SDK détecte automatiquement si vous êtes en mode test ou en production en fonction du préfixe de votre clé.
+
+```python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")  # Utilisez votre clé API
+```
+
+### Configuration avancée
+
+Vous pouvez personnaliser le comportement du SDK avec des options supplémentaires :
+
+```python
+from yabetoo import Yabetoo
+from yabetoo.models.common import HttpClientOptions
+
+yabetoo = Yabetoo(
+    secret_key="sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
+    options=HttpClientOptions(
+        timeout=30,              # Délai d'expiration en secondes (défaut : 30)
+        max_retries=3,           # Nombre de tentatives (défaut : 3)
+        retry_delay=1,           # Délai entre les tentatives en secondes (défaut : 1)
+        verify_ssl=True,         # Vérification SSL (défaut : True)
+        follow_redirects=True,   # Suivre les redirections HTTP (défaut : True)
+        custom_headers={}        # En-têtes personnalisés supplémentaires
+    )
+)
+```
+
+## Gestion des paiements avec Yabetoo
+
+Vous pouvez créer des paiements, récupérer des informations sur des paiements spécifiques et gérer les paiements en utilisant la ressource `payments`.
+
+Yabetoo fonctionne sur un modèle de paiements en deux étapes. Cela signifie que, pour traiter un paiement, vous devez d'abord créer une intention de paiement et ensuite confirmer cette intention pour capturer le montant.
+
+Cette approche offre une flexibilité accrue, permettant par exemple de vérifier les fonds disponibles ou d'obtenir l'autorisation d'un utilisateur avant de finaliser une transaction. Voici comment cela fonctionne étape par étape :
+
+1. **Créer une intention de paiement** : Vous créez une intention de paiement en spécifiant le montant, la devise et d'autres détails pertinents.
+2. **Confirmer l'intention de paiement** : Une fois que vous avez créé l'intention, vous pouvez la confirmer pour capturer le montant. Cela peut être fait immédiatement ou à une date ultérieure, selon vos besoins.
+3. **Gérer les paiements** : Vous pouvez récupérer des informations sur les paiements, annuler des paiements ou gérer d'autres aspects liés aux transactions.
+
+### Créer une intention de paiement
+
+Une intention de paiement est une ressource qui représente votre souhait de recevoir un paiement pour un montant spécifique. Lorsque vous créez une intention de paiement, vous ne capturez pas immédiatement le montant ; c'est une étape préparatoire.
+
+```python
+from yabetoo import Yabetoo, CreateIntentRequest
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+payment = yabetoo.payments.create(CreateIntentRequest(
+    amount=5000,
+    currency="xaf",
+    description="Achat de services Yabetoo",
+    metadata={
+        "order_id": "6735",
+        "customer_id": "12345"
+    }
+))
+
+print(f"ID de l'intention de paiement : {payment.id}")
+print(f"Client Secret : {payment.client_secret}")
+```
+
+Ce code crée une intention de paiement pour un montant de 5000 XAF. La réponse de l'API contient un identifiant unique (`id`) de l'intention de paiement que vous utiliserez lors de la confirmation.
+
+### Confirmer une intention de paiement
+
+Après avoir créé l'intention de paiement, vous devez la confirmer pour capturer le montant. Cela se produit généralement lorsque l'utilisateur final a terminé toutes les étapes nécessaires (comme fournir des informations de paiement ou accepter les conditions générales).
+
+```python
+from yabetoo import (
+    Yabetoo,
+    ConfirmIntentRequest,
+    PaymentMethodData,
+    MomoData
+)
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+payment_confirmation = yabetoo.payments.confirm(
+    payment_id=payment.id,
+    data=ConfirmIntentRequest(
+        client_secret=payment.client_secret,
+        first_name="Jean",
+        last_name="Dupont",
+        receipt_email="jean.dupont@example.com",
+        payment_method_data=PaymentMethodData(
+            type="momo",
+            momo=MomoData(
+                country="cg",
+                msisdn="242123456789",
+                operator_name="mtn"
+            )
+        )
+    )
+)
+
+print(f"ID de la charge : {payment_confirmation.charge_id}")
+print(f"Statut : {payment_confirmation.status}")
+```
+
+En appelant cette méthode, le montant associé à l'intention de paiement sera capturé, et le paiement sera considéré comme réussi si tout se passe bien.
+
+Avec ce modèle en deux étapes, les développeurs peuvent avoir une meilleure maîtrise du processus de paiement tout en offrant une expérience utilisateur fluide. Vous pouvez adapter ces deux étapes à vos besoins spécifiques (par exemple, pré-autorisation ou paiement différé).
+
+### Gestion des erreurs lors de la confirmation
+
+<Note>
+  Il est important de gérer les erreurs car la confirmation d'une intention de paiement peut échouer pour diverses raisons (insuffisance de fonds, informations de paiement incorrectes, etc.).
+</Note>
+
+Voici un exemple de gestion des erreurs lors de la confirmation :
+
+```python
+from yabetoo import Yabetoo, YabetooError
+from yabetoo.errors import ValidationError, APIError, NetworkError
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+try:
+    payment_confirmation = yabetoo.payments.confirm(payment.id, confirm_data)
+    print(f"Paiement confirmé : {payment_confirmation.charge_id}")
+except ValidationError as e:
+    print("Erreur de validation :")
+    for error in e.errors:
+        print(f"  - Champ '{error.get('field')}' : {error.get('message')}")
+except APIError as e:
+    print(f"Erreur API : {e.message}")
+    if e.code:
+        print(f"Code d'erreur : {e.code}")
+except NetworkError as e:
+    print(f"Erreur réseau : {e.message}")
+except YabetooError as e:
+    print(f"Erreur générale : {e}")
+```
+
+Dans cet exemple, si la confirmation échoue, un message d'erreur sera affiché au lieu de faire planter l'application. Vous pouvez également enregistrer ces erreurs pour une analyse ultérieure ou afficher un message convivial à l'utilisateur.
+
+### Récupérer les détails d'un paiement
+
+Pour récupérer les informations sur un paiement existant, utilisez l'ID du paiement comme paramètre :
+
+```python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+payment_details = yabetoo.payments.retrieve("pi_XXXXXXXXXXXX")
+
+print(f"ID du paiement : {payment_details.id}")
+print(f"Montant : {payment_details.amount}")
+print(f"Statut : {payment_details.status}")
+```
+
+Ce code vous permet d'obtenir des informations détaillées sur un paiement spécifique, y compris son statut, son montant et d'autres métadonnées associées.
+
+### Récupérer la liste de tous vos paiements
+
+Pour récupérer la liste de tous vos paiements, utilisez la méthode `all`. Vous pouvez également filtrer les paiements par statut ou d'autres critères si nécessaire.
+
+```python
+from yabetoo import Yabetoo
+from yabetoo.models.payment import PaymentFiltersRequest, Sorting
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+# Pagination simple
+payments = yabetoo.payments.get_page(page=1, per_page=10)
+
+print(f"Total des paiements : {payments.total_count}")
+print(f"Éléments de la page actuelle : {len(payments.items)}")
+print(f"Pages supplémentaires : {payments.has_more}")
+
+for payment in payments.items:
+    print(f"  - {payment.id} : {payment.amount} {payment.currency}")
+```
+
+#### Filtrage et tri avancés
+
+```python
+from yabetoo.models.payment import PaymentFiltersRequest, Sorting
+
+# Avec tri
+sorted_payments = yabetoo.payments.get_page(
+    page=1,
+    per_page=10,
+    sorting=[{"id": "createdAt", "desc": True}]  # Les plus récents en premier
+)
+
+# Utilisation de l'objet de requête de filtre
+filters = PaymentFiltersRequest(
+    page=1,
+    per_page=10,
+    sorting=[
+        Sorting(id="amount", desc=True),      # Montants les plus élevés en premier
+        Sorting(id="createdAt", desc=False)   # Puis les plus anciens en premier
+    ]
+)
+filtered_payments = yabetoo.payments.all(filters)
+```
+
+## Utilisation des sessions de paiement avec Yabetoo
+
+Avec Yabetoo, vous pouvez créer des sessions de paiement qui permettent à vos utilisateurs de passer par une page de paiement hébergée. Cette page est entièrement gérée et sécurisée par Yabetoo, simplifiant l'intégration des paiements en ligne tout en garantissant la conformité et la sécurité des transactions.
+
+### Qu'est-ce qu'une session de paiement ?
+
+Une session de paiement est une instance qui génère une URL unique pointant vers une page de paiement hébergée par Yabetoo. Cette page permet à vos clients de finaliser leur paiement de manière simple et sécurisée, sans que vous ayez besoin de gérer directement les détails sensibles, tels que les informations de carte bancaire ou mobile money.
+
+### Avantages d'utiliser une session de paiement
+
+L'utilisation d'une page de paiement hébergée présente plusieurs avantages pour vous en tant que développeur ou marchand :
+
+- **Sécurité** : Yabetoo gère la sécurité des paiements, vous permettant de vous concentrer sur votre application.
+- **Conformité** : En utilisant une page de paiement hébergée, vous réduisez votre charge de conformité PCI, car Yabetoo gère les informations sensibles.
+- **Expérience utilisateur** : La page de paiement est optimisée pour offrir une expérience utilisateur fluide et rapide.
+- **Personnalisation** : Vous pouvez personnaliser l'apparence de la page de paiement pour qu'elle corresponde à votre marque.
+
+### Créer une session de paiement
+
+Les sessions de paiement vous permettent de créer un processus de paiement sécurisé et fluide pour vos utilisateurs. Cette session redirige l'utilisateur vers une page de paiement hébergée pour finaliser la transaction.
+
+```python
+from yabetoo import Yabetoo, CreateCheckoutSession, CheckoutItem
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+# Créer les articles du panier
+items = [
+    CheckoutItem(
+        product_id="prod_12345",
+        product_name="Écran HD",
+        quantity=1,
+        price=200000
+    ),
+    CheckoutItem(
+        product_id="prod_67890",
+        product_name="Clavier sans fil",
+        quantity=2,
+        price=35000
+    )
+]
+
+# Créer la session de paiement
+session = yabetoo.sessions.create(CreateCheckoutSession(
+    account_id="acct_xxxxxxxx",           # ID de votre compte
+    total=270000,                          # Montant total
+    currency="xaf",
+    success_url="https://votre-site.com/checkout-success",
+    cancel_url="https://votre-site.com/checkout-cancel",
+    items=items,
+    metadata={"order_id": "ORD-1234"}
+))
+
+print(f"ID de la session : {session.session_id}")
+print(f"URL de paiement : {session.url}")
+print(f"Expire à : {session.expires_at}")
+```
+
+### Fonctionnement de la session de paiement
+
+<Steps>
+  <Step title="Création de la session">
+    Lorsque vous créez une session, vous envoyez les informations sur les articles, le montant total, la devise et les URLs de redirection (pour succès ou annulation).
+  </Step>
+  <Step title="Page de paiement hébergée">
+    Yabetoo vous renvoie une URL unique que vous pouvez utiliser pour rediriger vos utilisateurs vers la page de paiement hébergée.
+  </Step>
+  <Step title="Confirmation du paiement">
+    Une fois le paiement effectué avec succès, l'utilisateur est redirigé vers l'URL que vous avez définie dans `success_url`, avec les détails de la transaction. Si l'utilisateur annule, il sera redirigé vers l'URL définie dans `cancel_url`.
+  </Step>
+</Steps>
+
+### Redirection après le paiement
+
+Lorsque le paiement est effectué via la page de paiement hébergée par Yabetoo, vous serez redirigé vers l'URL que vous avez définie dans le champ `success_url`. Yabetoo ajoute automatiquement un paramètre dans cette URL : l'ID de paiement. Cet ID de paiement est crucial pour vérifier les détails du paiement et effectuer une double vérification du statut.
+
+```python
+# Dans votre gestionnaire d'URL de succès (ex : Flask ou Django)
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+def checkout_success(request):
+    payment_id = request.GET.get('payment_id')
+
+    if payment_id:
+        # Récupérer les détails du paiement
+        payment_details = yabetoo.payments.retrieve(payment_id)
+
+        # Double vérification du statut du paiement
+        if payment_details.status == 'succeeded':
+            # Paiement confirmé, traiter la commande
+            print("Paiement réussi. Vous pouvez maintenant traiter la commande.")
+            return {"status": "success", "payment": payment_details}
+        else:
+            # Paiement non finalisé ou échoué
+            print("Paiement en attente ou échoué. Veuillez vérifier.")
+            return {"status": "pending", "payment": payment_details}
+    else:
+        return {"status": "error", "message": "Aucun ID de paiement trouvé"}
+```
+
+<Note>
+  Il est important de toujours effectuer cette double vérification pour garantir la sécurité et l'intégrité de votre processus de paiement.
+</Note>
+
+## Décaissements
+
+Les décaissements vous permettent d'envoyer de l'argent aux destinataires (clients, partenaires, etc.) via Mobile Money.
+
+### Créer un décaissement
+
+```python
+from yabetoo import (
+    Yabetoo,
+    CreateDisbursementRequest,
+    PaymentMethodData,
+    MomoData
+)
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+disbursement = yabetoo.disbursements.create(CreateDisbursementRequest(
+    amount=5000,
+    currency="xaf",
+    first_name="Jean",
+    last_name="Dupont",
+    payment_method_data=PaymentMethodData(
+        type="momo",
+        momo=MomoData(
+            country="cg",
+            msisdn="+242123456789",
+            operator_name="mtn"
+        )
+    )
+))
+
+print(f"ID du décaissement : {disbursement.id}")
+print(f"Statut : {disbursement.status}")
+```
+
+### Récupérer le statut d'un décaissement
+
+```python
+# Vérifier le statut du décaissement
+status = yabetoo.disbursements.retrieve(disbursement.id)
+
+print(f"Statut du décaissement : {status.status}")
+print(f"Montant : {status.amount} {status.currency}")
+print(f"Destinataire : {status.first_name} {status.last_name}")
+```
+
+## Transferts (Remittances)
+
+Les transferts vous permettent de créer des transactions de transfert d'argent.
+
+### Créer un transfert
+
+```python
+from yabetoo import (
+    Yabetoo,
+    CreateRemittanceRequest,
+    PaymentMethodData,
+    MomoData
+)
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+remittance = yabetoo.remittances.create(CreateRemittanceRequest(
+    amount=10000,
+    currency="xaf",
+    first_name="Marie",
+    last_name="Martin",
+    payment_method_data=PaymentMethodData(
+        type="momo",
+        momo=MomoData(
+            country="cg",
+            msisdn="+242987654321",
+            operator_name="airtel"
+        )
+    ),
+    metadata={"reference": "REM-2024-001"}
+))
+
+print(f"ID du transfert : {remittance.id}")
+print(f"Statut : {remittance.status}")
+```
+
+### Récupérer le statut d'un transfert
+
+```python
+# Vérifier le statut du transfert
+status = yabetoo.remittances.retrieve(remittance.id)
+
+print(f"Statut du transfert : {status.status}")
+print(f"Montant : {status.amount} {status.currency}")
+```
+
+## Gestion des erreurs
+
+Le SDK fournit une hiérarchie d'exceptions spécifiques pour différents scénarios d'erreur :
+
+| Exception | Description |
+|-----------|-------------|
+| `YabetooError` | Exception de base pour toutes les erreurs du SDK |
+| `ValidationError` | Échecs de validation de la requête |
+| `APIError` | L'API a retourné une réponse d'erreur |
+| `NetworkError` | Échecs de réseau ou de connexion |
+| `AuthenticationError` | Échecs d'authentification |
+
+### Exemple complet de gestion des erreurs
+
+```python
+from yabetoo import Yabetoo, YabetooError
+from yabetoo.errors import ValidationError, APIError, NetworkError, AuthenticationError
+
+yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+try:
+    payment = yabetoo.payments.retrieve("pi_invalid_id")
+except AuthenticationError as e:
+    print(f"Échec de l'authentification : {e.message}")
+    # Vérifiez votre clé API
+except ValidationError as e:
+    print("Erreurs de validation :")
+    for error in e.errors:
+        field = error.get('field', 'inconnu')
+        message = error.get('message', 'Erreur inconnue')
+        print(f"  - {field} : {message}")
+except APIError as e:
+    print(f"Erreur API : {e.message}")
+    if e.code:
+        print(f"Code d'erreur : {e.code}")
+    # Gérer les codes d'erreur spécifiques
+    if e.code == "payment_not_found":
+        print("Le paiement n'existe pas")
+except NetworkError as e:
+    print(f"Erreur réseau : {e.message}")
+    # Réessayer la requête ou notifier l'utilisateur
+except YabetooError as e:
+    print(f"Erreur inattendue : {e}")
+```
+
+## Méthodes de paiement supportées
+
+| Méthode | Type | Pays | Opérateurs |
+|---------|------|------|------------|
+| Mobile Money | `momo` | `cg` (Congo), `fr` (France) | `mtn`, `airtel` |
+
+## Référence des modèles de données
+
+### Données de méthode de paiement
+
+```python
+from yabetoo import PaymentMethodData, MomoData
+
+payment_method = PaymentMethodData(
+    type="momo",  # Type de méthode de paiement
+    momo=MomoData(
+        country="cg",           # Code pays : 'cg' ou 'fr'
+        msisdn="242123456789",  # Numéro de téléphone
+        operator_name="mtn"     # Opérateur : 'mtn' ou 'airtel'
+    )
+)
+```
+
+### Réponse paginée
+
+```python
+# L'objet PaginatedResponse fournit ces propriétés :
+response = yabetoo.payments.get_page(page=1, per_page=10)
+
+response.items        # Liste des éléments (paiements)
+response.total_count  # Nombre total d'éléments
+response.page         # Numéro de la page actuelle
+response.per_page     # Éléments par page
+response.has_more     # S'il y a plus de pages
+response.raw_data     # Données brutes de la réponse API
+```
+
+## Conclusion
+
+Le SDK Python de Yabetoo vous permet d'intégrer facilement le système de paiement sécurisé de Yabetoo dans vos applications. Grâce à sa simplicité d'utilisation et à ses fonctionnalités avancées, vous pouvez gérer les paiements en ligne de manière efficace et sécurisée.
+
+Que vous soyez un développeur débutant ou expérimenté, ce SDK vous offre tous les outils nécessaires pour créer une expérience de paiement fluide et sécurisée pour vos utilisateurs.
+
+## Ressources supplémentaires
+
+- [Documentation de l'API Yabetoo](https://docs.yabetoo.com)
+- [SDK Python sur GitHub](https://github.com/yabetoo/yabetoo-python)
+- [SDK Python sur PyPI](https://pypi.org/project/yabetoo/)

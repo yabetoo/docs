@@ -1,250 +1,89 @@
 ---
-title: "Référence API"
-description: "Guide complet de l'API de paiement Yabetoo"
+title: Introduction
+description: Guide de démarrage pour l'API Yabetoo.
 ---
 
-## Bienvenue dans l'API Yabetoo
+L'API Yabetoo est organisée autour des principes REST. Notre API utilise des endpoints prévisibles avec des ressources orientées URL, accepte des requêtes JSON encodées en form-data, renvoie des réponses JSON encodées, et utilise les codes de statut HTTP standard.
 
-L'API Yabetoo est organisée autour des principes REST, avec des URL orientées ressources prévisibles, des corps de requête et de réponse JSON, et des codes de réponse HTTP standard. Notre API est conçue pour être simple, sécurisée et conviviale pour les développeurs.
-
-<Card title="URL de base" icon="link">
-  Toutes les requêtes API doivent être effectuées vers :
-  `https://api.yabetoopay.com`
-</Card>
-
-## Démarrage rapide
-
-Commencez avec l'API Yabetoo en quelques minutes :
-
-<Steps>
-  <Step title="Obtenez vos clés API">
-    Inscrivez-vous et obtenez vos clés API depuis le [tableau de bord
-    développeur](https://app.yabetoopay.com)
-  </Step>
-  <Step title="Effectuez votre première requête">
-    Testez l'API en créant une session de checkout ou une intention de paiement
-  </Step>
-  <Step title="Gérez les webhooks">
-    Configurez des webhooks pour recevoir des notifications en temps réel sur
-    les événements de paiement
-  </Step>
-</Steps>
-
-## Authentification
-
-Tous les endpoints de l'API nécessitent une authentification en utilisant votre clé API secrète. Incluez votre clé dans l'en-tête Authorization de chaque requête :
+## Base URL
 
 ```bash
-Authorization: Bearer votre_cle_secrete_ici
+https://pay.api.yabetoopay.com    # Production
+https://pay.sandbox.yabetoopay.com # Sandbox
 ```
 
-<Warning>
-  N'exposez jamais vos clés API secrètes dans le code côté client. Effectuez
-  toujours les appels API depuis votre serveur.
-</Warning>
+## Authentication
 
-## Format des requêtes
+L'API Yabetoo utilise des clés API pour authentifier les requêtes. Vous pouvez gérer vos clés API dans le [tableau de bord](https://app.yabetoo.com/developers).
 
-L'API Yabetoo accepte des corps de requête au format JSON et retourne des réponses JSON. Incluez toujours l'en-tête Content-Type approprié :
+Toutes les requêtes API doivent être effectuées via HTTPS et doivent inclure votre clé API dans l'en-tête Authorization :
+
+```bash
+Authorization: Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+## Formats de requête
+
+### Content-Type
+
+Pour les requêtes POST et PUT, le corps doit être encodé en JSON avec l'en-tête :
 
 ```bash
 Content-Type: application/json
 ```
 
-### Exemple de requête
+### Paramètres de pagination
 
-```bash
-curl -X POST "https://api.yabetoopay.com/v1/checkout-sessions" \
-  -H "Authorization: Bearer sk_test_..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": 2000,
-    "currency": "EUR",
-    "success_url": "https://votresite.com/success",
-    "cancel_url": "https://votresite.com/cancel"
-  }'
-```
+Pour les endpoints qui renvoient des listes, utilisez ces paramètres :
 
-## Ressources principales
+- `limit` : Nombre d'éléments par page (défaut : 10, max : 100)
+- `page` : Numéro de la page (commence à 1)
 
-### Sessions de checkout
+## Réponses
 
-Créez des pages de paiement hébergées sécurisées pour accepter les paiements sans gérer les données de carte sensibles.
+### Structure
 
-<Card
-  title="Sessions de checkout"
-  icon="credit-card"
-  href="/fr/api-reference/checkout-session/create"
->
-  Créez et gérez des sessions de checkout pour les paiements hébergés
-</Card>
-
-### Intentions de paiement
-
-Construisez des flux de paiement personnalisés avec un contrôle total sur le processus de paiement.
-
-<Card
-  title="Intentions de paiement"
-  icon="code"
-  href="/fr/api-reference/payment-intent/create"
->
-  Créez et confirmez des intentions de paiement pour des intégrations avancées
-</Card>
-
-### Décaissements
-
-Transférez des fonds de votre compte vers les comptes clients pour les scénarios de place de marché et de plateforme.
-
-<Card
-  title="Décaissements"
-  icon="money-bill-transfer"
-  href="/fr/api-reference/disbursement/create"
->
-  Envoyez de l'argent aux clients ou partenaires
-</Card>
-
-### Transferts de fonds
-
-Activez les transferts d'argent internationaux avec notre API de transfert de fonds.
-
-<Card
-  title="Transferts de fonds"
-  icon="globe"
-  href="/fr/api-reference/remittance/create"
->
-  Traitez les paiements et transferts transfrontaliers
-</Card>
-
-### Webhooks
-
-Recevez des notifications en temps réel sur les événements de votre compte.
-
-<Card title="Webhooks" icon="bell" href="/fr/api-reference/webhook/create">
-  Configurez des endpoints pour recevoir des notifications d'événements
-</Card>
-
-## Codes de statut HTTP
-
-L'API Yabetoo utilise les codes de statut HTTP standard pour indiquer le succès ou l'échec :
-
-| Code  | Description                                                          |
-| ----- | -------------------------------------------------------------------- |
-| `200` | Succès - Requête complétée avec succès                               |
-| `201` | Créé - Ressource créée avec succès                                   |
-| `400` | Requête incorrecte - Paramètres de requête invalides                 |
-| `401` | Non autorisé - Clé API invalide ou manquante                         |
-| `402` | Paiement requis - Fonds insuffisants ou paiement échoué              |
-| `403` | Interdit - Accès refusé                                              |
-| `404` | Non trouvé - Ressource non trouvée                                   |
-| `429` | Trop de requêtes - Limite de débit dépassée                          |
-| `500` | Erreur serveur interne - Quelque chose s'est mal passé de notre côté |
-
-## Gestion des erreurs
-
-Lorsqu'une erreur se produit, l'API retourne un objet JSON avec les détails de l'erreur :
+Toutes les réponses sont en JSON avec cette structure :
 
 ```json
 {
+  "status": "success",
+  "data": {
+    // Les données de la réponse
+  },
+  "message": "Description optionnelle"
+}
+```
+
+### Codes HTTP
+
+- `200` : Succès
+- `201` : Ressource créée
+- `400` : Requête invalide
+- `401` : Non authentifié
+- `403` : Non autorisé
+- `404` : Ressource non trouvée
+- `429` : Trop de requêtes
+- `500` : Erreur serveur
+
+## Gestion des erreurs
+
+En cas d'erreur, vous recevrez :
+
+```json
+{
+  "status": "error",
   "error": {
-    "type": "invalid_request_error",
-    "code": "parameter_missing",
-    "message": "Paramètre requis manquant : amount",
-    "param": "amount"
+    "code": "invalid_request",
+    "message": "Description de l'erreur",
+    "details": {
+      // Détails supplémentaires si disponibles
+    }
   }
 }
 ```
 
-### Types d'erreurs
-
-- `api_error` - Problèmes avec notre API
-- `authentication_error` - Problèmes avec votre clé API
-- `invalid_request_error` - Paramètres ou format invalides
-- `rate_limit_error` - Trop de requêtes
-- `payment_error` - Échec du traitement du paiement
-
-## Limitation du débit
-
-L'API Yabetoo implémente une limitation du débit pour assurer une utilisation équitable :
-
-- **Mode test** : 100 requêtes par minute
-- **Mode production** : 1000 requêtes par minute
-
-Les informations de limite de débit sont incluses dans les en-têtes de réponse :
-
-```
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1609459200
-```
-
-## Pagination
-
-Les endpoints de liste supportent la pagination en utilisant les paramètres `limit` et `offset` :
-
-```bash
-GET /v1/payment-intents?limit=20&offset=40
-```
-
-La réponse inclut les métadonnées de pagination :
-
-```json
-{
-  "data": [...],
-  "has_more": true,
-  "total": 150
-}
-```
-
-## Idempotence
-
-Réessayez les requêtes en toute sécurité en incluant un en-tête `Idempotency-Key` avec une valeur unique :
-
-```bash
-Idempotency-Key: votre-cle-unique-ici
-```
-
-Cela empêche le traitement en double si vous devez réessayer une requête.
-
-## Versioning
-
-La version actuelle de l'API est `v1`. Nous maintenons la compatibilité ascendante et annonçons les changements bien à l'avance. Spécifiez la version de l'API dans vos requêtes :
-
-```bash
-GET https://api.yabetoopay.com/v1/payment-intents
-```
-
-## SDK et bibliothèques
-
-Accélérez votre intégration avec nos SDK officiels :
-
-<CardGroup cols={2}>
-  <Card title="SDK PHP" icon="php" href="/fr/developer-tools/sdk/php">
-    Bibliothèque PHP officielle pour l'intégration côté serveur
-  </Card>
-  <Card title="SDK Java" icon="java" href="/fr/developer-tools/sdk/java">
-    SDK Java prêt pour l'entreprise
-  </Card>
-</CardGroup>
-
-## Tests
-
-Utilisez notre environnement sandbox pour tester votre intégration sans traiter de vrais paiements :
-
-- **Clé API de test** : Commence par `sk_test_`
-- **Endpoint de test** : Identique à la production (`https://api.yabetoopay.com`)
-- **Cartes de test** : Utilisez nos [numéros de carte de test](/fr/developer-tools/test/overview)
-
-## Support
-
-Besoin d'aide avec l'API ?
-
-- **Documentation** : Guides complets et exemples
-- **Support développeur** : Contactez notre équipe technique
-- **Page de statut** : Vérifiez le statut et la disponibilité de l'API
-- **Communauté** : Rejoignez notre communauté de développeurs
-
 <Note>
-  Cette référence API fournit une documentation complète pour tous les endpoints
-  de l'API Yabetoo. Chaque endpoint inclut des exemples de requête/réponse, des
-  descriptions de paramètres et des codes d'erreur.
+  Conservez vos clés API en sécurité. Ne les partagez jamais publiquement ou dans
+  le code client.
 </Note>

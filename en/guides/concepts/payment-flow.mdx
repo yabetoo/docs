@@ -1,0 +1,186 @@
+---
+title: Payment Flow
+description: Understand the complete payment flow from creation to confirmation.
+icon: "arrow-progress"
+---
+
+This guide explains the complete payment flow in Yabetoo, from creating a payment intent to receiving confirmation via webhooks.
+
+## Overview
+
+The Yabetoo payment flow follows a two-step process that gives you full control over when and how payments are captured.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    participant Yabetoo
+    participant MobileMoney
+
+    Client->>Server: Initiate payment
+    Server->>Yabetoo: Create Payment Intent
+    Yabetoo-->>Server: Return intent + client_secret
+    Server->>Yabetoo: Confirm Payment Intent
+    Yabetoo->>MobileMoney: Send payment request
+    MobileMoney-->>Client: Push notification (enter PIN)
+    Client->>MobileMoney: Confirm payment
+    MobileMoney-->>Yabetoo: Payment confirmed
+    Yabetoo-->>Server: Webhook: intent.completed
+    Server-->>Client: Payment successful
+```
+
+## Step 1: Create a Payment Intent
+
+A Payment Intent represents your intention to collect a payment. It tracks the payment lifecycle and stores information about the transaction.
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
+    },
+    body: JSON.stringify({
+      amount: 5000,
+      currency: "xaf",
+    }),
+  }
+);
+
+const paymentIntent = await response.json();
+// Returns: { id: "pi_xxx", client_secret: "...", amount: 5000, currency: "xaf" }
+```
+
+At this stage:
+- No money has been moved
+- The intent is in `pending` status
+- You have a `client_secret` for the next step
+
+## Step 2: Confirm the Payment Intent
+
+Confirmation triggers the actual payment. You provide the customer's payment method details (Mobile Money information).
+
+```javascript
+const response = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
+    },
+    body: JSON.stringify({
+      client_secret: paymentIntent.client_secret,
+      first_name: "John",
+      last_name: "Doe",
+      receipt_email: "john@example.com",
+      payment_method_data: {
+        type: "momo",
+        momo: {
+          country: "cg",
+          msisdn: "+242066594470",
+          operator_name: "mtn",
+        },
+      },
+    }),
+  }
+);
+```
+
+After confirmation:
+- The customer receives a push notification on their phone
+- They enter their PIN to authorize the payment
+- Yabetoo waits for the Mobile Money provider's response
+
+## Step 3: Handle the Result
+
+### Synchronous Response
+
+The confirmation request returns immediately with the payment status:
+
+```json
+{
+  "intent_id": "pi_9aATHBv8UXuD6H5qrSav",
+  "amount": 5000,
+  "currency": "xaf",
+  "status": "succeeded",
+  "captured": true
+}
+```
+
+### Webhook Notification
+
+For reliability, always listen for webhooks. Yabetoo sends an `intent.completed` event when the payment succeeds:
+
+```javascript
+// Your webhook endpoint
+app.post("/webhook", (req, res) => {
+  const event = req.body;
+
+  if (event.type === "intent.completed") {
+    const payment = event.data;
+    // Update your database
+    // Send confirmation to customer
+  }
+
+  res.status(200).send("OK");
+});
+```
+
+## Payment Statuses
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Payment intent created, not yet confirmed |
+| `processing` | Payment is being processed by the Mobile Money provider |
+| `succeeded` | Payment completed successfully |
+| `failed` | Payment failed (insufficient funds, rejected, etc.) |
+
+## Common Error Codes
+
+When a payment fails, you may receive one of these error codes:
+
+| Code | Description |
+|------|-------------|
+| `LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED` | Insufficient funds, transaction limit reached, or transaction not allowed |
+| `TIMEOUT` | Customer did not confirm the payment in time |
+
+<Warning>
+  Always handle the `LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED` error gracefully by informing the customer that their payment could not be processed due to insufficient balance or account restrictions.
+</Warning>
+
+## Best Practices
+
+1. **Always verify webhooks** - Don't rely solely on the synchronous response
+2. **Store the payment intent ID** - Link it to your order for tracking
+3. **Handle failures gracefully** - Show clear error messages to users
+4. **Implement idempotency** - Prevent duplicate payments on retries
+
+## Alternative: Checkout Sessions
+
+For a simpler integration, use Checkout Sessions. Yabetoo handles the entire payment UI:
+
+```javascript
+const session = await fetch("https://buy.api.yabetoopay.com/v1/sessions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer sk_test_XXXXXXXXXXXXXXXXXXXXXXXX",
+  },
+  body: JSON.stringify({
+    total: 5000,
+    currency: "xaf",
+    accountId: "acct_XXXXXXXX",
+    successUrl: "https://yoursite.com/success",
+    cancelUrl: "https://yoursite.com/cancel",
+  }),
+});
+
+// Redirect customer to session.url
+```
+
+<Note>
+  For more details on each step, see the [Payment Intent API documentation](/en/api-reference/payment-intent/create).
+</Note>

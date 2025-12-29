@@ -1,5 +1,122 @@
 ---
-title: Récupérer un versement
-description: Récupérez les détails d'un versement existant.
-openapi: "GET /v1/disbursement/{id}"
+title: "Récupérer un décaissement"
+description: "Récupérez un décaissement par son ID."
 ---
+
+## Endpoint
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/disbursement/{id}   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/disbursement/{id}       # Production
+```
+
+## Authentification
+
+Utilisez votre clé secrète dans l'en-tête `Authorization` :
+
+```bash
+Authorization: Bearer YOUR_SECRET_KEY
+```
+
+## Paramètres de chemin
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | L'ID du décaissement |
+
+## Exemple de requête
+
+<CodeGroup>
+```bash cURL
+curl https://pay.sandbox.yabetoopay.com/v1/disbursement/wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+
+```javascript JavaScript
+import Yabetoo from "yabetoo";
+
+const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+const disbursement = await yabetoo.disbursements.retrieve("wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ");
+```
+
+```python Python
+from yabetoo import Yabetoo
+
+yabetoo = Yabetoo("YOUR_SECRET_KEY")
+
+disbursement = yabetoo.disbursements.retrieve("wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ")
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Yabetoo\Yabetoo;
+
+$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
+
+$disbursement = $yabetoo->disbursements->retrieve("wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ");
+```
+
+```java Java
+import com.yabetoo.Yabetoo;
+import com.yabetoo.YabetooConfig;
+import com.yabetoo.model.Disbursement;
+
+YabetooConfig config = new YabetooConfig()
+    .setApiKey("YOUR_SECRET_KEY");
+
+Yabetoo yabetoo = new Yabetoo(config);
+
+Disbursement disbursement = yabetoo.disbursements().retrieve("wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ");
+```
+</CodeGroup>
+
+## Réponse
+
+### 200 OK
+
+```json
+{
+  "amount": 10000,
+  "currency": "XAF",
+  "status": "processing",
+  "firstName": "Jean",
+  "lastName": "Dupont",
+  "operatorName": "mtn",
+  "country": "cg",
+  "phone": "242066594471",
+  "object": "disbursement",
+  "type": 1,
+  "shouldExecutedAt": "2025-03-18T09:24:57.555Z",
+  "id": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "createdAt": "2025-03-17T10:24:57.559+01:00",
+  "updatedAt": "2025-03-17T10:24:57.559+01:00"
+}
+```
+
+### Statuts du décaissement
+
+| Statut | Description |
+|--------|-------------|
+| `processing` | En cours de traitement |
+| `succeeded` | Décaissement réussi |
+| `failed` | Décaissement échoué |
+| `canceled` | Décaissement annulé |
+
+### 404 Not Found
+
+```json
+{
+  "message": "Disbursement not found"
+}
+```
+
+### 401 Non autorisé
+
+```json
+{
+  "message": "Unauthorized"
+}
+```

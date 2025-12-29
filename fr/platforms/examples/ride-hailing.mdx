@@ -1,0 +1,446 @@
+---
+title: VTC & Super App
+description: Comment intégrer Yabetoo pour les services de VTC, taxi et super apps multi-services comme Gozem.
+icon: "car"
+---
+
+Apprenez à construire une plateforme de VTC complète ou une super app avec Yabetoo, inspirée de [Gozem](https://gozem.co/), la super app africaine opérant en Afrique francophone. Ce guide couvre les paiements de courses, les rémunérations des chauffeurs, les portefeuilles numériques et les intégrations multi-services.
+
+## Aperçu
+
+Les applications de VTC et super apps doivent gérer :
+- Le calcul et paiement des courses en temps réel
+- Plusieurs types de véhicules (motos, voitures, tricycles)
+- Les gains des chauffeurs et paiements instantanés
+- Les recharges et paiements via portefeuille numérique
+- Les transactions multi-services (courses, livraisons, courses)
+- La gestion des commissions
+
+## Le modèle Gozem
+
+[Gozem](https://gozem.co/) est la super app africaine opérant depuis 2018, offrant :
+- **Transport** : Moto-taxis (zémidjans), voitures, tricycles
+- **Livraison** : Repas, courses, logistique e-commerce
+- **Services financiers** : Portefeuille numérique, paiements sans espèces
+- **Couverture** : 9+ pays dont le Togo, Bénin, Cameroun, Congo
+
+Au Congo Brazzaville, Gozem utilise Yabetoo pour le traitement des paiements mobile money.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[App Passager] --> B[Yabetoo API]
+    B --> C[Mobile Money]
+    C --> B
+    B --> D[Super App]
+    D --> B
+    B --> E[Chauffeur]
+```
+
+## Implémentation
+
+### 1. Modèles de données
+
+Définissez les structures de courses et véhicules :
+
+```typescript
+// types.ts
+interface Ride {
+  id: string;
+  passengerId: string;
+  driverId?: string;
+  vehicleType: 'motorcycle' | 'car' | 'tricycle';
+  pickup: Location;
+  dropoff: Location;
+  distance: number; // en km
+  duration: number; // minutes estimées
+  fare: number;
+  platformFee: number;
+  driverEarnings: number;
+  status: 'searching' | 'accepted' | 'arrived' | 'in_progress' | 'completed' | 'cancelled';
+  paymentMethod: 'wallet' | 'mobile_money' | 'cash';
+  paymentStatus: 'pending' | 'paid' | 'failed';
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+interface Driver {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  operatorName: 'mtn' | 'airtel';
+  vehicleType: 'motorcycle' | 'car' | 'tricycle';
+  vehiclePlate: string;
+  rating: number;
+  totalRides: number;
+  walletBalance: number;
+  status: 'online' | 'offline' | 'busy';
+}
+
+// Configuration tarifaire
+const PRICING = {
+  motorcycle: { baseFare: 500, perKm: 200, perMinute: 25 },
+  car: { baseFare: 1000, perKm: 350, perMinute: 50 },
+  tricycle: { baseFare: 750, perKm: 250, perMinute: 35 }
+};
+
+const PLATFORM_COMMISSION = 0.20; // 20% commission plateforme
+```
+
+### 2. Calcul des tarifs
+
+Calculer les tarifs dynamiques basés sur la distance et le temps :
+
+```typescript
+function calculateFare(
+  vehicleType: 'motorcycle' | 'car' | 'tricycle',
+  distanceKm: number,
+  durationMinutes: number,
+  surgeMultiplier: number = 1.0
+) {
+  const pricing = PRICING[vehicleType];
+
+  const baseFare = pricing.baseFare;
+  const distanceFare = Math.round(distanceKm * pricing.perKm);
+  const timeFare = Math.round(durationMinutes * pricing.perMinute);
+
+  const subtotal = baseFare + distanceFare + timeFare;
+  const totalFare = Math.round(subtotal * surgeMultiplier);
+
+  const platformFee = Math.round(totalFare * PLATFORM_COMMISSION);
+  const driverEarnings = totalFare - platformFee;
+
+  return {
+    baseFare,
+    distanceFare,
+    timeFare,
+    totalFare,
+    platformFee,
+    driverEarnings,
+    currency: 'XAF'
+  };
+}
+
+// Exemple: course de 5km, 15 minutes, en moto
+// calculateFare('motorcycle', 5, 15)
+// → { baseFare: 500, distanceFare: 1000, timeFare: 375, totalFare: 1875, ... }
+```
+
+### 3. Recharge du portefeuille
+
+Permettre aux passagers de recharger leur portefeuille :
+
+```typescript
+import Yabetoo from 'yabetoo';
+
+const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
+
+async function topUpWallet(userId: string, amount: number) {
+  if (amount < 500) {
+    throw new Error('Montant minimum de recharge: 500 XAF');
+  }
+
+  const user = await db.users.findById(userId);
+
+  const intent = await yabetoo.payments.create({
+    amount,
+    currency: 'XAF',
+    description: `Recharge portefeuille - ${user.firstName} ${user.lastName}`,
+    metadata: {
+      userId,
+      userType: 'passenger',
+      type: 'wallet_topup'
+    }
+  });
+
+  await db.walletTransactions.create({
+    id: generateTransactionId(),
+    walletId: user.walletId,
+    type: 'topup',
+    amount,
+    paymentIntentId: intent.id,
+    status: 'pending',
+    createdAt: new Date()
+  });
+
+  return intent;
+}
+```
+
+### 4. Réservation et paiement de course
+
+Gérer les demandes de courses et paiements :
+
+```typescript
+async function createRideRequest(
+  passengerId: string,
+  pickup: Location,
+  dropoff: Location,
+  vehicleType: 'motorcycle' | 'car' | 'tricycle',
+  paymentMethod: 'wallet' | 'mobile_money'
+) {
+  const passenger = await db.users.findById(passengerId);
+
+  // Calculer l'itinéraire
+  const route = await calculateRoute(pickup, dropoff);
+  const fareEstimate = calculateFare(vehicleType, route.distanceKm, route.durationMinutes);
+
+  // Vérifier le solde du portefeuille si paiement par portefeuille
+  if (paymentMethod === 'wallet') {
+    const wallet = await db.wallets.findByUser(passengerId);
+    if (wallet.balance < fareEstimate.totalFare) {
+      throw new Error('Solde insuffisant. Veuillez recharger ou utiliser mobile money.');
+    }
+  }
+
+  // Créer la course
+  const ride: Ride = {
+    id: generateRideId(),
+    passengerId,
+    vehicleType,
+    pickup,
+    dropoff,
+    distance: route.distanceKm,
+    duration: route.durationMinutes,
+    fare: fareEstimate.totalFare,
+    platformFee: fareEstimate.platformFee,
+    driverEarnings: fareEstimate.driverEarnings,
+    status: 'searching',
+    paymentMethod,
+    paymentStatus: 'pending',
+    createdAt: new Date()
+  };
+
+  await db.rides.create(ride);
+
+  // Diffuser aux chauffeurs à proximité
+  await broadcastToNearbyDrivers(ride);
+
+  return { ride, fareEstimate };
+}
+```
+
+### 5. Fin de course et traitement du paiement
+
+Traiter le paiement à la fin de la course :
+
+```typescript
+async function completeRide(rideId: string, driverId: string) {
+  const ride = await db.rides.findById(rideId);
+
+  // Mettre à jour le statut de la course
+  await db.rides.update(rideId, {
+    status: 'completed',
+    completedAt: new Date()
+  });
+
+  // Traiter le paiement selon la méthode
+  if (ride.paymentMethod === 'wallet') {
+    await processWalletPayment(ride);
+  } else if (ride.paymentMethod === 'mobile_money') {
+    await processMobileMoneyPayment(ride);
+  }
+
+  // Mettre à jour le statut du chauffeur
+  await db.drivers.update(driverId, { status: 'online' });
+
+  return ride;
+}
+
+async function processWalletPayment(ride: Ride) {
+  // Débiter le portefeuille du passager
+  await db.wallets.decrementBalance(ride.passengerId, ride.fare);
+
+  // Créditer les gains du chauffeur
+  await db.drivers.incrementWalletBalance(ride.driverId!, ride.driverEarnings);
+
+  // Mettre à jour le statut de paiement
+  await db.rides.update(ride.id, { paymentStatus: 'paid' });
+
+  // Notifier les deux parties
+  await sendRideCompletionNotifications(ride);
+}
+```
+
+### 6. Système de paiement des chauffeurs
+
+Traiter les paiements des chauffeurs :
+
+```typescript
+// Paiement instantané à la demande
+async function requestDriverPayout(driverId: string, amount?: number) {
+  const driver = await db.drivers.findById(driverId);
+
+  const payoutAmount = amount || driver.walletBalance;
+
+  if (payoutAmount < 1000) {
+    throw new Error('Montant minimum de retrait: 1 000 XAF');
+  }
+
+  if (payoutAmount > driver.walletBalance) {
+    throw new Error('Solde insuffisant');
+  }
+
+  const disbursement = await yabetoo.disbursements.create({
+    amount: payoutAmount,
+    currency: 'XAF',
+    firstName: driver.firstName,
+    lastName: driver.lastName,
+    paymentMethodData: {
+      type: 'momo',
+      momo: {
+        msisdn: driver.phone,
+        country: 'cg',
+        operatorName: driver.operatorName
+      }
+    }
+  });
+
+  // Débiter le portefeuille du chauffeur
+  await db.drivers.decrementWalletBalance(driverId, payoutAmount);
+
+  // Enregistrer le paiement
+  await db.driverPayouts.create({
+    driverId,
+    amount: payoutAmount,
+    disbursementId: disbursement.id,
+    status: 'processing',
+    createdAt: new Date()
+  });
+
+  await sendNotification(driverId, {
+    type: 'payout_initiated',
+    title: 'Paiement en cours',
+    message: `${payoutAmount} XAF est en cours d'envoi vers votre compte mobile money.`
+  });
+
+  return disbursement;
+}
+
+// Paiements automatiques quotidiens pour les chauffeurs avec solde > seuil
+async function processDailyPayouts() {
+  const drivers = await db.drivers.findMany({
+    where: { walletBalance: { gte: 5000 } }
+  });
+
+  for (const driver of drivers) {
+    try {
+      await requestDriverPayout(driver.id, driver.walletBalance);
+    } catch (error) {
+      console.error(`Échec du paiement pour le chauffeur ${driver.id}:`, error);
+    }
+  }
+}
+```
+
+### 7. Support multi-services (Super App)
+
+Étendre pour supporter plusieurs services comme Gozem :
+
+```typescript
+type ServiceType = 'ride' | 'food_delivery' | 'grocery' | 'package';
+
+interface Order {
+  id: string;
+  userId: string;
+  serviceType: ServiceType;
+  details: any;
+  amount: number;
+  status: string;
+  paymentMethod: 'wallet' | 'mobile_money';
+}
+
+async function createOrder(
+  userId: string,
+  serviceType: ServiceType,
+  details: any,
+  paymentMethod: 'wallet' | 'mobile_money'
+) {
+  let amount: number;
+
+  switch (serviceType) {
+    case 'ride':
+      const fareEstimate = calculateFare(details.vehicleType, details.distance, details.duration);
+      amount = fareEstimate.totalFare;
+      break;
+    case 'food_delivery':
+      amount = details.foodTotal + details.deliveryFee;
+      break;
+    case 'grocery':
+      amount = details.groceryTotal + details.deliveryFee;
+      break;
+    case 'package':
+      amount = calculatePackageDeliveryFee(details.weight, details.distance);
+      break;
+  }
+
+  // Traiter selon la méthode de paiement
+  // ...
+
+  return order;
+}
+```
+
+## Flux de course
+
+<Steps>
+  <Step title="Demande de course">
+    Le passager sélectionne les points de départ/arrivée et le type de véhicule.
+  </Step>
+  <Step title="Estimation du tarif">
+    L'app affiche le tarif estimé basé sur la distance et le temps.
+  </Step>
+  <Step title="Confirmer & Payer">
+    Le passager confirme et paie via portefeuille ou mobile money.
+  </Step>
+  <Step title="Chauffeur assigné">
+    Un chauffeur à proximité accepte la demande de course.
+  </Step>
+  <Step title="Suivi de la course">
+    Suivi GPS en temps réel jusqu'à destination.
+  </Step>
+  <Step title="Noter & Évaluer">
+    Les deux parties se notent après la course.
+  </Step>
+  <Step title="Paiement chauffeur">
+    Le chauffeur reçoit ses gains dans son portefeuille, peut retirer à tout moment.
+  </Step>
+</Steps>
+
+## Grille tarifaire exemple
+
+| Type de véhicule | Tarif de base | Par Km | Par Minute |
+|------------------|---------------|--------|------------|
+| Moto | 500 XAF | 200 XAF | 25 XAF |
+| Voiture | 1 000 XAF | 350 XAF | 50 XAF |
+| Tricycle | 750 XAF | 250 XAF | 35 XAF |
+
+## Bonnes pratiques
+
+<AccordionGroup>
+  <Accordion title="Tarification dynamique">
+    Implémentez des prix majorés pendant les heures de pointe pour équilibrer offre et demande.
+  </Accordion>
+  <Accordion title="Incitations chauffeurs">
+    Offrez des bonus pour X courses complétées par jour ou pendant les heures creuses.
+  </Accordion>
+  <Accordion title="Fonctionnalités de sécurité">
+    Incluez bouton d'urgence, partage de trajet et vérification des chauffeurs.
+  </Accordion>
+  <Accordion title="Support hors ligne">
+    Mettez en cache les transactions récentes et synchronisez quand la connexion est rétablie.
+  </Accordion>
+</AccordionGroup>
+
+## Ressources associées
+
+<CardGroup cols={2}>
+  <Card title="Décaissements" icon="money-bill-transfer" href="/fr/payments/disbursement/overview">
+    Traiter les paiements des chauffeurs
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/fr/developer-tools/webhook/overview">
+    Gérer les événements de paiement en temps réel
+  </Card>
+</CardGroup>
