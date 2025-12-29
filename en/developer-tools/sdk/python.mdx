@@ -73,8 +73,7 @@ This approach offers increased flexibility, allowing you, for example, to verify
 A payment intent is a resource that represents your wish to receive a payment for a specific amount. When you create a payment intent, you don't immediately capture the amount; it's a preparatory step.
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.payment import CreateIntentRequest
+from yabetoo import Yabetoo, CreateIntentRequest
 
 yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
@@ -99,8 +98,8 @@ This code creates a payment intent for 5000 XAF. The API response contains a uni
 After creating the payment intent, you must confirm it to capture the amount. This typically occurs when the end user has completed all necessary steps (such as providing payment information or accepting terms and conditions).
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.payment import (
+from yabetoo import (
+    Yabetoo,
     ConfirmIntentRequest,
     PaymentMethodData,
     MomoData
@@ -252,8 +251,7 @@ Using a hosted payment page offers several advantages for you as a developer or 
 Payment sessions allow you to create a secure and smooth payment process for your users. This session redirects the user to a hosted payment page to finalize the transaction.
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
+from yabetoo import Yabetoo, CreateCheckoutSession, CheckoutItem
 
 yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
@@ -344,9 +342,12 @@ Disbursements allow you to send money to recipients (customers, partners, etc.) 
 ### Create a Disbursement
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.disbursement import CreateDisbursementRequest
-from yabetoo.models.payment import PaymentMethodData, MomoData
+from yabetoo import (
+    Yabetoo,
+    CreateDisbursementRequest,
+    PaymentMethodData,
+    MomoData
+)
 
 yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
@@ -387,9 +388,12 @@ Remittances allow you to create transfer transactions.
 ### Create a Remittance
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.remittance import CreateRemittanceRequest
-from yabetoo.models.payment import PaymentMethodData, MomoData
+from yabetoo import (
+    Yabetoo,
+    CreateRemittanceRequest,
+    PaymentMethodData,
+    MomoData
+)
 
 yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
@@ -479,7 +483,7 @@ except YabetooError as e:
 ### Payment Method Data
 
 ```python
-from yabetoo.models.payment import PaymentMethodData, MomoData
+from yabetoo import PaymentMethodData, MomoData
 
 payment_method = PaymentMethodData(
     type="momo",  # Payment method type

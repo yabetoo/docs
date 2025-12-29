@@ -73,8 +73,7 @@ Cette approche offre une flexibilité accrue, permettant par exemple de vérifie
 Une intention de paiement est une ressource qui représente votre souhait de recevoir un paiement pour un montant spécifique. Lorsque vous créez une intention de paiement, vous ne capturez pas immédiatement le montant ; c'est une étape préparatoire.
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.payment import CreateIntentRequest
+from yabetoo import Yabetoo, CreateIntentRequest
 
 yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
@@ -99,8 +98,8 @@ Ce code crée une intention de paiement pour un montant de 5000 XAF. La réponse
 Après avoir créé l'intention de paiement, vous devez la confirmer pour capturer le montant. Cela se produit généralement lorsque l'utilisateur final a terminé toutes les étapes nécessaires (comme fournir des informations de paiement ou accepter les conditions générales).
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.payment import (
+from yabetoo import (
+    Yabetoo,
     ConfirmIntentRequest,
     PaymentMethodData,
     MomoData
@@ -252,8 +251,7 @@ L'utilisation d'une page de paiement hébergée présente plusieurs avantages po
 Les sessions de paiement vous permettent de créer un processus de paiement sécurisé et fluide pour vos utilisateurs. Cette session redirige l'utilisateur vers une page de paiement hébergée pour finaliser la transaction.
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
+from yabetoo import Yabetoo, CreateCheckoutSession, CheckoutItem
 
 yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
@@ -344,9 +342,12 @@ Les décaissements vous permettent d'envoyer de l'argent aux destinataires (clie
 ### Créer un décaissement
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.disbursement import CreateDisbursementRequest
-from yabetoo.models.payment import PaymentMethodData, MomoData
+from yabetoo import (
+    Yabetoo,
+    CreateDisbursementRequest,
+    PaymentMethodData,
+    MomoData
+)
 
 yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
@@ -387,9 +388,12 @@ Les transferts vous permettent de créer des transactions de transfert d'argent.
 ### Créer un transfert
 
 ```python
-from yabetoo import Yabetoo
-from yabetoo.models.remittance import CreateRemittanceRequest
-from yabetoo.models.payment import PaymentMethodData, MomoData
+from yabetoo import (
+    Yabetoo,
+    CreateRemittanceRequest,
+    PaymentMethodData,
+    MomoData
+)
 
 yabetoo = Yabetoo("sk_test_XXXXXXXXXXXXXXXXXXXXXXXX")
 
@@ -479,7 +483,7 @@ except YabetooError as e:
 ### Données de méthode de paiement
 
 ```python
-from yabetoo.models.payment import PaymentMethodData, MomoData
+from yabetoo import PaymentMethodData, MomoData
 
 payment_method = PaymentMethodData(
     type="momo",  # Type de méthode de paiement

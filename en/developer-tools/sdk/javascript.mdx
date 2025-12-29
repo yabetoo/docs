@@ -496,19 +496,34 @@ This SDK is written in TypeScript and includes full type definitions. All models
 
 ```typescript
 import type {
+  // Main types
   PaymentIntent,
   CreateIntentRequest,
   ConfirmIntentRequest,
+  ConfirmIntentResponse,
   CheckoutSession,
   CreateCheckoutSessionRequest,
+  CheckoutItem,
   Disbursement,
   CreateDisbursementRequest,
   Remittance,
   CreateRemittanceRequest,
+  CreateRemittanceResponse,
+
+  // Payment method types
   MomoData,
   PaymentMethodData,
+  Country,           // 'cg' | 'fr'
+  OperatorName,      // 'mtn' | 'airtel'
+
+  // Pagination types
   PaginatedResponse,
-  Sorting
+  PaginationParams,
+  Sorting,
+
+  // Error types
+  FieldError,
+  YabetooErrorOptions
 } from 'yabetoo';
 ```
 
