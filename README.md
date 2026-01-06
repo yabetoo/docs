@@ -1,32 +1,83 @@
-# Mintlify Starter Kit
+# Yabetoo Documentation
 
-Click on `Use this template` to copy the Mintlify starter kit. The starter kit contains examples including
+Documentation officielle de Yabetoo - La solution de paiement Mobile Money la plus simple pour l'Afrique.
 
-- Guide pages
-- Navigation
-- Customizations
-- API Reference pages
-- Use of popular components
+## À propos de Yabetoo
 
-### Development
+Yabetoo fournit une infrastructure de paiement complète pour les entreprises en Afrique. Acceptez les paiements Mobile Money de MTN, Airtel et d'autres opérateurs dans plusieurs pays.
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mintlify) to preview the documentation changes locally. To install, use the following command
+### Fonctionnalités principales
+
+- **Paiements** - Acceptez les paiements Mobile Money via page de checkout hébergée ou API
+- **Décaissements** - Envoyez de l'argent à vos clients, partenaires ou employés
+- **Transferts internationaux** - Gérez les remises transfrontalières
+- **Liens de paiement** - Créez des liens de paiement partageables sans code
+- **Webhooks** - Recevez des notifications en temps réel sur les transactions
+
+### Opérateurs supportés
+
+| Méthode | Opérateurs | Pays |
+|---------|------------|------|
+| Mobile Money | MTN, Airtel | Congo (CG) |
+
+## Structure du projet
 
 ```
+docs/
+├── en/                    # Documentation en anglais
+│   ├── api-reference/     # Référence API complète
+│   ├── developer-tools/   # SDKs, webhooks, tests
+│   ├── guides/            # Guides et concepts clés
+│   ├── payments/          # Paiements, décaissements, transferts
+│   └── platforms/         # Études de cas par secteur
+├── fr/                    # Documentation en français
+│   └── ...                # Même structure que /en
+└── docs.json              # Configuration Mintlify
+```
+
+## SDKs disponibles
+
+| Langage | Package | Installation |
+|---------|---------|--------------|
+| JavaScript/TypeScript | [@yabetoo/sdk-js](https://www.npmjs.com/package/@yabetoo/sdk-js) | `npm install @yabetoo/sdk-js` |
+| Python | [yabetoo-sdk](https://pypi.org/project/yabetoo-sdk/) | `pip install yabetoo-sdk` |
+| PHP | yabetoo/yabetoo-php | `composer require yabetoo/yabetoo-php` |
+| Java | com.yabetoo:yabetoo-java | Maven/Gradle |
+
+## Développement local
+
+Installer le [Mintlify CLI](https://www.npmjs.com/package/mintlify) pour prévisualiser la documentation localement :
+
+```bash
 npm i -g mintlify
 ```
 
-Run the following command at the root of your documentation (where docs.json is)
+Lancer le serveur de développement à la racine du projet (où se trouve `docs.json`) :
 
-```
+```bash
 mintlify dev
 ```
 
-### Publishing Changes
+La documentation sera disponible sur `http://localhost:3000`.
 
-Install our Github App to auto propagate changes from your repo to your deployment. Changes will be deployed to production automatically after pushing to the default branch. Find the link to install on your dashboard. 
+## Publication
 
-#### Troubleshooting
+Les changements sont automatiquement déployés en production après un push sur la branche principale via l'application GitHub Mintlify.
 
-- Mintlify dev isn't running - Run `mintlify install` it'll re-install dependencies.
-- Page loads as a 404 - Make sure you are running in a folder with `docs.json`
+## Dépannage
+
+- **Mintlify dev ne démarre pas** - Exécuter `mintlify install` pour réinstaller les dépendances
+- **Page 404** - Vérifier que vous êtes dans un dossier contenant `docs.json`
+
+## Liens utiles
+
+- [Documentation en ligne](https://docs.yabetoopay.com)
+- [Dashboard Yabetoo](https://app.yabetoo.com)
+- [API Sandbox](https://pay.sandbox.yabetoopay.com)
+- [Site web](https://yabetoopay.com)
+- [Support](mailto:support@yabetoopay.com)
+
+## Réseaux sociaux
+
+- [LinkedIn](https://www.linkedin.com/company/yabetoopay/)
+- [Facebook](https://www.facebook.com/Yabetoopay/)

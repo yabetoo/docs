@@ -67,7 +67,7 @@ export const PLANS = {
 When a user subscribes, create a payment intent:
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
 
@@ -135,7 +135,7 @@ Set up a webhook to activate subscriptions when payment succeeds:
 
 ```typescript
 // webhook-handler.ts
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
 
@@ -195,7 +195,7 @@ Set up a scheduled job to handle recurring payments:
 
 ```typescript
 // cron-job.ts (runs daily)
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
 

@@ -20,11 +20,11 @@ This SDK allows you to easily integrate Yabetoo's secure payment system into you
 To install the SDK, use npm, yarn, or pnpm. Run one of the following commands in your project:
 
 ```bash
-npm install yabetoo
+npm install @yabetoo/sdk-js
 # or
-yarn add yabetoo
+yarn add @yabetoo/sdk-js
 # or
-pnpm add yabetoo
+pnpm add @yabetoo/sdk-js
 ```
 
 ## Configuration
@@ -34,7 +34,7 @@ pnpm add yabetoo
 Before using the SDK, you must initialize an instance of the `Yabetoo` class. Simply provide your API key during initialization. The SDK automatically detects whether you are in test or production mode based on your key prefix.
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');  // Use your API key
 ```
@@ -44,7 +44,7 @@ const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');  // Use your AP
 You can customize the SDK behavior with additional options:
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX', {
   options: {
@@ -73,7 +73,7 @@ This approach offers increased flexibility, allowing you, for example, to verify
 A payment intent is a resource that represents your wish to receive a payment for a specific amount. When you create a payment intent, you don't immediately capture the amount; it's a preparatory step.
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -98,7 +98,7 @@ This code creates a payment intent for 5000 XAF. The API response contains a uni
 After creating the payment intent, you must confirm it to capture the amount. This typically occurs when the end user has completed all necessary steps (such as providing payment information or accepting terms and conditions).
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -140,7 +140,7 @@ import Yabetoo, {
   APIError,
   NetworkError,
   AuthenticationError
-} from 'yabetoo';
+} from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -175,7 +175,7 @@ In this example, if the confirmation fails, an error message will be displayed i
 To retrieve information about an existing payment, use the payment ID as a parameter:
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -193,7 +193,7 @@ This code allows you to obtain detailed information about a specific payment, in
 To retrieve a list of all your payments, use the `all` method. You can also filter payments by status or other criteria if needed.
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -250,7 +250,7 @@ Using a hosted payment page offers several advantages for you as a developer or 
 Payment sessions allow you to create a secure and smooth payment process for your users. This session redirects the user to a hosted payment page to finalize the transaction.
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -309,7 +309,7 @@ When the payment is made via the payment page hosted by Yabetoo, you will be red
 
 ```typescript
 // In your success URL handler (e.g., Express.js or Next.js)
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -348,7 +348,7 @@ Disbursements allow you to send money to recipients (customers, partners, etc.) 
 ### Create a Disbursement
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -389,7 +389,7 @@ Remittances allow you to create transfer transactions.
 ### Create a Remittance
 
 ```typescript
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -450,7 +450,7 @@ import Yabetoo, {
   NetworkError,
   AuthenticationError,
   RateLimitError
-} from 'yabetoo';
+} from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo('sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
 
@@ -524,7 +524,7 @@ import type {
   // Error types
   FieldError,
   YabetooErrorOptions
-} from 'yabetoo';
+} from '@yabetoo/sdk-js';
 ```
 
 ## Supported Payment Methods
@@ -538,7 +538,7 @@ import type {
 ### Payment Method Data
 
 ```typescript
-import type { PaymentMethodData, MomoData } from 'yabetoo';
+import type { PaymentMethodData, MomoData } from '@yabetoo/sdk-js';
 
 const paymentMethod: PaymentMethodData = {
   type: 'momo',  // Payment method type
@@ -570,7 +570,7 @@ response.hasMore;     // Whether more pages exist
 ```typescript
 // pages/api/create-payment.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
 
@@ -605,7 +605,7 @@ export default async function handler(
 
 ```typescript
 import express from 'express';
-import Yabetoo from 'yabetoo';
+import Yabetoo from '@yabetoo/sdk-js';
 
 const app = express();
 const yabetoo = new Yabetoo(process.env.YABETOO_SECRET_KEY!);
