@@ -1,10 +1,96 @@
 ---
 title: WordPress
-description: "Intégrez Yabetoo Pay dans votre site WordPress."
+description: "Integrate Yabetoo Pay into your WordPress site."
 icon: "wordpress"
 ---
 
-## Intégration de Yabetoo Pay dans WordPress
+The Yabetoo WordPress plugin allows you to easily accept Mobile Money payments on your WordPress/WooCommerce site.
 
-téléchargez le plugin Yabetoo Pay sur le marketplace WordPress
-[Télécharger notre guide PDF](/assets/plugins/yabetoopay-getaway.zip)
+<Card title="Download Plugin" icon="download" href="/downloads/yabetoopay-woocommerce.zip">
+  Download the latest version of the Yabetoo plugin for WooCommerce
+</Card>
+
+## Installation
+
+### Option 1: Manual Installation (recommended)
+
+1. <a href="/downloads/yabetoopay-woocommerce.zip" download>Download the plugin</a>
+2. Log in to your WordPress dashboard as an administrator
+3. Go to **Plugins** > **Add New** > **Upload Plugin**
+4. Select the downloaded `yabetoopay-woocommerce.zip` file
+5. Click **Install Now** then **Activate**
+
+### Option 2: Via WordPress Marketplace
+
+1. Log in to your WordPress dashboard as an administrator
+2. Go to **Plugins** > **Add New**
+3. Search for "Yabetoo Payment Gateway"
+4. Click **Install Now** then **Activate**
+
+## Configuration
+
+1. Go to **WooCommerce** > **Settings** > **Payments**
+2. Enable "Yabetoo" by clicking the toggle
+3. Click **Manage**
+4. Configure the following settings:
+   - Test/Production Mode
+   - Secret API Key
+   - Public API Key
+   - Payment method description (displayed to customers)
+5. Click **Save changes**
+
+## Customization
+
+### Modify Button Appearance
+
+You can customize the payment button appearance by adding custom CSS to your theme:
+
+```css
+.yabetoo-payment-button {
+    background-color: #your-color;
+    color: #text-color;
+}
+```
+
+### WordPress Hooks
+
+The plugin provides several hooks to customize its behavior:
+
+```php
+// Modify payment parameters before creation
+add_filter('yabetoo_payment_parameters', function($parameters, $order) {
+    // Customize parameters
+    return $parameters;
+}, 10, 2);
+
+// Action after successful payment
+add_action('yabetoo_payment_success', function($order_id) {
+    // Your code here
+});
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Payment button not displaying**
+   - Verify the plugin is activated
+   - Ensure API keys are correctly configured
+
+2. **Configuration error**
+   - Verify you're using the correct API keys for the selected mode
+   - Ensure your site is using HTTPS
+
+3. **Webhooks not received**
+   - Verify the webhook URL is publicly accessible
+   - Confirm the webhook signature is correctly configured
+
+## Support
+
+For additional assistance:
+- Check our [complete documentation](https://docs.yabetoo.com)
+- Contact our support at support@yabetoopay.com
+
+<Note>
+  Always test the plugin in Test mode before going to production.
+</Note>
