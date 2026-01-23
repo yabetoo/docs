@@ -1,0 +1,638 @@
+---
+title: "Promotions et Codes Promo"
+description: "Créez des coupons et codes promotionnels pour offrir des réductions : pourcentage, montant fixe, durée limitée et restrictions"
+---
+
+## Vue d'ensemble
+
+Le système de promotions Yabetoo se compose de deux entités :
+
+<CardGroup cols={2}>
+  <Card title="Coupon" icon="ticket">
+    Définit la **réduction** à appliquer (pourcentage ou montant fixe)
+  </Card>
+  <Card title="Code Promo" icon="tag">
+    Code utilisable par les clients, lié à un coupon avec des **restrictions** supplémentaires
+  </Card>
+</CardGroup>
+
+```
+Coupon "Summer Sale 20%"
+├── Code Promo "SUMMER20" (public, max 1000 utilisations)
+├── Code Promo "SUMMERVIP" (VIP, min 50€ d'achat)
+└── Code Promo "SUMMER-JEAN" (limité aux clients: cus_xxx)
+```
+
+---
+
+## Coupons
+
+### Qu'est-ce qu'un Coupon ?
+
+Un **Coupon** définit le type et le montant de la réduction. Il peut être réutilisé par plusieurs codes promo avec différentes restrictions.
+
+<Info>
+  **Format de l'identifiant** : `coupon_` suivi de 24 caractères alphanumériques.
+
+  Exemple : `coupon_summer2024_20percent`
+</Info>
+
+### Attributs du Coupon
+
+| Attribut | Type | Description |
+|----------|------|-------------|
+| `id` | string | Identifiant unique |
+| `name` | string | Nom du coupon (interne) |
+| `percentOff` | number \| null | Pourcentage de réduction (0-100) |
+| `amountOff` | number \| null | Montant fixe de réduction |
+| `currencyOptions` | object | Montants par devise |
+| `duration` | enum | `once`, `forever`, `repeating` |
+| `durationInMonths` | number \| null | Durée en mois (si `repeating`) |
+| `maxRedemptions` | number \| null | Nombre max d'utilisations |
+| `timesRedeemed` | number | Utilisations actuelles |
+| `redeemBy` | DateTime \| null | Date d'expiration |
+| `appliesToSkus` | string[] | SKUs éligibles (optionnel) |
+| `valid` | boolean | Coupon actif |
+
+### Types de réduction
+
+<Tabs>
+  <Tab title="Pourcentage">
+    ### Réduction en pourcentage
+
+    Applique un pourcentage de réduction sur le montant total.
+
+    ```bash
+    curl -X POST https://api.yabetoo.com/v1/coupons \
+      -H "Authorization: Bearer sk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Summer Sale 20%",
+        "percentOff": 20,
+        "duration": "once"
+      }'
+    ```
+
+    **Exemple :** 20% sur un panier de 100€ = 80€ à payer
+  </Tab>
+
+  <Tab title="Montant fixe">
+    ### Réduction montant fixe
+
+    Soustrait un montant fixe du total.
+
+    ```bash
+    curl -X POST https://api.yabetoo.com/v1/coupons \
+      -H "Authorization: Bearer sk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Welcome 10€",
+        "amountOff": 10,
+        "currency": "EUR",
+        "duration": "once"
+      }'
+    ```
+
+    **Exemple :** -10€ sur un panier de 50€ = 40€ à payer
+  </Tab>
+
+  <Tab title="Multi-devises">
+    ### Réduction multi-devises
+
+    Définissez des montants fixes différents par devise.
+
+    ```bash
+    curl -X POST https://api.yabetoo.com/v1/coupons \
+      -H "Authorization: Bearer sk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Welcome Discount",
+        "amountOff": 10,
+        "currencyOptions": {
+          "EUR": { "amountOff": 10 },
+          "USD": { "amountOff": 11 },
+          "XOF": { "amountOff": 6500 }
+        },
+        "duration": "once"
+      }'
+    ```
+
+    Le système applique automatiquement le montant correspondant à la devise de la commande.
+  </Tab>
+</Tabs>
+
+### Durée de la réduction
+
+<CardGroup cols={3}>
+  <Card title="Once" icon="1">
+    **Une seule fois**
+
+    La réduction s'applique uniquement au premier paiement.
+
+    Idéal pour : offres de bienvenue, premiers achats
+  </Card>
+  <Card title="Forever" icon="infinity">
+    **Toujours**
+
+    La réduction s'applique à tous les paiements futurs.
+
+    Idéal pour : réductions permanentes, partenariats
+  </Card>
+  <Card title="Repeating" icon="repeat">
+    **Limité dans le temps**
+
+    La réduction s'applique pendant X mois.
+
+    Idéal pour : promotions temporaires sur abonnements
+  </Card>
+</CardGroup>
+
+```json
+// Réduction pendant 3 mois sur un abonnement
+{
+  "name": "3 mois à -50%",
+  "percentOff": 50,
+  "duration": "repeating",
+  "durationInMonths": 3
+}
+```
+
+### Restrictions par SKU
+
+Limitez un coupon à certains produits/SKUs :
+
+```json
+{
+  "name": "Promo Formations",
+  "percentOff": 30,
+  "duration": "once",
+  "appliesToSkus": [
+    "sku_formation_js",
+    "sku_formation_react",
+    "sku_formation_node"
+  ]
+}
+```
+
+<Warning>
+  Si `appliesToSkus` est défini, la réduction ne s'applique qu'aux SKUs listés. Les autres articles du panier ne bénéficient pas de la réduction.
+</Warning>
+
+---
+
+## Codes Promo
+
+### Qu'est-ce qu'un Code Promo ?
+
+Un **Code Promo** (PromotionCode) est le code que les clients utilisent. Il est associé à un coupon et peut avoir des restrictions supplémentaires.
+
+<Info>
+  **Format de l'identifiant** : `promo_` suivi de 24 caractères alphanumériques.
+
+  Exemple : `promo_summer20_public`
+</Info>
+
+### Attributs du Code Promo
+
+| Attribut | Type | Description |
+|----------|------|-------------|
+| `id` | string | Identifiant unique |
+| `couponId` | string | Coupon associé |
+| `code` | string | Code utilisable (auto-majuscules) |
+| `active` | boolean | Code actif |
+| `expiresAt` | DateTime \| null | Date d'expiration |
+| `maxRedemptions` | number \| null | Nombre max d'utilisations |
+| `timesRedeemed` | number | Utilisations actuelles |
+| `minimumAmount` | number \| null | Montant minimum d'achat |
+| `minimumAmountCurrency` | string \| null | Devise du minimum |
+| `firstTimeTransaction` | boolean | Réservé aux premiers achats |
+| `customerIds` | string[] | Liste blanche de clients |
+
+### Créer un Code Promo
+
+```bash
+curl -X POST https://api.yabetoo.com/v1/promotion-codes \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "couponId": "coupon_summer2024",
+    "code": "SUMMER20",
+    "maxRedemptions": 1000,
+    "expiresAt": "2024-08-31T23:59:59Z"
+  }'
+```
+
+<Note>
+  Le code est automatiquement converti en majuscules. `summer20` devient `SUMMER20`.
+</Note>
+
+### Restrictions avancées
+
+<Tabs>
+  <Tab title="Montant minimum">
+    Exiger un montant d'achat minimum :
+
+    ```json
+    {
+      "couponId": "coupon_20percent",
+      "code": "SAVE20",
+      "minimumAmount": 50,
+      "minimumAmountCurrency": "EUR"
+    }
+    ```
+
+    Le code ne fonctionne que si le panier dépasse 50€.
+  </Tab>
+
+  <Tab title="Premier achat">
+    Réserver aux nouveaux clients :
+
+    ```json
+    {
+      "couponId": "coupon_welcome",
+      "code": "WELCOME15",
+      "firstTimeTransaction": true
+    }
+    ```
+
+    Le code ne fonctionne que pour la première commande du client.
+  </Tab>
+
+  <Tab title="Clients spécifiques">
+    Limiter à certains clients :
+
+    ```json
+    {
+      "couponId": "coupon_vip",
+      "code": "VIP50",
+      "customerIds": [
+        "cus_abc123",
+        "cus_def456",
+        "cus_ghi789"
+      ]
+    }
+    ```
+
+    Seuls les clients listés peuvent utiliser ce code.
+  </Tab>
+
+  <Tab title="Limité dans le temps">
+    Définir une période de validité :
+
+    ```json
+    {
+      "couponId": "coupon_blackfriday",
+      "code": "BLACKFRIDAY",
+      "expiresAt": "2024-11-30T23:59:59Z",
+      "maxRedemptions": 500
+    }
+    ```
+
+    Le code expire à la date définie OU après 500 utilisations.
+  </Tab>
+</Tabs>
+
+---
+
+## Validation d'un Code Promo
+
+Lors de l'utilisation d'un code promo, le système effectue plusieurs vérifications :
+
+<Steps>
+  <Step title="Code existe et actif">
+    Le code doit exister et `active` doit être `true`
+  </Step>
+  <Step title="Non expiré">
+    La date actuelle doit être avant `expiresAt`
+  </Step>
+  <Step title="Limite non atteinte">
+    `timesRedeemed` doit être inférieur à `maxRedemptions`
+  </Step>
+  <Step title="Coupon valide">
+    Le coupon associé doit être valide (`valid: true`)
+  </Step>
+  <Step title="Montant minimum">
+    Le panier doit atteindre `minimumAmount` si défini
+  </Step>
+  <Step title="Premier achat">
+    Si `firstTimeTransaction`, vérifier que c'est la première commande
+  </Step>
+  <Step title="Client autorisé">
+    Si `customerIds` défini, vérifier que le client est dans la liste
+  </Step>
+  <Step title="SKUs éligibles">
+    Si le coupon a `appliesToSkus`, vérifier que le panier contient ces SKUs
+  </Step>
+  <Step title="Devise supportée">
+    La devise de la commande doit être supportée par le coupon
+  </Step>
+</Steps>
+
+### Erreurs de validation
+
+| Erreur | Description |
+|--------|-------------|
+| `INVALID_CODE` | Code inexistant ou inactif |
+| `EXPIRED` | Code ou coupon expiré |
+| `MAX_REDEMPTIONS` | Limite d'utilisations atteinte |
+| `MINIMUM_NOT_MET` | Montant minimum non atteint |
+| `NOT_FIRST_PURCHASE` | Réservé aux premiers achats |
+| `SKUS_NOT_ELIGIBLE` | Aucun SKU éligible dans le panier |
+| `CURRENCY_MISMATCH` | Devise non supportée |
+| `CUSTOMER_NOT_ALLOWED` | Client non autorisé |
+| `COUPON_INVALID` | Coupon désactivé |
+
+---
+
+## Historique des utilisations
+
+Chaque utilisation d'un coupon/code promo est enregistrée dans `CouponRedemption` :
+
+```json
+{
+  "id": "redemption_abc123",
+  "couponId": "coupon_summer2024",
+  "promotionCodeId": "promo_summer20",
+  "customerId": "cus_xyz789",
+  "customerEmail": "client@example.com",
+  "orderId": "ord_def456",
+  "discountAmount": 20,
+  "currency": "EUR",
+  "createdAt": "2024-07-15T14:30:00Z"
+}
+```
+
+Cet historique permet :
+- L'audit des remises accordées
+- L'analyse des performances des promotions
+- La vérification des utilisations par client
+
+---
+
+## Calcul de la réduction
+
+### Réduction en pourcentage
+
+```typescript
+const discount = (subtotal * coupon.percentOff) / 100;
+```
+
+### Réduction montant fixe
+
+```typescript
+const discount = coupon.getAmountOffForCurrency(currency);
+// Retourne le montant pour la devise ou null si non supporté
+```
+
+### Exemple complet
+
+```
+Panier: 120€
+Coupon: 20% de réduction
+
+Calcul:
+- Sous-total: 120€
+- Réduction: 120 × 0.20 = 24€
+- Total: 120 - 24 = 96€
+```
+
+---
+
+## Réponses API
+
+<Tabs>
+  <Tab title="Coupon">
+    ```json
+    {
+      "id": "coupon_summer2024_20percent",
+      "object": "coupon",
+      "name": "Summer Sale 20%",
+      "percentOff": 20,
+      "amountOff": null,
+      "currencyOptions": {},
+      "duration": "once",
+      "durationInMonths": null,
+      "maxRedemptions": 1000,
+      "timesRedeemed": 156,
+      "redeemBy": "2024-08-31T23:59:59.000Z",
+      "appliesToSkus": null,
+      "valid": true,
+      "createdAt": "2024-06-01T00:00:00.000Z",
+      "updatedAt": "2024-07-15T14:30:00.000Z"
+    }
+    ```
+  </Tab>
+
+  <Tab title="Code Promo">
+    ```json
+    {
+      "id": "promo_summer20_public",
+      "object": "promotion_code",
+      "couponId": "coupon_summer2024_20percent",
+      "code": "SUMMER20",
+      "active": true,
+      "expiresAt": "2024-08-31T23:59:59.000Z",
+      "maxRedemptions": 1000,
+      "timesRedeemed": 156,
+      "minimumAmount": null,
+      "minimumAmountCurrency": null,
+      "firstTimeTransaction": false,
+      "customerIds": null,
+      "coupon": {
+        "id": "coupon_summer2024_20percent",
+        "name": "Summer Sale 20%",
+        "percentOff": 20
+      },
+      "createdAt": "2024-06-01T00:00:00.000Z",
+      "updatedAt": "2024-07-15T14:30:00.000Z"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Opérations courantes
+
+### Créer un coupon
+
+```bash
+curl -X POST https://api.yabetoo.com/v1/coupons \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Black Friday 30%",
+    "percentOff": 30,
+    "duration": "once",
+    "maxRedemptions": 500,
+    "redeemBy": "2024-11-30T23:59:59Z"
+  }'
+```
+
+### Créer un code promo
+
+```bash
+curl -X POST https://api.yabetoo.com/v1/promotion-codes \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "couponId": "coupon_blackfriday",
+    "code": "BLACKFRIDAY30"
+  }'
+```
+
+### Valider un code promo
+
+```bash
+curl -X POST https://api.yabetoo.com/v1/promotion-codes/validate \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "SUMMER20",
+    "amount": 100,
+    "currency": "EUR",
+    "customerEmail": "client@example.com"
+  }'
+```
+
+### Désactiver un code promo
+
+```bash
+curl -X PATCH https://api.yabetoo.com/v1/promotion-codes/promo_xxx \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "active": false
+  }'
+```
+
+---
+
+## Bonnes pratiques
+
+<AccordionGroup>
+  <Accordion title="Nommage des codes">
+    - Utilisez des codes mémorables et faciles à saisir
+    - Évitez les caractères ambigus (0/O, 1/l)
+    - Incluez le contexte : `SUMMER20`, `WELCOME15`, `VIP50`
+    - Gardez les codes courts (6-12 caractères)
+  </Accordion>
+
+  <Accordion title="Limites et expirations">
+    - Définissez toujours une limite (`maxRedemptions` ou `expiresAt`)
+    - Les promotions sans limite peuvent impacter vos marges
+    - Prévoyez une marge de sécurité sur les limites
+  </Accordion>
+
+  <Accordion title="Suivi des performances">
+    - Analysez les `CouponRedemption` régulièrement
+    - Mesurez le taux de conversion par code
+    - Comparez les performances des différentes promotions
+  </Accordion>
+
+  <Accordion title="Communication">
+    - Affichez clairement les conditions d'utilisation
+    - Indiquez la date d'expiration aux clients
+    - Expliquez pourquoi un code est refusé
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Exemples de cas d'usage
+
+<Tabs>
+  <Tab title="Offre de bienvenue">
+    ```json
+    {
+      "coupon": {
+        "name": "Welcome 10€",
+        "amountOff": 10,
+        "currency": "EUR",
+        "duration": "once"
+      },
+      "promotionCode": {
+        "code": "WELCOME10",
+        "firstTimeTransaction": true,
+        "minimumAmount": 30,
+        "minimumAmountCurrency": "EUR"
+      }
+    }
+    ```
+    **Résultat :** -10€ pour les nouveaux clients avec panier > 30€
+  </Tab>
+
+  <Tab title="Black Friday">
+    ```json
+    {
+      "coupon": {
+        "name": "Black Friday 40%",
+        "percentOff": 40,
+        "duration": "once",
+        "maxRedemptions": 1000,
+        "redeemBy": "2024-11-30T23:59:59Z"
+      },
+      "promotionCode": {
+        "code": "BLACK40",
+        "expiresAt": "2024-11-30T23:59:59Z"
+      }
+    }
+    ```
+    **Résultat :** -40% limité à 1000 utilisations jusqu'au 30 novembre
+  </Tab>
+
+  <Tab title="Programme VIP">
+    ```json
+    {
+      "coupon": {
+        "name": "VIP Permanent 15%",
+        "percentOff": 15,
+        "duration": "forever"
+      },
+      "promotionCode": {
+        "code": "VIP15",
+        "customerIds": ["cus_vip1", "cus_vip2", "cus_vip3"]
+      }
+    }
+    ```
+    **Résultat :** -15% permanent pour les clients VIP uniquement
+  </Tab>
+
+  <Tab title="Abonnement réduit">
+    ```json
+    {
+      "coupon": {
+        "name": "3 mois à -50%",
+        "percentOff": 50,
+        "duration": "repeating",
+        "durationInMonths": 3
+      },
+      "promotionCode": {
+        "code": "START50"
+      }
+    }
+    ```
+    **Résultat :** -50% sur les 3 premiers mois d'abonnement
+  </Tab>
+</Tabs>
+
+---
+
+## Prochaines étapes
+
+<CardGroup cols={2}>
+  <Card
+    title="Créer une session de paiement"
+    icon="credit-card"
+    href="/fr/payments/checkout-page/intro"
+  >
+    Utilisez les codes promo dans vos checkout sessions
+  </Card>
+  <Card
+    title="Webhooks"
+    icon="bell"
+    href="/fr/developer-tools/webhook/overview"
+  >
+    Recevez des notifications lors des utilisations de codes promo
+  </Card>
+</CardGroup>

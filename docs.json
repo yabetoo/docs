@@ -35,6 +35,17 @@
                 "icon": "lightbulb"
               },
               {
+                "group": "Catalogue Produits",
+                "pages": [
+                  "fr/products/overview",
+                  "fr/products/products",
+                  "fr/products/skus",
+                  "fr/products/prices",
+                  "fr/products/coupons"
+                ],
+                "icon": "box"
+              },
+              {
                 "group": "Ressources",
                 "pages": [
                   "fr/guides/troubleshooting",
@@ -241,6 +252,17 @@
                   "en/guides/concepts/statuses"
                 ],
                 "icon": "lightbulb"
+              },
+              {
+                "group": "Product Catalog",
+                "pages": [
+                  "en/products/overview",
+                  "en/products/products",
+                  "en/products/skus",
+                  "en/products/prices",
+                  "en/products/coupons"
+                ],
+                "icon": "box"
               },
               {
                 "group": "Resources",

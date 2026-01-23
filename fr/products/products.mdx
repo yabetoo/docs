@@ -1,0 +1,330 @@
+---
+title: "Produits"
+description: "Créez et gérez votre catalogue de produits avec différents types, statuts et configurations"
+---
+
+## Qu'est-ce qu'un Produit ?
+
+Un **Produit** représente un article ou service que vous vendez. C'est l'entité de base de votre catalogue autour de laquelle s'articulent les variantes (SKUs), les prix et les promotions.
+
+<Info>
+  **Format de l'identifiant** : `prod_` suivi de 36 caractères alphanumériques.
+
+  Exemple : `prod_abc123def456ghi789jkl012mno345`
+</Info>
+
+## Attributs du Produit
+
+### Attributs principaux
+
+| Attribut | Type | Description |
+|----------|------|-------------|
+| `id` | string | Identifiant unique du produit |
+| `name` | string | Nom du produit affiché aux clients |
+| `description` | string | Description détaillée du produit |
+| `type` | enum | Type de produit : `physical`, `digital`, `service` |
+| `status` | enum | Statut : `active`, `archived`, `draft` |
+| `price` | number \| null | Prix par défaut (optionnel) |
+| `category` | number | Catégorie du produit |
+| `subscriptionEligible` | boolean | Peut être vendu en abonnement |
+| `hasSkus` | boolean | Indique si le produit a des variantes |
+
+## Types de produits
+
+<Tabs>
+  <Tab title="Physique">
+    ### Produit Physique (`physical`)
+
+    Un produit tangible qui nécessite une livraison au client.
+
+    **Caractéristiques :**
+    - Gestion du stock activée
+    - Adresse de livraison requise
+    - Suivi des expéditions possible
+
+    **Exemples :** Vêtements, électronique, livres imprimés, accessoires
+
+    ```json
+    {
+      "name": "T-shirt Premium",
+      "type": "physical",
+      "description": "T-shirt 100% coton biologique",
+      "hasSkus": true
+    }
+    ```
+  </Tab>
+
+  <Tab title="Numérique">
+    ### Produit Numérique (`digital`)
+
+    Un produit dématérialisé accessible par téléchargement.
+
+    **Caractéristiques :**
+    - Livraison instantanée après paiement
+    - Liens de téléchargement sécurisés
+    - Contrôle du nombre de téléchargements
+    - Expiration des liens possible
+
+    **Exemples :** E-books, logiciels, formations vidéo, templates
+
+    ```json
+    {
+      "name": "Formation React Avancé",
+      "type": "digital",
+      "description": "20 heures de vidéo + ressources",
+      "subscriptionEligible": false
+    }
+    ```
+  </Tab>
+
+  <Tab title="Service">
+    ### Service (`service`)
+
+    Une prestation de service ponctuelle ou continue.
+
+    **Caractéristiques :**
+    - Pas de stock physique
+    - Idéal pour les abonnements
+    - Facturation récurrente possible
+
+    **Exemples :** Consultations, abonnements SaaS, maintenance, coaching
+
+    ```json
+    {
+      "name": "Abonnement Pro",
+      "type": "service",
+      "description": "Accès illimité à toutes les fonctionnalités",
+      "subscriptionEligible": true
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Statuts du produit
+
+Le statut détermine la visibilité et la disponibilité du produit :
+
+<CardGroup cols={3}>
+  <Card title="Active" icon="circle-check" color="#22c55e">
+    Le produit est visible et disponible à la vente. Les clients peuvent l'acheter.
+  </Card>
+  <Card title="Draft" icon="pencil" color="#f59e0b">
+    Brouillon en cours de création. Non visible par les clients.
+  </Card>
+  <Card title="Archived" icon="box-archive" color="#6b7280">
+    Produit archivé. Non visible mais conservé pour l'historique.
+  </Card>
+</CardGroup>
+
+```typescript
+enum ProductStatus {
+  ACTIVE = 'active',      // Disponible à la vente
+  DRAFT = 'draft',        // En cours de création
+  ARCHIVED = 'archived'   // Archivé
+}
+```
+
+## Créer un produit
+
+<Steps>
+  <Step title="Définir les informations de base">
+    Renseignez le nom, la description et le type de produit.
+
+    ```bash
+    curl -X POST https://api.yabetoo.com/v1/products \
+      -H "Authorization: Bearer sk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Formation JavaScript",
+        "description": "Maîtrisez JavaScript de A à Z",
+        "type": "digital"
+      }'
+    ```
+  </Step>
+
+  <Step title="Configurer les options">
+    Définissez si le produit peut être vendu en abonnement et s'il possède des variantes.
+
+    ```json
+    {
+      "subscriptionEligible": true,
+      "hasSkus": false
+    }
+    ```
+  </Step>
+
+  <Step title="Ajouter les variantes (optionnel)">
+    Si `hasSkus` est `true`, créez les variantes du produit.
+
+    Voir [Documentation des SKUs](/fr/products/skus)
+  </Step>
+
+  <Step title="Définir les prix">
+    Associez un ou plusieurs prix au produit ou à ses variantes.
+
+    Voir [Documentation des Prix](/fr/products/prices)
+  </Step>
+</Steps>
+
+## Réponse API
+
+<Tabs>
+  <Tab title="Produit simple">
+    ```json
+    {
+      "id": "prod_abc123def456ghi789",
+      "object": "product",
+      "name": "Formation JavaScript",
+      "description": "Maîtrisez JavaScript de A à Z",
+      "type": "digital",
+      "status": "active",
+      "price": null,
+      "category": 1,
+      "subscriptionEligible": true,
+      "hasSkus": false,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+    ```
+  </Tab>
+
+  <Tab title="Produit avec variantes">
+    ```json
+    {
+      "id": "prod_xyz789abc123def456",
+      "object": "product",
+      "name": "T-shirt Premium",
+      "description": "T-shirt 100% coton biologique",
+      "type": "physical",
+      "status": "active",
+      "price": null,
+      "category": 2,
+      "subscriptionEligible": false,
+      "hasSkus": true,
+      "skus": [
+        {
+          "id": "sku_small_white",
+          "name": "T-shirt S Blanc",
+          "skuCode": "TSHIRT-S-WHITE",
+          "attributes": {
+            "size": "S",
+            "color": "white"
+          },
+          "stockQuantity": 50,
+          "stockTracking": true
+        },
+        {
+          "id": "sku_medium_black",
+          "name": "T-shirt M Noir",
+          "skuCode": "TSHIRT-M-BLACK",
+          "attributes": {
+            "size": "M",
+            "color": "black"
+          },
+          "stockQuantity": 30,
+          "stockTracking": true
+        }
+      ],
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Opérations courantes
+
+### Récupérer un produit
+
+```bash
+curl https://api.yabetoo.com/v1/products/prod_abc123 \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+### Mettre à jour un produit
+
+```bash
+curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Formation JavaScript Avancé",
+    "description": "De débutant à expert en JavaScript"
+  }'
+```
+
+### Archiver un produit
+
+```bash
+curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "archived"
+  }'
+```
+
+### Supprimer un produit
+
+<Warning>
+  Un produit supprimé n'est plus visible mais l'historique des commandes associées est conservé.
+</Warning>
+
+```bash
+curl -X DELETE https://api.yabetoo.com/v1/products/prod_abc123 \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+## Relations avec d'autres entités
+
+```
+Product
+├── ProductSku[] (variantes)
+│   └── Price[] (prix)
+├── Document[] (images, fichiers)
+└── ProductLink[] (produits liés)
+    ├── Cross-sell (produits complémentaires)
+    ├── Upsell (produits supérieurs)
+    └── Related (produits associés)
+```
+
+## Bonnes pratiques
+
+<AccordionGroup>
+  <Accordion title="Nommage des produits">
+    - Utilisez des noms clairs et descriptifs
+    - Évitez les abréviations obscures
+    - Incluez les caractéristiques clés dans le nom pour les variantes
+  </Accordion>
+
+  <Accordion title="Gestion des statuts">
+    - Utilisez `draft` pour les produits en préparation
+    - Passez en `active` uniquement quand tout est configuré (prix, images, stock)
+    - Archivez plutôt que supprimer pour conserver l'historique
+  </Accordion>
+
+  <Accordion title="Organisation du catalogue">
+    - Groupez les produits similaires par catégorie
+    - Utilisez les variantes (SKUs) pour les déclinaisons d'un même produit
+    - Configurez les produits liés pour le cross-selling
+  </Accordion>
+</AccordionGroup>
+
+## Prochaines étapes
+
+<CardGroup cols={2}>
+  <Card
+    title="Gérer les variantes"
+    icon="tags"
+    href="/fr/products/skus"
+  >
+    Apprenez à créer des SKUs pour les déclinaisons de vos produits
+  </Card>
+  <Card
+    title="Définir les prix"
+    icon="money-bill"
+    href="/fr/products/prices"
+  >
+    Configurez la tarification de vos produits
+  </Card>
+</CardGroup>

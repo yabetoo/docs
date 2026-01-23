@@ -1,0 +1,406 @@
+---
+title: "Tarification (Prices)"
+description: "Configurez vos stratégies de prix : paiements uniques, abonnements récurrents, périodes d'essai et multi-devises"
+---
+
+## Qu'est-ce qu'un Price ?
+
+Un **Price** (Prix) définit comment un SKU est facturé. Il peut s'agir d'un paiement unique ou d'un abonnement récurrent avec différentes périodicités.
+
+<Info>
+  **Format de l'identifiant** : `price_` suivi de 36 caractères alphanumériques.
+
+  Exemple : `price_abc123def456ghi789jkl012mno345`
+</Info>
+
+## Relation SKU → Price
+
+Un SKU peut avoir plusieurs prix pour différentes stratégies tarifaires :
+
+```
+SKU "Formation Pro"
+├── Price 99€ one-time (paiement unique)
+├── Price 19€/mois (abonnement mensuel)
+├── Price 199€/an (abonnement annuel avec économie)
+└── Price 65 000 XOF one-time (marché africain)
+```
+
+<Note>
+  Cette flexibilité permet de proposer plusieurs options de paiement pour le même produit et de gérer plusieurs devises.
+</Note>
+
+## Attributs du Price
+
+### Attributs principaux
+
+| Attribut | Type | Description |
+|----------|------|-------------|
+| `id` | string | Identifiant unique du prix |
+| `skuId` | string | Référence au SKU parent |
+| `amount` | number | Montant en unité entière |
+| `currency` | string | Code devise (EUR, XOF, USD, etc.) |
+| `type` | enum | `one_time` ou `recurring` |
+| `active` | boolean | Prix actif et utilisable |
+
+### Attributs récurrents (abonnements)
+
+| Attribut | Type | Description |
+|----------|------|-------------|
+| `billingInterval` | enum | `day`, `week`, `month`, `year` |
+| `billingIntervalCount` | number | Nombre d'intervalles (ex: 3 = tous les 3 mois) |
+| `trialPeriodDays` | number \| null | Jours d'essai gratuit |
+
+## Types de tarification
+
+<Tabs>
+  <Tab title="Paiement unique">
+    ### One-Time (`one_time`)
+
+    Le client paie une seule fois pour accéder au produit.
+
+    **Cas d'usage :**
+    - Achats ponctuels
+    - Produits physiques
+    - Téléchargements numériques
+    - Accès à vie
+
+    ```bash
+    curl -X POST https://api.yabetoo.com/v1/skus/sku_abc123/prices \
+      -H "Authorization: Bearer sk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": 99,
+        "currency": "EUR",
+        "type": "one_time"
+      }'
+    ```
+  </Tab>
+
+  <Tab title="Abonnement récurrent">
+    ### Recurring (`recurring`)
+
+    Le client est facturé automatiquement à intervalles réguliers.
+
+    **Cas d'usage :**
+    - Abonnements SaaS
+    - Services continus
+    - Accès premium
+    - Maintenance
+
+    ```bash
+    curl -X POST https://api.yabetoo.com/v1/skus/sku_abc123/prices \
+      -H "Authorization: Bearer sk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": 19,
+        "currency": "EUR",
+        "type": "recurring",
+        "billingInterval": "month",
+        "billingIntervalCount": 1,
+        "trialPeriodDays": 14
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+## Intervalles de facturation
+
+Pour les prix récurrents, définissez la fréquence de facturation :
+
+| Interval | Count | Description | Exemple |
+|----------|-------|-------------|---------|
+| `day` | 1 | Quotidien | Facturé chaque jour |
+| `week` | 1 | Hebdomadaire | Facturé chaque semaine |
+| `week` | 2 | Bi-hebdomadaire | Facturé toutes les 2 semaines |
+| `month` | 1 | Mensuel | Facturé chaque mois |
+| `month` | 3 | Trimestriel | Facturé tous les 3 mois |
+| `month` | 6 | Semestriel | Facturé tous les 6 mois |
+| `year` | 1 | Annuel | Facturé chaque année |
+
+```json
+// Facturation trimestrielle
+{
+  "type": "recurring",
+  "billingInterval": "month",
+  "billingIntervalCount": 3,
+  "amount": 45
+}
+```
+
+## Périodes d'essai
+
+Offrez une période d'essai gratuit pour attirer de nouveaux clients :
+
+```json
+{
+  "type": "recurring",
+  "billingInterval": "month",
+  "billingIntervalCount": 1,
+  "amount": 29,
+  "currency": "EUR",
+  "trialPeriodDays": 14
+}
+```
+
+<Steps>
+  <Step title="Début de l'abonnement">
+    Le client s'inscrit et démarre sa période d'essai gratuite
+  </Step>
+  <Step title="Période d'essai">
+    Pendant 14 jours, le client a accès complet sans être facturé
+  </Step>
+  <Step title="Fin de l'essai">
+    À la fin de la période d'essai, le premier paiement est prélevé automatiquement
+  </Step>
+  <Step title="Cycle récurrent">
+    Les paiements suivants sont prélevés selon l'intervalle défini
+  </Step>
+</Steps>
+
+<Warning>
+  Assurez-vous d'informer clairement vos clients sur la durée de l'essai et le montant qui sera facturé après.
+</Warning>
+
+## Gestion multi-devises
+
+Créez plusieurs prix pour le même SKU dans différentes devises :
+
+```json
+{
+  "sku": "sku_formation_pro",
+  "prices": [
+    {
+      "amount": 99,
+      "currency": "EUR",
+      "type": "one_time"
+    },
+    {
+      "amount": 109,
+      "currency": "USD",
+      "type": "one_time"
+    },
+    {
+      "amount": 65000,
+      "currency": "XOF",
+      "type": "one_time"
+    }
+  ]
+}
+```
+
+### Devises supportées
+
+| Code | Devise | Pays/Région |
+|------|--------|-------------|
+| `EUR` | Euro | Europe |
+| `USD` | Dollar américain | États-Unis |
+| `XOF` | Franc CFA BCEAO | Afrique de l'Ouest |
+| `XAF` | Franc CFA BEAC | Afrique Centrale |
+| `GNF` | Franc guinéen | Guinée |
+| `CDF` | Franc congolais | RD Congo |
+
+<Tip>
+  Tous les montants sont exprimés en unités entières. Par exemple : 99 EUR = 99 €, 65000 XOF = 65 000 XOF.
+</Tip>
+
+## Réponse API
+
+<Tabs>
+  <Tab title="Prix unique">
+    ```json
+    {
+      "id": "price_abc123def456ghi789",
+      "object": "price",
+      "skuId": "sku_xyz789abc123def456",
+      "amount": 99,
+      "currency": "EUR",
+      "type": "one_time",
+      "billingInterval": null,
+      "billingIntervalCount": null,
+      "trialPeriodDays": null,
+      "active": true,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+    ```
+  </Tab>
+
+  <Tab title="Prix récurrent">
+    ```json
+    {
+      "id": "price_def456ghi789jkl012",
+      "object": "price",
+      "skuId": "sku_xyz789abc123def456",
+      "amount": 19,
+      "currency": "EUR",
+      "type": "recurring",
+      "billingInterval": "month",
+      "billingIntervalCount": 1,
+      "trialPeriodDays": 14,
+      "active": true,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Opérations courantes
+
+### Créer un prix
+
+```bash
+curl -X POST https://api.yabetoo.com/v1/skus/sku_abc123/prices \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 29,
+    "currency": "EUR",
+    "type": "recurring",
+    "billingInterval": "month",
+    "billingIntervalCount": 1
+  }'
+```
+
+### Récupérer un prix
+
+```bash
+curl https://api.yabetoo.com/v1/prices/price_abc123 \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+### Désactiver un prix
+
+<Note>
+  Les prix ne peuvent pas être supprimés s'ils sont associés à des abonnements actifs. Utilisez la désactivation à la place.
+</Note>
+
+```bash
+curl -X PATCH https://api.yabetoo.com/v1/prices/price_abc123 \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "active": false
+  }'
+```
+
+### Lister les prix d'un SKU
+
+```bash
+curl https://api.yabetoo.com/v1/skus/sku_abc123/prices \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+## Stratégies de tarification
+
+### Offre mensuelle vs annuelle
+
+Proposez une réduction pour l'abonnement annuel :
+
+```json
+{
+  "sku": "sku_saas_pro",
+  "prices": [
+    {
+      "amount": 29,
+      "currency": "EUR",
+      "type": "recurring",
+      "billingInterval": "month",
+      "billingIntervalCount": 1
+    },
+    {
+      "amount": 290,
+      "currency": "EUR",
+      "type": "recurring",
+      "billingInterval": "year",
+      "billingIntervalCount": 1
+    }
+  ]
+}
+```
+
+<Tip>
+  29 €/mois vs 290 €/an représente environ 2 mois gratuits, ce qui incite les clients à s'engager sur l'année.
+</Tip>
+
+### Tarification par paliers
+
+Créez des SKUs différents pour chaque niveau de service :
+
+```json
+{
+  "product": "App Cloud",
+  "skus": [
+    {
+      "skuCode": "CLOUD-STARTER",
+      "prices": [{ "amount": 9, "currency": "EUR", "type": "recurring", "billingInterval": "month" }]
+    },
+    {
+      "skuCode": "CLOUD-PRO",
+      "prices": [{ "amount": 29, "currency": "EUR", "type": "recurring", "billingInterval": "month" }]
+    },
+    {
+      "skuCode": "CLOUD-ENTERPRISE",
+      "prices": [{ "amount": 99, "currency": "EUR", "type": "recurring", "billingInterval": "month" }]
+    }
+  ]
+}
+```
+
+## Getters utiles
+
+Le modèle Price fournit des getters pour faciliter les vérifications :
+
+```typescript
+// Vérifier le type de prix
+price.isRecurring  // true si type === 'recurring'
+price.isOneTime    // true si type === 'one_time'
+```
+
+## Bonnes pratiques
+
+<AccordionGroup>
+  <Accordion title="Format des montants">
+    Les montants sont exprimés en unités entières de la devise :
+    - EUR : 99 = 99 €
+    - USD : 109 = 109 $
+    - XOF : 65000 = 65 000 XOF
+  </Accordion>
+
+  <Accordion title="Prix actifs/inactifs">
+    - Désactivez les anciens prix plutôt que de les supprimer
+    - Gardez les prix actifs au minimum nécessaire
+    - Utilisez des prix différents pour les promotions
+  </Accordion>
+
+  <Accordion title="Périodes d'essai">
+    - 7 à 14 jours est généralement optimal
+    - Trop court : pas assez de temps pour évaluer
+    - Trop long : perte de revenus potentielle
+  </Accordion>
+
+  <Accordion title="Multi-devises">
+    - Ajustez les prix pour chaque marché (pas de simple conversion)
+    - Tenez compte du pouvoir d'achat local
+    - Utilisez des prix psychologiques (29€ plutôt que 28,73€)
+  </Accordion>
+</AccordionGroup>
+
+## Prochaines étapes
+
+<CardGroup cols={2}>
+  <Card
+    title="Créer des promotions"
+    icon="percent"
+    href="/fr/products/coupons"
+  >
+    Appliquez des réductions avec les coupons et codes promo
+  </Card>
+  <Card
+    title="Gérer les abonnements"
+    icon="repeat"
+    href="/fr/subscriptions/overview"
+  >
+    Comprenez le cycle de vie des abonnements
+  </Card>
+</CardGroup>

@@ -1,0 +1,105 @@
+---
+title: "Catalogue Produits"
+description: "Comprendre les concepts fondamentaux du catalogue produits Yabetoo : produits, variantes, prix et promotions"
+---
+
+## Vue d'ensemble
+
+Le catalogue produits de Yabetoo vous permet de gérer l'ensemble de votre offre commerciale. Que vous vendiez des produits physiques, numériques ou des services, notre système flexible s'adapte à vos besoins.
+
+<CardGroup cols={2}>
+  <Card title="Produits" icon="box" href="/fr/products/products">
+    Créez et gérez votre catalogue de produits avec différents types et statuts
+  </Card>
+  <Card title="Variantes (SKUs)" icon="tags" href="/fr/products/skus">
+    Gérez les déclinaisons de vos produits : tailles, couleurs, options
+  </Card>
+  <Card title="Tarification" icon="money-bill" href="/fr/products/prices">
+    Définissez vos prix : paiement unique ou abonnement récurrent
+  </Card>
+  <Card title="Promotions" icon="percent" href="/fr/products/coupons">
+    Créez des coupons et codes promo pour stimuler vos ventes
+  </Card>
+</CardGroup>
+
+## Architecture du catalogue
+
+Le catalogue Yabetoo suit une hiérarchie claire et flexible :
+
+```
+Produit (Product)
+├── Variante 1 (SKU)
+│   ├── Prix EUR mensuel
+│   ├── Prix EUR annuel
+│   └── Prix XOF mensuel
+├── Variante 2 (SKU)
+│   └── Prix unique EUR
+└── Documents (images, fichiers)
+```
+
+<Steps>
+  <Step title="Créer un Produit">
+    Définissez les informations de base : nom, description, type (physique, numérique, service)
+  </Step>
+  <Step title="Ajouter des Variantes (SKUs)">
+    Créez des déclinaisons avec leurs attributs (taille, couleur, etc.) et stock
+  </Step>
+  <Step title="Définir les Prix">
+    Associez un ou plusieurs prix à chaque variante : paiement unique ou récurrent
+  </Step>
+  <Step title="Configurer les Promotions">
+    Créez des coupons et codes promo pour offrir des réductions
+  </Step>
+</Steps>
+
+## Concepts clés
+
+### Types de produits
+
+| Type | Description | Cas d'usage |
+|------|-------------|-------------|
+| `physical` | Produit physique nécessitant une livraison | Vêtements, électronique, accessoires |
+| `digital` | Produit numérique téléchargeable | E-books, logiciels, formations vidéo |
+| `service` | Prestation de service | Consultations, abonnements SaaS |
+
+### Types de tarification
+
+<CardGroup cols={2}>
+  <Card title="Paiement unique" icon="credit-card">
+    Le client paie une seule fois pour accéder au produit. Idéal pour les achats ponctuels.
+  </Card>
+  <Card title="Abonnement récurrent" icon="repeat">
+    Le client est facturé automatiquement à intervalles réguliers. Parfait pour les services continus.
+  </Card>
+</CardGroup>
+
+### Formats des identifiants
+
+Chaque entité possède un identifiant unique avec un préfixe distinctif :
+
+| Entité | Préfixe | Exemple |
+|--------|---------|---------|
+| Produit | `prod_` | `prod_abc123def456...` |
+| Variante (SKU) | `sku_` | `sku_xyz789ghi012...` |
+| Prix | `price_` | `price_eur_monthly_001...` |
+| Coupon | `coupon_` | `coupon_summer_2024...` |
+| Code promo | `promo_` | `promo_SUMMER20...` |
+
+## Prochaines étapes
+
+<CardGroup cols={2}>
+  <Card
+    title="Créer votre premier produit"
+    icon="plus"
+    href="/fr/products/products#créer-un-produit"
+  >
+    Apprenez à créer et configurer un produit complet
+  </Card>
+  <Card
+    title="Configurer la tarification"
+    icon="sliders"
+    href="/fr/products/prices"
+  >
+    Définissez vos stratégies de prix et abonnements
+  </Card>
+</CardGroup>
