@@ -1,34 +1,129 @@
 ---
 title: "Vue d'ensemble"
-description: "Créez et partagez des liens de paiement avec vos clients"
+description: "Créez et partagez des liens de paiement réutilisables avec vos clients"
 ---
 
-Les liens de paiement Yabetoo vous permettent de créer rapidement des pages de paiement personnalisées que vous pouvez partager avec vos clients via email, SMS, ou tout autre canal de communication.
+## Qu'est-ce qu'un Lien de paiement ?
+
+Un **Lien de paiement** est une URL unique que vous pouvez partager avec vos clients pour collecter des paiements. Contrairement aux Checkout Sessions qui sont créées pour chaque transaction, les liens de paiement sont réutilisables et peuvent être partagés via n'importe quel canal.
+
+<Info>
+  **Format de l'identifiant** : `plink_` suivi de 24 caractères alphanumériques.
+
+  Exemple : `plink_abc123def456ghi789jkl012`
+</Info>
+
+## Types de liens de paiement
+
+<CardGroup cols={3}>
+  <Card title="product" icon="box">
+    **Vente de produits**
+
+    Pour vendre un ou plusieurs produits de votre catalogue avec gestion des quantités et variantes.
+  </Card>
+  <Card title="amount" icon="money-bill">
+    **Montant fixe ou variable**
+
+    Pour collecter un montant spécifique ou permettre au client de choisir le montant.
+  </Card>
+  <Card title="subscription" icon="repeat">
+    **Abonnement**
+
+    Pour créer des abonnements récurrents après le premier paiement.
+  </Card>
+</CardGroup>
 
 ## Avantages des liens de paiement
 
-- **Simplicité** : Créez des liens de paiement en quelques clics, sans avoir besoin de compétences techniques.
-- **Flexibilité** : Personnalisez le montant, la devise, et ajoutez des informations sur le produit ou service.
-- **Partage facile** : Envoyez le lien via n'importe quel canal de communication.
-- **Suivi en temps réel** : Suivez le statut des paiements et recevez des notifications.
-- **Sécurité** : Les paiements sont traités sur des pages sécurisées hébergées par Yabetoo.
+<AccordionGroup>
+  <Accordion title="Simplicité">
+    - Créez des liens en quelques clics via l'API ou le dashboard
+    - Aucune compétence technique requise pour les utiliser
+    - URL courte et facile à partager
+  </Accordion>
+
+  <Accordion title="Flexibilité">
+    - Personnalisez le montant, la devise et les produits
+    - Définissez des limites d'utilisation
+    - Ajoutez des options comme la collecte d'adresse
+  </Accordion>
+
+  <Accordion title="Réutilisabilité">
+    - Un seul lien pour plusieurs clients
+    - Pas besoin de créer une nouvelle session à chaque fois
+    - Idéal pour les campagnes marketing
+  </Accordion>
+
+  <Accordion title="Traçabilité">
+    - Suivez le nombre d'utilisations
+    - Recevez des notifications en temps réel
+    - Accédez à l'historique des paiements
+  </Accordion>
+</AccordionGroup>
 
 ## Comment ça marche
 
-1. **Création** : Créez un lien de paiement en spécifiant le montant, la devise et les détails du produit.
-2. **Partage** : Partagez le lien avec votre client via email, SMS, WhatsApp, ou tout autre moyen.
-3. **Paiement** : Le client clique sur le lien et est redirigé vers une page de paiement sécurisée.
-4. **Confirmation** : Une fois le paiement effectué, vous recevez une notification et le client reçoit une confirmation.
+<Steps>
+  <Step title="Création">
+    Créez un lien de paiement en spécifiant le type, les produits ou le montant, et les options.
+  </Step>
+  <Step title="Partage">
+    Partagez le lien avec vos clients via email, SMS, WhatsApp, réseaux sociaux ou intégrez-le sur votre site.
+  </Step>
+  <Step title="Paiement">
+    Le client clique sur le lien et accède à une page de paiement sécurisée hébergée par Yabetoo.
+  </Step>
+  <Step title="Confirmation">
+    Une fois le paiement effectué, vous recevez une notification webhook et le client reçoit une confirmation.
+  </Step>
+</Steps>
 
 ## Cas d'utilisation
 
-- **Factures** : Envoyez des factures avec un lien de paiement intégré.
-- **Dons** : Collectez des dons pour votre organisation.
-- **Vente de produits** : Vendez des produits ou services sans avoir besoin d'une boutique en ligne.
-- **Événements** : Vendez des billets pour vos événements.
-- **Services** : Facturez vos clients pour des services rendus.
+| Cas d'usage | Type recommandé | Description |
+|-------------|-----------------|-------------|
+| **Factures** | `amount` | Envoyez des factures avec un lien de paiement intégré |
+| **E-commerce** | `product` | Vendez des produits avec variantes (taille, couleur) |
+| **Dons** | `amount` (variable) | Permettez aux donateurs de choisir le montant |
+| **Abonnements** | `subscription` | Créez des abonnements récurrents |
+| **Événements** | `product` | Vendez des billets avec différentes catégories |
+| **Services** | `amount` | Facturez des prestations ponctuelles |
 
-<Note>
-  Les liens de paiement sont disponibles pour tous les comptes professionnels Yabetoo.
-  Pour plus d'informations sur les tarifs, contactez notre équipe commerciale.
-</Note>
+## Lien de paiement vs Checkout Session
+
+| Caractéristique | Lien de paiement | Checkout Session |
+|-----------------|------------------|------------------|
+| **Réutilisabilité** | Réutilisable plusieurs fois | Usage unique |
+| **Création** | Une fois, puis partagé | À chaque transaction |
+| **Expiration** | Configurable (ou jamais) | Expire après un délai court |
+| **Limite d'utilisation** | Configurable (`maxRedemptions`) | Une seule utilisation |
+| **URL** | Courte et permanente | Longue et temporaire |
+| **Cas d'usage** | Campagnes, partage social | Intégration e-commerce |
+
+## Statuts du lien
+
+| Statut | Description |
+|--------|-------------|
+| `active` | Lien actif, accepte les paiements |
+| `inactive` | Lien désactivé manuellement |
+| `expired` | Lien expiré (date `expiresAt` dépassée) |
+| `exhausted` | Limite d'utilisation atteinte (`maxRedemptions`) |
+
+## Prochaines étapes
+
+<CardGroup cols={2}>
+  <Card
+    title="Créer un lien"
+    icon="plus"
+    href="/fr/payments/payment-link/create"
+  >
+    Apprenez à créer votre premier lien de paiement
+  </Card>
+  <Card
+    title="Partager un lien"
+    icon="share"
+    href="/fr/payments/payment-link/share"
+  >
+    Découvrez les différentes méthodes de partage
+  </Card>
+</CardGroup>

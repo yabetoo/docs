@@ -1,34 +1,129 @@
 ---
 title: "Overview"
-description: "Create and share payment links with your customers"
+description: "Create and share reusable payment links with your customers"
 ---
 
-Yabetoo payment links allow you to quickly create customized payment pages that you can share with your customers via email, SMS, or any other communication channel.
+## What is a Payment Link?
+
+A **Payment Link** is a unique URL that you can share with your customers to collect payments. Unlike Checkout Sessions which are created for each transaction, payment links are reusable and can be shared via any channel.
+
+<Info>
+  **Identifier format**: `plink_` followed by 24 alphanumeric characters.
+
+  Example: `plink_abc123def456ghi789jkl012`
+</Info>
+
+## Payment Link Types
+
+<CardGroup cols={3}>
+  <Card title="product" icon="box">
+    **Product Sales**
+
+    Sell one or more products from your catalog with quantity and variant management.
+  </Card>
+  <Card title="amount" icon="money-bill">
+    **Fixed or Variable Amount**
+
+    Collect a specific amount or allow the customer to choose the amount.
+  </Card>
+  <Card title="subscription" icon="repeat">
+    **Subscription**
+
+    Create recurring subscriptions after the first payment.
+  </Card>
+</CardGroup>
 
 ## Benefits of Payment Links
 
-- **Simplicity**: Create payment links in a few clicks, without needing technical skills.
-- **Flexibility**: Customize the amount, currency, and add product or service information.
-- **Easy Sharing**: Send the link via any communication channel.
-- **Real-time Tracking**: Monitor payment status and receive notifications.
-- **Security**: Payments are processed on secure pages hosted by Yabetoo.
+<AccordionGroup>
+  <Accordion title="Simplicity">
+    - Create links in a few clicks via API or dashboard
+    - No technical skills required to use them
+    - Short and easy-to-share URL
+  </Accordion>
+
+  <Accordion title="Flexibility">
+    - Customize the amount, currency, and products
+    - Set usage limits
+    - Add options like address collection
+  </Accordion>
+
+  <Accordion title="Reusability">
+    - One link for multiple customers
+    - No need to create a new session each time
+    - Ideal for marketing campaigns
+  </Accordion>
+
+  <Accordion title="Traceability">
+    - Track the number of uses
+    - Receive real-time notifications
+    - Access payment history
+  </Accordion>
+</AccordionGroup>
 
 ## How It Works
 
-1. **Creation**: Create a payment link by specifying the amount, currency, and product details.
-2. **Sharing**: Share the link with your customer via email, SMS, WhatsApp, or any other method.
-3. **Payment**: The customer clicks the link and is redirected to a secure payment page.
-4. **Confirmation**: Once payment is complete, you receive a notification and the customer receives a confirmation.
+<Steps>
+  <Step title="Creation">
+    Create a payment link by specifying the type, products or amount, and options.
+  </Step>
+  <Step title="Sharing">
+    Share the link with your customers via email, SMS, WhatsApp, social media, or embed it on your site.
+  </Step>
+  <Step title="Payment">
+    The customer clicks the link and accesses a secure payment page hosted by Yabetoo.
+  </Step>
+  <Step title="Confirmation">
+    Once payment is complete, you receive a webhook notification and the customer receives a confirmation.
+  </Step>
+</Steps>
 
 ## Use Cases
 
-- **Invoices**: Send invoices with an integrated payment link.
-- **Donations**: Collect donations for your organization.
-- **Product Sales**: Sell products or services without needing an online store.
-- **Events**: Sell tickets for your events.
-- **Services**: Bill your clients for services rendered.
+| Use Case | Recommended Type | Description |
+|----------|------------------|-------------|
+| **Invoices** | `amount` | Send invoices with an integrated payment link |
+| **E-commerce** | `product` | Sell products with variants (size, color) |
+| **Donations** | `amount` (variable) | Allow donors to choose the amount |
+| **Subscriptions** | `subscription` | Create recurring subscriptions |
+| **Events** | `product` | Sell tickets with different categories |
+| **Services** | `amount` | Bill for one-time services |
 
-<Note>
-  Payment links are available for all Yabetoo business accounts.
-  For more information on pricing, contact our sales team.
-</Note>
+## Payment Link vs Checkout Session
+
+| Feature | Payment Link | Checkout Session |
+|---------|--------------|------------------|
+| **Reusability** | Reusable multiple times | Single use |
+| **Creation** | Once, then shared | Per transaction |
+| **Expiration** | Configurable (or never) | Expires after a short delay |
+| **Usage Limit** | Configurable (`maxRedemptions`) | Single use |
+| **URL** | Short and permanent | Long and temporary |
+| **Use Case** | Campaigns, social sharing | E-commerce integration |
+
+## Link Statuses
+
+| Status | Description |
+|--------|-------------|
+| `active` | Active link, accepts payments |
+| `inactive` | Manually deactivated link |
+| `expired` | Expired link (`expiresAt` date passed) |
+| `exhausted` | Usage limit reached (`maxRedemptions`) |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Create a Link"
+    icon="plus"
+    href="/en/payments/payment-link/create"
+  >
+    Learn how to create your first payment link
+  </Card>
+  <Card
+    title="Share a Link"
+    icon="share"
+    href="/en/payments/payment-link/share"
+  >
+    Discover the different sharing methods
+  </Card>
+</CardGroup>

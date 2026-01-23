@@ -1,3 +1,326 @@
 ---
-title: "Share a payment link"
+title: "Share a Payment Link"
+description: "Discover the best methods to share your payment links"
 ---
+
+## Get the Link URL
+
+After creating a payment link, you receive a unique URL in the response:
+
+```json
+{
+  "id": "plink_abc123def456ghi789jkl012",
+  "url": "https://checkout.yabetoo.com/p/training",
+  "slug": "training"
+}
+```
+
+The URL can take two forms:
+- **With custom slug**: `https://checkout.yabetoo.com/p/training`
+- **With ID**: `https://checkout.yabetoo.com/p/plink_abc123def456ghi789jkl012`
+
+## Sharing Methods
+
+<Tabs>
+  <Tab title="Email">
+    ### Sharing by Email
+
+    Embed the link in a professional email:
+
+    ```html
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Your order is ready!</h2>
+      <p>Hello [Customer Name],</p>
+      <p>Thank you for your order. Click the button below to proceed with payment:</p>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="https://checkout.yabetoo.com/p/training"
+           style="background-color: #0070f3;
+                  color: white;
+                  padding: 14px 28px;
+                  text-decoration: none;
+                  border-radius: 6px;
+                  font-weight: bold;
+                  display: inline-block;">
+          Pay Now
+        </a>
+      </div>
+
+      <p style="color: #666; font-size: 14px;">
+        This link is secure and hosted by Yabetoo.
+      </p>
+    </body>
+    </html>
+    ```
+  </Tab>
+
+  <Tab title="SMS">
+    ### Sharing by SMS
+
+    Short and direct format:
+
+    ```text
+    [Your Company] Pay your order of 25,000 XOF securely: https://checkout.yabetoo.com/p/training
+    ```
+
+    <Tip>
+      Use short slugs for SMS to respect character limits.
+    </Tip>
+  </Tab>
+
+  <Tab title="WhatsApp">
+    ### Sharing by WhatsApp
+
+    Message with context:
+
+    ```text
+    Hello! 👋
+
+    Here's the link to complete your order:
+    https://checkout.yabetoo.com/p/training
+
+    Amount: 25,000 XOF
+
+    Payment is 100% secure. Feel free to reach out if you have any questions!
+    ```
+  </Tab>
+
+  <Tab title="Social Media">
+    ### Sharing on Social Media
+
+    For Instagram, Facebook, Twitter, etc.:
+
+    ```text
+    🎉 New collection available!
+
+    Order directly via this secure link:
+    👉 https://checkout.yabetoo.com/p/summer-collection
+
+    Mobile money payment accepted 📱
+    ```
+  </Tab>
+</Tabs>
+
+## Generate a QR Code
+
+Create a QR code to allow customers to scan and access the link:
+
+```bash
+curl https://api.yabetoo.com/v1/payment-links/plink_abc123/qr \
+  -H "Authorization: Bearer sk_live_..." \
+  --output qr-code.png
+```
+
+### QR Code Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `size` | number | Size in pixels (default: 300) |
+| `format` | string | Image format: `png`, `svg` (default: `png`) |
+
+```bash
+curl "https://api.yabetoo.com/v1/payment-links/plink_abc123/qr?size=500&format=svg" \
+  -H "Authorization: Bearer sk_live_..." \
+  --output qr-code.svg
+```
+
+<Tip>
+  QR codes are ideal for posters, flyers, business cards, and presentations.
+</Tip>
+
+## Website Integration
+
+### Payment Button
+
+```html
+<a href="https://checkout.yabetoo.com/p/training"
+   class="yabetoo-payment-button"
+   target="_blank">
+  Buy Now - 25,000 XOF
+</a>
+
+<style>
+  .yabetoo-payment-button {
+    display: inline-block;
+    background-color: #0070f3;
+    color: white;
+    padding: 12px 24px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+  }
+
+  .yabetoo-payment-button:hover {
+    background-color: #0051a8;
+  }
+</style>
+```
+
+### Embedded Widget (iframe)
+
+```html
+<iframe
+  src="https://checkout.yabetoo.com/p/training?embed=true"
+  width="100%"
+  height="600"
+  frameborder="0"
+  allow="payment">
+</iframe>
+```
+
+## URL Parameters
+
+You can add parameters to the URL to customize the experience:
+
+| Parameter | Description |
+|-----------|-------------|
+| `prefill_email` | Pre-fill customer email |
+| `prefill_name` | Pre-fill customer name |
+| `prefill_phone` | Pre-fill phone number |
+| `locale` | Interface language (`fr`, `en`) |
+| `utm_source` | Campaign source |
+| `utm_medium` | Campaign medium |
+| `utm_campaign` | Campaign name |
+
+### Example with Parameters
+
+```
+https://checkout.yabetoo.com/p/training?prefill_email=customer@example.com&locale=en&utm_source=newsletter&utm_campaign=summer_2024
+```
+
+## Conversion Tracking
+
+### With Metadata
+
+Add tracking information when creating the link:
+
+```json
+{
+  "metadata": {
+    "campaign": "summer_2024",
+    "source": "newsletter",
+    "affiliate_id": "AFF123"
+  }
+}
+```
+
+### With UTM Parameters
+
+```
+https://checkout.yabetoo.com/p/training?utm_source=facebook&utm_medium=social&utm_campaign=january_promo
+```
+
+These parameters are included in webhooks for conversion tracking.
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Security">
+    - Never share your secret key
+    - Verify that the link is still active before sharing
+    - Use HTTPS for all integrations
+    - Configure webhooks to verify payments
+  </Accordion>
+
+  <Accordion title="Communication">
+    - Include a clear description of the product or service
+    - Specify the amount and currency
+    - Indicate the validity period if applicable
+    - Add your support contact information
+  </Accordion>
+
+  <Accordion title="Optimization">
+    - Use short and memorable slugs
+    - Test the link before sharing
+    - Adapt the message to the communication channel
+    - Track performance with UTM parameters
+  </Accordion>
+
+  <Accordion title="Accessibility">
+    - Offer multiple payment methods
+    - Ensure the link works on mobile
+    - Provide accessible customer support
+  </Accordion>
+</AccordionGroup>
+
+## Message Templates
+
+### Invoice
+
+```text
+Subject: Invoice #1234 - [Your Company]
+
+Hello [Name],
+
+Please find below the link to pay your invoice #1234 for an amount of 50,000 XOF.
+
+👉 Pay now: https://checkout.yabetoo.com/p/invoice-1234
+
+Payment deadline: January 30, 2024
+
+For any questions, contact us at support@your-company.com
+
+Best regards,
+[Your Company]
+```
+
+### Order Confirmation
+
+```text
+Subject: Confirm your order - [Your Company]
+
+Hello [Name]!
+
+Your cart is ready. Complete your order by clicking the link below:
+
+🛒 View and pay: https://checkout.yabetoo.com/p/order-xyz
+
+Summary:
+- JavaScript Course: 25,000 XOF
+- React Course: 35,000 XOF
+Total: 60,000 XOF
+
+See you soon!
+The [Your Company] Team
+```
+
+### Payment Reminder
+
+```text
+Subject: Reminder - Payment pending
+
+Hello [Name],
+
+We haven't received your payment for [Product/Service] yet.
+
+👉 Pay now: https://checkout.yabetoo.com/p/reminder-xyz
+
+The link expires on [Date].
+
+Need help? Reply to this email.
+
+Best regards,
+[Your Company]
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Webhooks"
+    icon="bell"
+    href="/en/developer-tools/webhook/overview"
+  >
+    Receive real-time payment notifications
+  </Card>
+  <Card
+    title="Promo Codes"
+    icon="percent"
+    href="/en/products/coupons"
+  >
+    Create discounts for your customers
+  </Card>
+</CardGroup>
