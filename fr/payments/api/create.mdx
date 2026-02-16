@@ -22,12 +22,12 @@ Le point de terminaison à utiliser est `POST https://pay.sandbox.yabetoopay.com
 1. Utilisez la clé secrète fournie `secret_key` pour vous authentifier auprès de l'API. Pour des raisons de sécurité, cette clé ne doit être utilisée que côté serveur.
 2. Le corps de la requête doit contenir les paramètres suivants :
 
-```javascript
+```json
 {
-  amount: 2000,
-  currency: "xaf",
-  description: "Paiement pour produit",
-  metadata: { orderId: "1234" },
+  "amount": 2000,
+  "currency": "xaf",
+  "description": "Paiement pour produit",
+  "metadata": { "orderId": "1234" }
 }
 ```
 
@@ -69,17 +69,31 @@ Le corps de la réponse contiendra les paramètres suivants :
 
 - `amount` : Le montant à payer
 - `currency` : La devise du paiement
+- `description` : La description du paiement
+- `metadata` : Les métadonnées associées au paiement
+- `accountId` : L'identifiant du compte marchand
+- `liveMode` : Indique si le paiement est en mode production (`true`) ou sandbox (`false`)
 - `label` : Le libellé de l'intention de paiement
-- `id` : L'identifiant de l'intention de paiement
-- `client_secret` : Le secret client de l'intention de paiement
+- `id` : L'identifiant unique de l'intention de paiement
+- `createdAt` : La date de création de l'intention de paiement
+- `updatedAt` : La date de dernière mise à jour de l'intention de paiement
+- `clientSecret` : Le secret client de l'intention de paiement
 
-```javascript
+```json
 {
-    "amount": 2000,
-    "currency": "xaf",
-    "label": "payment_intent",
-    "id": "pi_XdLeavDjiiaEx2y5nRz0",
-    "client_secret": ""
+  "amount": 10000,
+  "currency": "xaf",
+  "description": "Payment for product",
+  "metadata": {
+    "orderId": "orderId-22"
+  },
+  "accountId": "acct_xsd",
+  "liveMode": false,
+  "label": "payment_intent",
+  "id": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+  "createdAt": "2026-02-16T15:33:55.048+00:00",
+  "updatedAt": "2026-02-16T15:33:55.062+00:00",
+  "clientSecret": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl_secret_JYtxzKNhuwDCilaH72rEtMGuAlJl29qYAnOe"
 }
 ```
 
@@ -87,15 +101,15 @@ Le corps de la réponse contiendra les paramètres suivants :
 
 Si la requête est invalide, le serveur renverra un code d'état 422 avec un message d'erreur.
 
-```javascript
+```json
 {
-    "errors": [
-        {
-            "rule": "required",
-            "field": "currency",
-            "message": "La validation requise a échoué"
-        }
-    ]
+  "errors": [
+    {
+      "rule": "required",
+      "field": "currency",
+      "message": "La validation requise a échoué"
+    }
+  ]
 }
 ```
 
@@ -103,8 +117,8 @@ Si la requête est invalide, le serveur renverra un code d'état 422 avec un mes
 
 Si la clé secrète est invalide, le serveur renverra un code d'état 401 avec un message d'erreur.
 
-```javascript
+```json
 {
-    "error": "Non autorisé"
+  "error": "Non autorisé"
 }
 ```

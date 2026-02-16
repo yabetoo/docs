@@ -113,11 +113,19 @@ PaymentIntent paymentIntent = yabetoo.paymentIntents().create(request);
 
 ```json
 {
-  "amount": 2000,
+  "amount": 10000,
   "currency": "xaf",
+  "description": "Payment for product",
+  "metadata": {
+    "orderId": "orderId-22"
+  },
+  "accountId": "acct_xsd",
+  "liveMode": false,
   "label": "payment_intent",
-  "id": "pi_XdLeavDjiiaEx2y5nRz0",
-  "client_secret": ""
+  "id": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+  "createdAt": "2026-02-16T15:33:55.048+00:00",
+  "updatedAt": "2026-02-16T15:33:55.062+00:00",
+  "clientSecret": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl_secret_JYtxzKNhuwDCilaH72rEtMGuAlJl29qYAnOe"
 }
 ```
 
