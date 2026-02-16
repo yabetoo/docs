@@ -11,6 +11,8 @@ In order to collect payment from the customer, you must confirm the previously g
 
 ### Prepare your request
 
+The endpoint to use is `POST https://pay.sandbox.yabetoopay.com/v1/payment-intents/:id/confirm` for the sandbox environment and `POST https://pay.api.yabetoopay.com/v1/payment-intents/:id/confirm` for the production environment, where `:id` is the payment intent ID.
+
 You need to use the following parameters to confirm the payment intent:
 
 - `client_secret`: This parameter is the secret identifier of the payment intent. It is used to perform secure operations related to this specific payment intent.
@@ -31,9 +33,28 @@ You need to use the following parameters to confirm the payment intent:
   to authenticate the payment intent.
 </Note>
 
+The request body must be in JSON:
+
+```json
+{
+  "client_secret": "pi_AmBKcXsbKWQZOjPLDEQoxW06U35Xqt5nt1GN_secret_scKRe9xZ4l2ST2Yy6uwUQ0qBMNC9l2Z8vGGY",
+  "first_name": "Loumbou",
+  "last_name": "Scoty",
+  "receipt_email": "scott@artkodes.com",
+  "payment_method_data": {
+    "type": "momo",
+    "momo": {
+      "country": "cg",
+      "msisdn": "242065607120",
+      "operator_name": "airtel"
+    }
+  }
+}
+```
+
 ```javascript
 const response = await fetch(
-  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents/PAYMENT_INTENT_ID/confirm",
   {
     method: "POST",
     headers: {
@@ -42,15 +63,15 @@ const response = await fetch(
     },
     body: JSON.stringify({
       client_secret: "YOUR_CLIENT_SECRET",
-      first_name: "John",
-      last_name: "Doe",
-      receipt_email: "john.doe@example.com",
+      first_name: "Loumbou",
+      last_name: "Scoty",
+      receipt_email: "scott@artkodes.com",
       payment_method_data: {
         type: "momo",
         momo: {
-          country: "xaf",
-          msisdn: "+242123456789",
-          operator_name: "mtn",
+          country: "cg",
+          msisdn: "242065607120",
+          operator_name: "airtel",
         },
       },
     }),
@@ -72,34 +93,71 @@ With this two-step model, developers can gain greater control over the payment p
 
 ## Response
 
-### 200 OK
+### 200 OK - Payment Succeeded
 
 The response body will contain the following parameters:
 
-```JavaScript
+```json
 {
-    "intent_id": "pi_9aATHBv8UXuD6H5qrSav",
-    "financial_transaction_id": "832546449",
-    "transaction_id": "3c043d55-e659-4a86-9fab-b377fea9ee6b",
-    "amount": 500,
-    "currency": "xaf",
-    "status": "succeeded",
-    "captured": true,
-    "external_id": "ext_3rxAagDtTSlN9XO96R1slJk14WENvxOlJbCu",
-    "id": "ch_1jro7CEishIEWadybzlm",
+  "intentId": "pi_3r8utQTUlCY5hjV2pMtjtaNYsZ30FylO3PZk",
+  "financialTransactionId": "7331529368",
+  "transactionId": "pi_3r8utQTUlCY5hjV2pMtjtaNYsZ30FylO3PZk",
+  "amount": 2228,
+  "currency": "xaf",
+  "status": "succeeded",
+  "captured": true,
+  "externalId": "ext_7hp8lsjCFwTemoeL",
+  "id": "ch_ADdQhObdEDlz4L0kl7qNRniFjruNcrcY85xq",
+  "createdAt": "2026-02-16T06:51:43.103+00:00",
+  "updatedAt": "2026-02-16T06:51:43.177+00:00",
+  "paymentMethodId": "pm_evILNJIgAyJs7S4KYmy5n5Ect8itay2GeycL"
+}
+```
+
+### 200 OK - Payment Failed
+
+When the payment fails (e.g., timeout, insufficient balance), the response will still return a 200 status code but with a failed status:
+
+```json
+{
+  "intentId": "pi_HUHh0kAg9H8QZvHtFf0taIspdWlUVftSOLhB",
+  "transactionId": "pi_HUHh0kAg9H8QZvHtFf0taIspdWlUVftSOLhB",
+  "amount": 10363,
+  "currency": "xaf",
+  "status": "expired",
+  "captured": false,
+  "externalId": "ext_mQliBh5ZbdQ9w15S",
+  "failureMessage": "Transaction timed out",
+  "failureCode": "Transaction timed out",
+  "id": "ch_nZBtA8euTJFnpFMTSO402WJOP1g2WwWSGiC7",
+  "createdAt": "2026-02-16T14:07:02.061+00:00",
+  "updatedAt": "2026-02-16T14:07:02.190+00:00",
+  "paymentMethodId": "pm_tU0HivHLBjozujmhwbVk3LO0B2ttcd0Rk1j3"
 }
 ```
 
 ### 422 Bad Request
 
-If the request is invalid, the server will return a 422 status code with an error message.
+If the operation is not permitted, the server will return a 422 status code with an error message.
 
-```javascript
+```json
 {
-    "error": {
-        "message": "E_CONFIRMED_INTENT_EXCEPTION: Intent already confirmed",
-        "code": "E_CONFIRMED_INTENT_EXCEPTION"
-    }
+  "status": 422,
+  "path": "/v1/payment-intents/pi_2GlfKbBC6IMYBPDhOaFIRdn0nrXDDEAjBxyW/confirm",
+  "timestamp": "2026-02-16T15:54:49.730+00:00",
+  "code": "E_OPERATION_NOT_PERMITTED",
+  "message": "Operation not permitted",
+  "detail": "You are not permitted to perform this operation."
+}
+```
+
+### 404 Not Found
+
+If the payment intent ID is invalid or not found, the server will return a 404 status code.
+
+```json
+{
+  "message": "Row not found"
 }
 ```
 
@@ -107,11 +165,11 @@ If the request is invalid, the server will return a 422 status code with an erro
 
 If the secret key is invalid, the server will return a 401 status code with an error message.
 
-```javascript
+```json
 {
-    "error": {
-        "message": "Unauthorized",
-        "code": "Unauthorized"
-    }
+  "error": {
+    "message": "Unauthorized",
+    "code": "Unauthorized"
+  }
 }
 ```
