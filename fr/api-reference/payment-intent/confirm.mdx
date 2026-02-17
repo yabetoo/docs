@@ -6,9 +6,11 @@ description: "Confirmez une intention de paiement pour traiter le paiement."
 ## Endpoint
 
 ```bash
-POST https://pay.sandbox.yabetoopay.com/v1/payment-intents   # Sandbox
-POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
+POST https://pay.sandbox.yabetoopay.com/v1/payment-intents/:id/confirm   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/payment-intents/:id/confirm       # Production
 ```
+
+`:id` correspond à l'identifiant de l'intention de paiement.
 
 ## Authentification
 
@@ -52,7 +54,7 @@ Authorization: Bearer YOUR_SECRET_KEY
 
 <CodeGroup>
 ```bash cURL
-curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents/PAYMENT_INTENT_ID/confirm \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_SECRET_KEY" \
   -d '{
@@ -179,63 +181,69 @@ PaymentIntent confirmation = yabetoo.paymentIntents().confirm(
 
 ## Réponse
 
-### 200 OK
+### 200 OK - Paiement réussi
 
 ```json
 {
-  "intent_id": "pi_9aATHBv8UXuD6H5qrSav",
-  "financial_transaction_id": "832546449",
-  "transaction_id": "3c043d55-e659-4a86-9fab-b377fea9ee6b",
-  "amount": 500,
+  "intentId": "pi_3r8utQTUlCY5hjV2pMtjtaNYsZ30FylO3PZk",
+  "financialTransactionId": "7331529368",
+  "transactionId": "pi_3r8utQTUlCY5hjV2pMtjtaNYsZ30FylO3PZk",
+  "amount": 2228,
   "currency": "xaf",
   "status": "succeeded",
   "captured": true,
-  "external_id": "ext_3rxAagDtTSlN9XO96R1slJk14WENvxOlJbCu",
-  "id": "ch_1jro7CEishIEWadybzlm"
+  "externalId": "ext_7hp8lsjCFwTemoeL",
+  "id": "ch_ADdQhObdEDlz4L0kl7qNRniFjruNcrcY85xq",
+  "createdAt": "2026-02-16T06:51:43.103+00:00",
+  "updatedAt": "2026-02-16T06:51:43.177+00:00",
+  "paymentMethodId": "pm_evILNJIgAyJs7S4KYmy5n5Ect8itay2GeycL"
 }
 ```
 
-### 422 Bad Request
+### 200 OK - Paiement échoué
+
+Lorsque le paiement échoue (ex : délai dépassé, solde insuffisant), la réponse retourne toujours un code 200 mais avec un statut d'échec :
 
 ```json
 {
-  "error": {
-    "message": "E_CONFIRMED_INTENT_EXCEPTION: Intent already confirmed",
-    "code": "E_CONFIRMED_INTENT_EXCEPTION"
-  }
+  "intentId": "pi_HUHh0kAg9H8QZvHtFf0taIspdWlUVftSOLhB",
+  "transactionId": "pi_HUHh0kAg9H8QZvHtFf0taIspdWlUVftSOLhB",
+  "amount": 10363,
+  "currency": "xaf",
+  "status": "expired",
+  "captured": false,
+  "externalId": "ext_mQliBh5ZbdQ9w15S",
+  "failureMessage": "Transaction timed out",
+  "failureCode": "Transaction timed out",
+  "id": "ch_nZBtA8euTJFnpFMTSO402WJOP1g2WwWSGiC7",
+  "createdAt": "2026-02-16T14:07:02.061+00:00",
+  "updatedAt": "2026-02-16T14:07:02.190+00:00",
+  "paymentMethodId": "pm_tU0HivHLBjozujmhwbVk3LO0B2ttcd0Rk1j3"
 }
 ```
 
-### Paiement échoué - Solde insuffisant
+### 422 Mauvaise requête
 
 ```json
 {
-  "error": {
-    "message": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED",
-    "code": "LOW_BALANCE_OR_PAYEE_LIMIT_REACHED_OR_NOT_ALLOWED"
-  }
+  "status": 422,
+  "path": "/v1/payment-intents/pi_2GlfKbBC6IMYBPDhOaFIRdn0nrXDDEAjBxyW/confirm",
+  "timestamp": "2026-02-16T15:54:49.730+00:00",
+  "code": "E_OPERATION_NOT_PERMITTED",
+  "message": "Operation not permitted",
+  "detail": "You are not permitted to perform this operation."
 }
 ```
 
-Cette erreur survient quand :
-- Le client n'a pas assez de fonds sur son compte Mobile Money
-- Le client a atteint sa limite de transaction
-- La transaction n'est pas autorisée par l'opérateur
-
-### Paiement échoué - Délai dépassé
+### 404 Non trouvé
 
 ```json
 {
-  "error": {
-    "message": "TIMEOUT",
-    "code": "TIMEOUT"
-  }
+  "message": "Row not found"
 }
 ```
 
-Cette erreur survient quand le client n'a pas confirmé le paiement à temps (n'a pas entré son code PIN sur l'invite Mobile Money).
-
-### 401 Unauthorized
+### 401 Non autorisé
 
 ```json
 {

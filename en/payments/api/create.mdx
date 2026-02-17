@@ -22,12 +22,12 @@ The endpoint to use is `POST https://pay.sandbox.yabetoopay.com/v1/payment-inten
 1. Use the secret key provided `secret_key` to authenticate yourself to the API. For security reasons, this key must only be used on the server side.
 2. The request body should contain the following parameters:
 
-```javascript
+```json
 {
-  amount: 2000,
-  currency: "xaf",
-  description: "Payment for product",
-  metadata: { orderId: "1234" },
+  "amount": 2000,
+  "currency": "xaf",
+  "description": "Payment for product",
+  "metadata": { "orderId": "1234" }
 }
 ```
 
@@ -69,17 +69,31 @@ The response body will contain the following parameters:
 
 - `amount`: The amount to be paid
 - `currency`: The currency of the payment
+- `description`: The description of the payment
+- `metadata`: The metadata associated with the payment
+- `accountId`: The merchant account ID
+- `liveMode`: Indicates whether the payment is in production (`true`) or sandbox (`false`) mode
 - `label`: The label of the payment intent
-- `id`: The ID of the payment intent
-- `client_secret`: The client secret of the payment intent
+- `id`: The unique ID of the payment intent
+- `createdAt`: The creation date of the payment intent
+- `updatedAt`: The last update date of the payment intent
+- `clientSecret`: The client secret of the payment intent
 
-```javascript
+```json
 {
-    "amount": 2000,
-    "currency": "xaf",
-    "label": "payment_intent",
-    "id": "pi_XdLeavDjiiaEx2y5nRz0",
-    "client_secret": ""
+  "amount": 10000,
+  "currency": "xaf",
+  "description": "Payment for product",
+  "metadata": {
+    "orderId": "orderId-22"
+  },
+  "accountId": "acct_xsd",
+  "liveMode": false,
+  "label": "payment_intent",
+  "id": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+  "createdAt": "2026-02-16T15:33:55.048+00:00",
+  "updatedAt": "2026-02-16T15:33:55.062+00:00",
+  "clientSecret": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl_secret_JYtxzKNhuwDCilaH72rEtMGuAlJl29qYAnOe"
 }
 ```
 
@@ -87,15 +101,15 @@ The response body will contain the following parameters:
 
 If the request is invalid, the server will return a 422 status code with an error message.
 
-```javascript
+```json
 {
-    "errors": [
-        {
-            "rule": "required",
-            "field": "currency",
-            "message": "required validation failed"
-        }
-    ]
+  "errors": [
+    {
+      "rule": "required",
+      "field": "currency",
+      "message": "required validation failed"
+    }
+  ]
 }
 ```
 
@@ -103,8 +117,8 @@ If the request is invalid, the server will return a 422 status code with an erro
 
 If the secret key is invalid, the server will return a 401 status code with an error message.
 
-```javascript
+```json
 {
-    "error": "Unauthorized"
+  "error": "Unauthorized"
 }
 ```
