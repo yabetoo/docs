@@ -1,0 +1,330 @@
+---
+title: "Products"
+description: "Create and manage your product catalog with different types, statuses, and configurations"
+---
+
+## What is a Product?
+
+A **Product** represents an item or service you sell. It's the core entity of your catalog around which variants (SKUs), prices, and promotions are organized.
+
+<Info>
+  **Identifier format**: `prod_` followed by 36 alphanumeric characters.
+
+  Example: `prod_abc123def456ghi789jkl012mno345`
+</Info>
+
+## Product Attributes
+
+### Main Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `id` | string | Unique product identifier |
+| `name` | string | Product name displayed to customers |
+| `description` | string | Detailed product description |
+| `type` | enum | Product type: `physical`, `digital`, `service` |
+| `status` | enum | Status: `active`, `archived`, `draft` |
+| `price` | number \| null | Default price (optional) |
+| `category` | number | Product category |
+| `subscriptionEligible` | boolean | Can be sold as subscription |
+| `hasSkus` | boolean | Indicates if product has variants |
+
+## Product Types
+
+<Tabs>
+  <Tab title="Physical">
+    ### Physical Product (`physical`)
+
+    A tangible product that requires delivery to the customer.
+
+    **Characteristics:**
+    - Stock management enabled
+    - Shipping address required
+    - Shipment tracking possible
+
+    **Examples:** Clothing, electronics, printed books, accessories
+
+    ```json
+    {
+      "name": "Premium T-shirt",
+      "type": "physical",
+      "description": "100% organic cotton T-shirt",
+      "hasSkus": true
+    }
+    ```
+  </Tab>
+
+  <Tab title="Digital">
+    ### Digital Product (`digital`)
+
+    A dematerialized product accessible by download.
+
+    **Characteristics:**
+    - Instant delivery after payment
+    - Secure download links
+    - Download count control
+    - Link expiration possible
+
+    **Examples:** E-books, software, video courses, templates
+
+    ```json
+    {
+      "name": "Advanced React Course",
+      "type": "digital",
+      "description": "20 hours of video + resources",
+      "subscriptionEligible": false
+    }
+    ```
+  </Tab>
+
+  <Tab title="Service">
+    ### Service (`service`)
+
+    A one-time or ongoing service offering.
+
+    **Characteristics:**
+    - No physical inventory
+    - Ideal for subscriptions
+    - Recurring billing possible
+
+    **Examples:** Consultations, SaaS subscriptions, maintenance, coaching
+
+    ```json
+    {
+      "name": "Pro Subscription",
+      "type": "service",
+      "description": "Unlimited access to all features",
+      "subscriptionEligible": true
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Product Statuses
+
+Status determines product visibility and availability:
+
+<CardGroup cols={3}>
+  <Card title="Active" icon="circle-check" color="#22c55e">
+    Product is visible and available for sale. Customers can purchase it.
+  </Card>
+  <Card title="Draft" icon="pencil" color="#f59e0b">
+    Work in progress draft. Not visible to customers.
+  </Card>
+  <Card title="Archived" icon="box-archive" color="#6b7280">
+    Archived product. Not visible but kept for history.
+  </Card>
+</CardGroup>
+
+```typescript
+enum ProductStatus {
+  ACTIVE = 'active',      // Available for sale
+  DRAFT = 'draft',        // Work in progress
+  ARCHIVED = 'archived'   // Archived
+}
+```
+
+## Create a Product
+
+<Steps>
+  <Step title="Define basic information">
+    Enter the name, description, and product type.
+
+    ```bash
+    curl -X POST https://api.yabetoo.com/v1/products \
+      -H "Authorization: Bearer sk_live_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "JavaScript Course",
+        "description": "Master JavaScript from A to Z",
+        "type": "digital"
+      }'
+    ```
+  </Step>
+
+  <Step title="Configure options">
+    Define if the product can be sold as subscription and if it has variants.
+
+    ```json
+    {
+      "subscriptionEligible": true,
+      "hasSkus": false
+    }
+    ```
+  </Step>
+
+  <Step title="Add variants (optional)">
+    If `hasSkus` is `true`, create product variants.
+
+    See [SKU Documentation](/en/products/skus)
+  </Step>
+
+  <Step title="Define prices">
+    Associate one or more prices with the product or its variants.
+
+    See [Price Documentation](/en/products/prices)
+  </Step>
+</Steps>
+
+## API Response
+
+<Tabs>
+  <Tab title="Simple product">
+    ```json
+    {
+      "id": "prod_abc123def456ghi789",
+      "object": "product",
+      "name": "JavaScript Course",
+      "description": "Master JavaScript from A to Z",
+      "type": "digital",
+      "status": "active",
+      "price": null,
+      "category": 1,
+      "subscriptionEligible": true,
+      "hasSkus": false,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+    ```
+  </Tab>
+
+  <Tab title="Product with variants">
+    ```json
+    {
+      "id": "prod_xyz789abc123def456",
+      "object": "product",
+      "name": "Premium T-shirt",
+      "description": "100% organic cotton T-shirt",
+      "type": "physical",
+      "status": "active",
+      "price": null,
+      "category": 2,
+      "subscriptionEligible": false,
+      "hasSkus": true,
+      "skus": [
+        {
+          "id": "sku_small_white",
+          "name": "T-shirt S White",
+          "skuCode": "TSHIRT-S-WHITE",
+          "attributes": {
+            "size": "S",
+            "color": "white"
+          },
+          "stockQuantity": 50,
+          "stockTracking": true
+        },
+        {
+          "id": "sku_medium_black",
+          "name": "T-shirt M Black",
+          "skuCode": "TSHIRT-M-BLACK",
+          "attributes": {
+            "size": "M",
+            "color": "black"
+          },
+          "stockQuantity": 30,
+          "stockTracking": true
+        }
+      ],
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Common Operations
+
+### Retrieve a product
+
+```bash
+curl https://api.yabetoo.com/v1/products/prod_abc123 \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+### Update a product
+
+```bash
+curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Advanced JavaScript Course",
+    "description": "From beginner to expert in JavaScript"
+  }'
+```
+
+### Archive a product
+
+```bash
+curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "archived"
+  }'
+```
+
+### Delete a product
+
+<Warning>
+  A deleted product is no longer visible but the associated order history is preserved.
+</Warning>
+
+```bash
+curl -X DELETE https://api.yabetoo.com/v1/products/prod_abc123 \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+## Relationships with Other Entities
+
+```
+Product
+├── ProductSku[] (variants)
+│   └── Price[] (prices)
+├── Document[] (images, files)
+└── ProductLink[] (related products)
+    ├── Cross-sell (complementary products)
+    ├── Upsell (upgraded products)
+    └── Related (associated products)
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Product naming">
+    - Use clear and descriptive names
+    - Avoid obscure abbreviations
+    - Include key characteristics in variant names
+  </Accordion>
+
+  <Accordion title="Status management">
+    - Use `draft` for products in preparation
+    - Switch to `active` only when everything is configured (prices, images, stock)
+    - Archive rather than delete to preserve history
+  </Accordion>
+
+  <Accordion title="Catalog organization">
+    - Group similar products by category
+    - Use variants (SKUs) for variations of the same product
+    - Configure related products for cross-selling
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Manage variants"
+    icon="tags"
+    href="/en/products/skus"
+  >
+    Learn how to create SKUs for your product variations
+  </Card>
+  <Card
+    title="Define prices"
+    icon="money-bill"
+    href="/en/products/prices"
+  >
+    Configure pricing for your products
+  </Card>
+</CardGroup>

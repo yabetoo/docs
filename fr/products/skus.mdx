@@ -1,0 +1,359 @@
+---
+title: "Variantes (SKUs)"
+description: "Gérez les déclinaisons de vos produits avec les SKUs : tailles, couleurs, options et gestion de stock"
+---
+
+## Qu'est-ce qu'un SKU ?
+
+Un **SKU** (Stock Keeping Unit) représente une variante spécifique d'un produit. Par exemple, pour un t-shirt, chaque combinaison taille/couleur est un SKU distinct.
+
+<Info>
+  **Format de l'identifiant** : `sku_` suivi de 36 caractères alphanumériques.
+
+  Exemple : `sku_abc123def456ghi789jkl012mno345`
+</Info>
+
+## Relation Produit → SKU
+
+```
+Produit "T-shirt Premium"
+├── SKU "T-shirt S Blanc" (TSHIRT-S-WHITE)
+├── SKU "T-shirt M Blanc" (TSHIRT-M-WHITE)
+├── SKU "T-shirt L Blanc" (TSHIRT-L-WHITE)
+├── SKU "T-shirt S Noir" (TSHIRT-S-BLACK)
+├── SKU "T-shirt M Noir" (TSHIRT-M-BLACK)
+└── SKU "T-shirt L Noir" (TSHIRT-L-BLACK)
+```
+
+<Note>
+  Un produit peut avoir plusieurs SKUs, et chaque SKU peut avoir plusieurs prix (différentes devises, abonnements mensuels/annuels, etc.).
+</Note>
+
+## Attributs du SKU
+
+### Attributs principaux
+
+| Attribut | Type | Description |
+|----------|------|-------------|
+| `id` | string | Identifiant unique du SKU |
+| `productId` | string | Référence au produit parent |
+| `skuCode` | string | Code unique du SKU (ex: "TSHIRT-S-WHITE") |
+| `name` | string | Nom de la variante |
+| `attributes` | object | Attributs de la variante (taille, couleur, etc.) |
+
+### Gestion du stock
+
+| Attribut | Type | Description |
+|----------|------|-------------|
+| `stockTracking` | boolean | Gestion du stock activée |
+| `stockQuantity` | number \| null | Quantité en stock (null si non suivi) |
+
+## Créer un SKU
+
+### SKU simple
+
+```bash
+curl -X POST https://api.yabetoo.com/v1/products/prod_abc123/skus \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "skuCode": "TSHIRT-M-WHITE",
+    "name": "T-shirt M Blanc",
+    "attributes": {
+      "size": "M",
+      "color": "white"
+    },
+    "stockTracking": true,
+    "stockQuantity": 100
+  }'
+```
+
+### SKU sans gestion de stock
+
+Pour les produits numériques ou services, désactivez le suivi du stock :
+
+```bash
+curl -X POST https://api.yabetoo.com/v1/products/prod_abc123/skus \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "skuCode": "FORMATION-PRO",
+    "name": "Formation Pro",
+    "attributes": {
+      "access": "lifetime"
+    },
+    "stockTracking": false
+  }'
+```
+
+## Réponse API
+
+```json
+{
+  "id": "sku_xyz789abc123def456",
+  "object": "sku",
+  "productId": "prod_abc123def456ghi789",
+  "skuCode": "TSHIRT-M-WHITE",
+  "name": "T-shirt M Blanc",
+  "attributes": {
+    "size": "M",
+    "color": "white"
+  },
+  "stockTracking": true,
+  "stockQuantity": 100,
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
+
+## Gestion du stock
+
+Lorsque `stockTracking` est activé, le système gère automatiquement le stock :
+
+- **Vérification avant achat** : La disponibilité est vérifiée avant de valider une commande
+- **Mise à jour automatique** : Le stock est décrémenté lors d'un achat
+- **Restauration automatique** : En cas d'annulation ou d'échec de paiement, le stock est restauré
+
+<Tip>
+  Pour les produits numériques ou services, désactivez `stockTracking` pour permettre des ventes illimitées.
+</Tip>
+
+## Attributs personnalisés
+
+Le champ `attributes` est un objet JSON flexible qui peut contenir n'importe quelle combinaison d'attributs :
+
+<Tabs>
+  <Tab title="Vêtements">
+    ```json
+    {
+      "size": "L",
+      "color": "blue",
+      "material": "cotton"
+    }
+    ```
+  </Tab>
+
+  <Tab title="Électronique">
+    ```json
+    {
+      "storage": "256GB",
+      "color": "space-gray",
+      "warranty": "2-years"
+    }
+    ```
+  </Tab>
+
+  <Tab title="Abonnement">
+    ```json
+    {
+      "plan": "pro",
+      "seats": 10,
+      "features": ["api", "support", "analytics"]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Code SKU
+
+Le `skuCode` est un identifiant unique et lisible par l'humain pour la gestion interne :
+
+<AccordionGroup>
+  <Accordion title="Conventions de nommage recommandées">
+    | Pattern | Exemple | Description |
+    |---------|---------|-------------|
+    | `PRODUIT-TAILLE-COULEUR` | `TSHIRT-M-WHITE` | Standard pour vêtements |
+    | `PRODUIT-OPTION1-OPTION2` | `PHONE-256GB-BLACK` | Électronique |
+    | `CATEGORIE-REF` | `BOOK-978123456` | Livres avec ISBN |
+    | `SERVICE-PLAN` | `SAAS-PRO-MONTHLY` | Services/abonnements |
+  </Accordion>
+
+  <Accordion title="Bonnes pratiques">
+    - Utilisez des caractères alphanumériques et tirets uniquement
+    - Gardez les codes courts mais descriptifs
+    - Évitez les espaces et caractères spéciaux
+    - Soyez cohérent dans votre nomenclature
+  </Accordion>
+</AccordionGroup>
+
+## Opérations courantes
+
+### Lister les SKUs d'un produit
+
+```bash
+curl https://api.yabetoo.com/v1/products/prod_abc123/skus \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+### Mettre à jour un SKU
+
+```bash
+curl -X PATCH https://api.yabetoo.com/v1/skus/sku_xyz789 \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stockQuantity": 150,
+    "name": "T-shirt M Blanc - Édition Limitée"
+  }'
+```
+
+### Mettre à jour le stock
+
+```bash
+curl -X PATCH https://api.yabetoo.com/v1/skus/sku_xyz789/stock \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stockQuantity": 200
+  }'
+```
+
+## Relation SKU → Prix
+
+Chaque SKU peut avoir plusieurs prix pour différentes stratégies tarifaires :
+
+```
+SKU "Formation Pro"
+├── Prix 99€ (paiement unique)
+├── Prix 19€/mois (abonnement mensuel)
+├── Prix 199€/an (abonnement annuel)
+└── Prix 65 000 XOF (paiement unique Afrique)
+```
+
+Voir [Documentation des Prix](/fr/products/prices) pour configurer la tarification.
+
+## Exemples complets
+
+<Tabs>
+  <Tab title="E-commerce vêtements">
+    ```json
+    {
+      "product": {
+        "name": "Jean Slim",
+        "type": "physical",
+        "hasSkus": true
+      },
+      "skus": [
+        {
+          "skuCode": "JEAN-SLIM-28-BLUE",
+          "name": "Jean Slim 28 Bleu",
+          "attributes": { "waist": "28", "color": "blue" },
+          "stockTracking": true,
+          "stockQuantity": 25
+        },
+        {
+          "skuCode": "JEAN-SLIM-30-BLUE",
+          "name": "Jean Slim 30 Bleu",
+          "attributes": { "waist": "30", "color": "blue" },
+          "stockTracking": true,
+          "stockQuantity": 40
+        },
+        {
+          "skuCode": "JEAN-SLIM-32-BLACK",
+          "name": "Jean Slim 32 Noir",
+          "attributes": { "waist": "32", "color": "black" },
+          "stockTracking": true,
+          "stockQuantity": 15
+        }
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="SaaS">
+    ```json
+    {
+      "product": {
+        "name": "App Cloud",
+        "type": "service",
+        "subscriptionEligible": true,
+        "hasSkus": true
+      },
+      "skus": [
+        {
+          "skuCode": "CLOUD-STARTER",
+          "name": "Plan Starter",
+          "attributes": {
+            "storage": "10GB",
+            "users": 3,
+            "support": "email"
+          },
+          "stockTracking": false
+        },
+        {
+          "skuCode": "CLOUD-PRO",
+          "name": "Plan Pro",
+          "attributes": {
+            "storage": "100GB",
+            "users": 10,
+            "support": "priority"
+          },
+          "stockTracking": false
+        },
+        {
+          "skuCode": "CLOUD-ENTERPRISE",
+          "name": "Plan Enterprise",
+          "attributes": {
+            "storage": "unlimited",
+            "users": "unlimited",
+            "support": "dedicated"
+          },
+          "stockTracking": false
+        }
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Formation en ligne">
+    ```json
+    {
+      "product": {
+        "name": "Masterclass Marketing Digital",
+        "type": "digital",
+        "hasSkus": true
+      },
+      "skus": [
+        {
+          "skuCode": "MASTERCLASS-BASIC",
+          "name": "Accès Basic",
+          "attributes": {
+            "access": "6-months",
+            "bonus": false
+          },
+          "stockTracking": false
+        },
+        {
+          "skuCode": "MASTERCLASS-PREMIUM",
+          "name": "Accès Premium",
+          "attributes": {
+            "access": "lifetime",
+            "bonus": true,
+            "coaching": "2-sessions"
+          },
+          "stockTracking": false
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Prochaines étapes
+
+<CardGroup cols={2}>
+  <Card
+    title="Configurer les prix"
+    icon="money-bill"
+    href="/fr/products/prices"
+  >
+    Définissez la tarification pour chaque SKU
+  </Card>
+  <Card
+    title="Créer des promotions"
+    icon="percent"
+    href="/fr/products/coupons"
+  >
+    Appliquez des réductions sur vos SKUs
+  </Card>
+</CardGroup>

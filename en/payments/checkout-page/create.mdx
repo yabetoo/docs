@@ -1,269 +1,601 @@
 ---
-title: "Create a Yabetoo-hosted checkout page"
+title: "Create a Checkout Session"
+description: "Create a payment session to redirect your customers to the Yabetoo hosted payment page"
 ---
+
+## What is a Checkout Session?
+
+A **Checkout Session** represents your customer's payment session. It controls what the customer sees on the payment page: products, amount, currency, and available options.
+
+<Info>
+  **Identifier format**: `cs_` followed by 24 alphanumeric characters.
+
+  Example: `cs_abc123def456ghi789jkl012`
+</Info>
+
+## Session Modes
+
+<CardGroup cols={3}>
+  <Card title="payment" icon="credit-card">
+    **One-time payment**
+
+    For one-time purchases of products or services.
+  </Card>
+  <Card title="subscription" icon="repeat">
+    **Subscription**
+
+    To create a recurring subscription with automatic billing.
+  </Card>
+  <Card title="setup" icon="gear">
+    **Setup**
+
+    To save a payment method without making an immediate payment.
+  </Card>
+</CardGroup>
 
 ## Create a Checkout Session
 
-Add an endpoint on your server that creates a Checkout session. A Checkout session controls the information your customer can see on the payment page, such as the order amount and currency, as well as the accepted payment methods.
+### Basic Request
 
-<Note>
-  The endpoint to use is `POST https://buy.api.yabetoopay.com/v1/sessions`.
-</Note>
-
-```javascript
-const response = await fetch("https://buy.api.yabetoopay.com/v1/sessions", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: "Bearer YOUR_SECRET_KEY",
-  },
-  body: JSON.stringify({
-    total: 200000,
-    currency: "xaf",
-    accountId: "acct_xxxxxxxx",
-  }),
-});
-
-const data = await response.json();
+```bash
+curl -X POST https://api.yabetoo.com/v1/checkout/sessions \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "success_url": "https://your-site.com/success",
+    "cancel_url": "https://your-site.com/cancel",
+    "line_items": [
+      {
+        "price_data": {
+          "currency": "XOF",
+          "unit_amount": 15000,
+          "product_data": {
+            "name": "Premium T-shirt"
+          }
+        },
+        "quantity": 2
+      }
+    ]
+  }'
 ```
 
-## Define a Product to Sell
+### Required Parameters
 
-Always store sensitive information about your product inventory (such as price, availability, etc.) on your server to prevent any customer from modifying it. Define your product details when creating the Checkout session.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `success_url` | string | Redirect URL after successful payment |
+| `line_items` | array | List of items to purchase |
 
-```javascript
-const items = [
-  {
-    productId: "prt_XoPjNH2l5Q1g19mIZPxqYWEXwRJzOmlNXhcb",
-    quantity: 1,
-    price: 200000,
-    productName: "Écran LG",
-  },
-];
+### Optional Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cancel_url` | string | Redirect URL if customer cancels |
+| `mode` | string | `payment`, `subscription`, or `setup` (default: `payment`) |
+| `customer` | string | ID of an existing customer (`cus_xxx`) |
+| `customer_email` | string | Customer email (pre-fills the form) |
+| `client_reference_id` | string | Your internal reference (e.g., order ID) |
+| `allow_promotion_codes` | boolean | Allow promo codes |
+| `locale` | string | Page language (`fr`, `en`, etc.) |
+| `expires_at` | number | Unix timestamp for expiration |
+| `metadata` | object | Custom data |
+
+## Define Items (line_items)
+
+You have two options for defining items:
+
+<Tabs>
+  <Tab title="Inline price (price_data)">
+    Define the price directly in the request:
+
+    ```json
+    {
+      "line_items": [
+        {
+          "price_data": {
+            "currency": "XOF",
+            "unit_amount": 25000,
+            "product_data": {
+              "name": "JavaScript Training",
+              "description": "Full access to the course",
+              "images": ["https://example.com/image.jpg"]
+            }
+          },
+          "quantity": 1
+        }
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="Existing price (price)">
+    Reference a price created in your catalog:
+
+    ```json
+    {
+      "line_items": [
+        {
+          "price": "price_abc123def456",
+          "quantity": 1
+        }
+      ]
+    }
+    ```
+
+    <Tip>
+      Use pre-created prices for centralized catalog management.
+    </Tip>
+  </Tab>
+</Tabs>
+
+### Line Item Structure
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `price_data` | object | Inline defined price (see below) |
+| `price` | string | ID of an existing price (`price_xxx`) |
+| `quantity` | number | Quantity (minimum 1) |
+| `adjustable_quantity` | object | Allows customer to modify quantity |
+
+### Price Data Structure
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `currency` | string | Currency code (`XOF`, `EUR`, `USD`) |
+| `unit_amount` | number | Unit price |
+| `product_data` | object | Product information |
+| `recurring` | object | For subscriptions only |
+
+### Product Data Structure
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Product name (required) |
+| `description` | string | Description |
+| `images` | array | Image URLs |
+| `metadata` | object | Custom data |
+
+## Recurring Subscriptions
+
+To create a subscription, use `mode: "subscription"` and add `recurring` in `price_data`:
+
+```json
+{
+  "mode": "subscription",
+  "success_url": "https://your-site.com/success",
+  "line_items": [
+    {
+      "price_data": {
+        "currency": "XOF",
+        "unit_amount": 9900,
+        "product_data": {
+          "name": "Pro Subscription"
+        },
+        "recurring": {
+          "interval": "month",
+          "interval_count": 1
+        }
+      },
+      "quantity": 1
+    }
+  ]
+}
 ```
 
-```javascript
-const response = await fetch("https://buy.api.yabetoopay.com/v1/sessions", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: "Bearer YOUR_SECRET_KEY",
-  },
-  body: JSON.stringify({
-    items,
-  }),
-});
+### Available Intervals
 
-const data = await response.json();
+| Interval | Description |
+|----------|-------------|
+| `day` | Daily billing |
+| `week` | Weekly billing |
+| `month` | Monthly billing |
+| `year` | Annual billing |
+
+## Advanced Options
+
+### Collect Addresses
+
+```json
+{
+  "billing_address_collection": "required",
+  "shipping_address_collection": {
+    "allowed_countries": ["CG", "CD", "CI", "SN"]
+  }
+}
 ```
 
-## Define Metadata (optional)
+### Collect Phone Number
 
-You can add metadata to your Checkout session to store additional information, such as the order ID, customer ID, and more.
-
-```javascript
-metadata: {
-  orderId: "1234",
-  customerId: "5678",
-},
+```json
+{
+  "phone_number_collection": {
+    "enabled": true
+  }
+}
 ```
 
-## Provide Success and Cancel URLs
+### Allow Promo Codes
 
-Provide success and cancel URLs to redirect your customer back to your website after the payment. These URLs are used to inform the customer about the status of the transaction and to perform additional actions on your server, such as updating the order status.
-
-```javascript
-const successUrl = "https://votre-site.com/checkout-success";
-const cancelUrl = "https://votre-site.com/checkout-cancel";
+```json
+{
+  "allow_promotion_codes": true
+}
 ```
 
-## Full exemple
+### Apply a Promo Code Automatically
 
-The following example shows how to create a Checkout session with all the required parameters.
+```json
+{
+  "discounts": [
+    {
+      "promotion_code": "promo_abc123"
+    }
+  ]
+}
+```
+
+### Customize the Payment Button
+
+```json
+{
+  "submit_type": "pay"
+}
+```
+
+| Value | Button Text |
+|-------|-------------|
+| `auto` | Automatic based on context |
+| `pay` | "Pay" |
+| `book` | "Book" |
+| `donate` | "Donate" |
+
+### Adjustable Quantity
+
+Allow the customer to modify quantity on the payment page:
+
+```json
+{
+  "line_items": [
+    {
+      "price_data": {
+        "currency": "XOF",
+        "unit_amount": 5000,
+        "product_data": { "name": "Item" }
+      },
+      "quantity": 1,
+      "adjustable_quantity": {
+        "enabled": true,
+        "minimum": 1,
+        "maximum": 10
+      }
+    }
+  ]
+}
+```
+
+## Complete Example
 
 <CodeGroup>
 ```bash cURL
-curl -X POST https://buy.api.yabetoopay.com/v1/sessions \
+curl -X POST https://api.yabetoo.com/v1/checkout/sessions \
+  -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_SECRET_KEY" \
   -d '{
-    "total": 200000,
-    "currency": "xaf",
-    "accountId": "acct_xxxxxxxx",
-    "successUrl": "https://your-site.com/checkout-success",
-    "cancelUrl": "https://your-site.com/checkout-cancel",
-    "metadata": { "orderId": "1234" },
-    "items": [
+    "mode": "payment",
+    "success_url": "https://your-site.com/success?session_id={CHECKOUT_SESSION_ID}",
+    "cancel_url": "https://your-site.com/cancel",
+    "customer_email": "customer@example.com",
+    "client_reference_id": "order_12345",
+    "allow_promotion_codes": true,
+    "billing_address_collection": "required",
+    "phone_number_collection": { "enabled": true },
+    "locale": "en",
+    "metadata": {
+      "order_id": "12345",
+      "source": "website"
+    },
+    "line_items": [
       {
-        "productId": "prod_12345",
-        "quantity": 1,
-        "price": 200000,
-        "productName": "HD Screen"
+        "price_data": {
+          "currency": "XOF",
+          "unit_amount": 25000,
+          "product_data": {
+            "name": "HD Screen",
+            "description": "24 inch Full HD screen",
+            "images": ["https://example.com/screen.jpg"]
+          }
+        },
+        "quantity": 1
+      },
+      {
+        "price_data": {
+          "currency": "XOF",
+          "unit_amount": 5000,
+          "product_data": {
+            "name": "HDMI Cable"
+          }
+        },
+        "quantity": 2
       }
     ]
   }'
 ```
 
 ```javascript JavaScript
-import Yabetoo from "@yabetoo/sdk-js";
-
-const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
-
-const session = await yabetoo.sessions.create({
-  accountId: "acct_xxxxxxxx",
-  total: 200000,
-  currency: "xaf",
-  successUrl: "https://your-site.com/checkout-success",
-  cancelUrl: "https://your-site.com/checkout-cancel",
-  metadata: { orderId: "1234" },
-  items: [
-    {
-      productId: "prod_12345",
-      quantity: 1,
-      price: 200000,
-      productName: "HD Screen",
-    },
-  ],
+const response = await fetch("https://api.yabetoo.com/v1/checkout/sessions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: "Bearer sk_live_...",
+  },
+  body: JSON.stringify({
+    mode: "payment",
+    success_url: "https://your-site.com/success?session_id={CHECKOUT_SESSION_ID}",
+    cancel_url: "https://your-site.com/cancel",
+    customer_email: "customer@example.com",
+    allow_promotion_codes: true,
+    line_items: [
+      {
+        price_data: {
+          currency: "XOF",
+          unit_amount: 25000,
+          product_data: {
+            name: "HD Screen",
+          },
+        },
+        quantity: 1,
+      },
+    ],
+  }),
 });
+
+const session = await response.json();
+// Redirect to session.url
 ```
 
 ```python Python
-from yabetoo import Yabetoo
-from yabetoo.models.checkout import CreateCheckoutSession, CheckoutItem
+import requests
 
-yabetoo = Yabetoo("YOUR_SECRET_KEY")
+response = requests.post(
+    "https://api.yabetoo.com/v1/checkout/sessions",
+    headers={
+        "Authorization": "Bearer sk_live_...",
+        "Content-Type": "application/json"
+    },
+    json={
+        "mode": "payment",
+        "success_url": "https://your-site.com/success",
+        "cancel_url": "https://your-site.com/cancel",
+        "line_items": [
+            {
+                "price_data": {
+                    "currency": "XOF",
+                    "unit_amount": 25000,
+                    "product_data": {
+                        "name": "HD Screen"
+                    }
+                },
+                "quantity": 1
+            }
+        ]
+    }
+)
 
-items = [
-    CheckoutItem(
-        product_id="prod_12345",
-        product_name="HD Screen",
-        quantity=1,
-        price=200000
-    )
-]
-
-session = yabetoo.sessions.create(CreateCheckoutSession(
-    account_id="acct_xxxxxxxx",
-    total=200000,
-    currency="xaf",
-    success_url="https://your-site.com/checkout-success",
-    cancel_url="https://your-site.com/checkout-cancel",
-    items=items,
-    metadata={"orderId": "1234"}
-))
+session = response.json()
 ```
 
 ```php PHP
-<?php
-require 'vendor/autoload.php';
+$curl = curl_init();
 
-use Yabetoo\Yabetoo;
-
-$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
-
-$session = $yabetoo->sessions->create([
-    "total" => 200000,
-    "currency" => "xaf",
-    "accountId" => "acct_xxxxxxxx",
-    "successUrl" => "https://your-site.com/checkout-success",
-    "cancelUrl" => "https://your-site.com/checkout-cancel",
-    "metadata" => ["orderId" => "1234"],
-    "items" => [
-        [
-            "productId" => "prod_12345",
-            "quantity" => 1,
-            "price" => 200000,
-            "productName" => "HD Screen",
-        ]
+curl_setopt_array($curl, [
+    CURLOPT_URL => "https://api.yabetoo.com/v1/checkout/sessions",
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_HTTPHEADER => [
+        "Authorization: Bearer sk_live_...",
+        "Content-Type: application/json"
     ],
+    CURLOPT_POSTFIELDS => json_encode([
+        "mode" => "payment",
+        "success_url" => "https://your-site.com/success",
+        "cancel_url" => "https://your-site.com/cancel",
+        "line_items" => [
+            [
+                "price_data" => [
+                    "currency" => "XOF",
+                    "unit_amount" => 25000,
+                    "product_data" => [
+                        "name" => "HD Screen"
+                    ]
+                ],
+                "quantity" => 1
+            ]
+        ]
+    ])
 ]);
-```
 
-```java Java
-import com.yabetoo.Yabetoo;
-import com.yabetoo.YabetooConfig;
-import com.yabetoo.model.Session;
-import com.yabetoo.request.SessionCreateRequest;
-import com.yabetoo.request.LineItem;
-
-YabetooConfig config = new YabetooConfig()
-    .setApiKey("YOUR_SECRET_KEY");
-
-Yabetoo yabetoo = new Yabetoo(config);
-
-SessionCreateRequest request = SessionCreateRequest.builder()
-    .successUrl("https://your-site.com/checkout-success")
-    .cancelUrl("https://your-site.com/checkout-cancel")
-    .addLineItem(LineItem.builder()
-        .productId("prod_12345")
-        .quantity(1)
-        .price(200000)
-        .productName("HD Screen")
-        .build())
-    .currency("xaf")
-    .build();
-
-Session session = yabetoo.sessions().create(request);
+$response = curl_exec($curl);
+$session = json_decode($response, true);
 ```
 </CodeGroup>
 
-### Response
-
-The response contains the session ID and other details.
+## Response
 
 ```json
 {
-  "accountId": "acct_iNXIGeot1lqyhGI5eP7KL0LcWTCTgFLytfRa",
-  "successUrl": "https://votre-site.com/checkout-success",
-  "cancelUrl": "https://votre-site.com/checkout-cancel",
-  "orderId": "ord_KowaIWyMlD25Lhb8MyY3GQyvN8nFaxTZ7ji7",
-  "expiresAt": "2024-05-28T13:33:51.760+00:00",
-  "id": "session_ajrw3pQUUZD8UI2eFkWyUgLxJ4kGuXCoaQeb",
-  "createdAt": "2024-05-28T12:33:51.762+00:00",
-  "updatedAt": "2024-05-28T12:33:51.762+00:00"
+  "id": "cs_abc123def456ghi789",
+  "object": "checkout.session",
+  "mode": "payment",
+  "status": "open",
+  "payment_status": "unpaid",
+  "url": "https://checkout.yabetoo.com/cs_abc123def456ghi789",
+  "success_url": "https://your-site.com/success?session_id={CHECKOUT_SESSION_ID}",
+  "cancel_url": "https://your-site.com/cancel",
+  "customer_email": "customer@example.com",
+  "client_reference_id": "order_12345",
+  "amount_subtotal": 35000,
+  "amount_total": 35000,
+  "amount_discount": 0,
+  "currency": "XOF",
+  "allow_promotion_codes": true,
+  "line_items": [
+    {
+      "price_data": {
+        "currency": "XOF",
+        "unit_amount": 25000,
+        "product_data": { "name": "HD Screen" }
+      },
+      "quantity": 1,
+      "amount_subtotal": 25000,
+      "amount_total": 25000
+    },
+    {
+      "price_data": {
+        "currency": "XOF",
+        "unit_amount": 5000,
+        "product_data": { "name": "HDMI Cable" }
+      },
+      "quantity": 2,
+      "amount_subtotal": 10000,
+      "amount_total": 10000
+    }
+  ],
+  "metadata": {
+    "order_id": "12345",
+    "source": "website"
+  },
+  "expires_at": "2024-01-15T12:00:00.000Z",
+  "created_at": "2024-01-15T11:00:00.000Z"
 }
 ```
 
-## Redirect to Checkout
+### Response Fields
 
-Once the Checkout session is created, redirect your customer to the hosted payment page URL. This URL is available in the Checkout session response.
+| Field | Description |
+|-------|-------------|
+| `id` | Unique session identifier |
+| `url` | Payment page URL |
+| `status` | `open`, `complete`, or `expired` |
+| `payment_status` | `unpaid`, `paid`, or `no_payment_required` |
+| `amount_subtotal` | Subtotal before discounts |
+| `amount_total` | Total amount to pay |
+| `amount_discount` | Applied discounts amount |
 
 ## Redirect the Customer
 
-Once the payment is completed, the customer is redirected to the success or cancel URL you specified in the `successUrl` or `cancelUrl` field.
-
-Our system will add the transaction ID to your callback like this: `https://your_callback?paymentId={id}`. It is in your interest to verify the correct receipt of the payment by checking the status of the transaction in our system by following this process:
-
-<Note>
-  Sandbox : `https://pay.sandbox.yabetoopay.com/v1/payment-intents/{paymentId}`
-</Note>
-
-<Note>
-  Production : `https://pay.api.yabetoopay.com/v1/payment-intents/{paymentId}`
-</Note>
+Once the session is created, redirect the customer to the payment URL:
 
 ```javascript
-const paymentId = new URLSearchParams(window.location.search).get("paymentId");
+// Server-side: create the session
+const session = await createCheckoutSession(/* ... */);
 
-const response = await fetch(`${url}/${paymentId}`, {
-  method: "GET",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: "Bearer YOUR_SECRET_KEY",
-  },
-});
-
-const data = await response.json();
-
-console.log(data);
+// Client-side: redirect
+window.location.href = session.url;
 ```
 
-### Why Perform a Double Verification?
+## After Payment
 
-1. **Security** : Ensures that the payment was genuinely made and that you do not process false transactions.
-2. **Confidence** : By formally verifying the payment status via the API, you maintain a reliable record of successful and failed transactions.
-3. **Prevention of fraud** : By verifying the payment status, you reduce the risk of potential fraud.
+### Redirection
 
-The redirect step after the payment is crucial for finalizing a transaction. By retrieving the payment ID provided in the URL and performing a double verification with the Yabetoo API, you reinforce the security of your order process and ensure that only confirmed payments are processed.
+After payment, the customer is redirected to `success_url` with the session ID:
 
-The use of a hosted checkout page with sessions of payment simplifies the process of integrating payments into your application. It allows you to delegate the management of sensitive data to Yabetoo, while offering a smooth and secure payment experience to your users.
+```
+https://your-site.com/success?session_id=cs_abc123def456
+```
+
+### Verify Status
+
+<Warning>
+  Never trust the redirect alone. Always verify the session status server-side.
+</Warning>
+
+```javascript
+// Get session ID from URL
+const sessionId = new URLSearchParams(window.location.search).get("session_id");
+
+// Verify status server-side
+const response = await fetch(
+  "https://api.yabetoo.com/v1/checkout/sessions/" + sessionId,
+  {
+    headers: {
+      Authorization: "Bearer sk_live_...",
+    },
+  }
+);
+
+const session = await response.json();
+
+if (session.status === "complete" && session.payment_status === "paid") {
+  // Payment confirmed - process the order
+}
+```
+
+### Webhooks
+
+For a robust integration, use webhooks to receive payment notifications:
+
+```json
+{
+  "type": "checkout.session.completed",
+  "data": {
+    "object": {
+      "id": "cs_abc123def456",
+      "status": "complete",
+      "payment_status": "paid",
+      "amount_total": 35000,
+      "currency": "XOF"
+    }
+  }
+}
+```
+
+See [Webhooks Documentation](/en/developer-tools/webhook/overview) for more details.
+
+## Session Statuses
+
+| Status | Description |
+|--------|-------------|
+| `open` | Active session, awaiting payment |
+| `complete` | Payment successful |
+| `expired` | Session expired (not paid within deadline) |
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Security">
+    - Always create sessions server-side
+    - Never store API keys client-side
+    - Verify status via API or webhooks
+  </Accordion>
+
+  <Accordion title="User Experience">
+    - Pre-fill email if you have it
+    - Use `client_reference_id` to link to your order
+    - Customize `submit_type` based on context
+  </Accordion>
+
+  <Accordion title="Error Handling">
+    - Handle the case where customer cancels
+    - Plan for session expiration
+    - Use webhooks for edge cases
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Webhooks"
+    icon="bell"
+    href="/en/developer-tools/webhook/overview"
+  >
+    Receive real-time notifications
+  </Card>
+  <Card
+    title="Promo Codes"
+    icon="percent"
+    href="/en/products/coupons"
+  >
+    Apply discounts to your sessions
+  </Card>
+</CardGroup>

@@ -1,0 +1,105 @@
+---
+title: "Product Catalog"
+description: "Understand the core concepts of Yabetoo's product catalog: products, variants, prices, and promotions"
+---
+
+## Overview
+
+Yabetoo's product catalog allows you to manage your entire commercial offering. Whether you sell physical products, digital goods, or services, our flexible system adapts to your needs.
+
+<CardGroup cols={2}>
+  <Card title="Products" icon="box" href="/en/products/products">
+    Create and manage your product catalog with different types and statuses
+  </Card>
+  <Card title="Variants (SKUs)" icon="tags" href="/en/products/skus">
+    Manage product variations: sizes, colors, options
+  </Card>
+  <Card title="Pricing" icon="money-bill" href="/en/products/prices">
+    Define your prices: one-time payments or recurring subscriptions
+  </Card>
+  <Card title="Promotions" icon="percent" href="/en/products/coupons">
+    Create coupons and promo codes to boost your sales
+  </Card>
+</CardGroup>
+
+## Catalog Architecture
+
+Yabetoo's catalog follows a clear and flexible hierarchy:
+
+```
+Product
+├── Variant 1 (SKU)
+│   ├── Price EUR monthly
+│   ├── Price EUR yearly
+│   └── Price XOF monthly
+├── Variant 2 (SKU)
+│   └── One-time Price EUR
+└── Documents (images, files)
+```
+
+<Steps>
+  <Step title="Create a Product">
+    Define basic information: name, description, type (physical, digital, service)
+  </Step>
+  <Step title="Add Variants (SKUs)">
+    Create variations with their attributes (size, color, etc.) and stock
+  </Step>
+  <Step title="Define Prices">
+    Associate one or more prices with each variant: one-time or recurring
+  </Step>
+  <Step title="Configure Promotions">
+    Create coupons and promo codes to offer discounts
+  </Step>
+</Steps>
+
+## Key Concepts
+
+### Product Types
+
+| Type | Description | Use Cases |
+|------|-------------|-----------|
+| `physical` | Physical product requiring shipping | Clothing, electronics, accessories |
+| `digital` | Downloadable digital product | E-books, software, video courses |
+| `service` | Service offering | Consultations, SaaS subscriptions |
+
+### Pricing Types
+
+<CardGroup cols={2}>
+  <Card title="One-time Payment" icon="credit-card">
+    Customer pays once to access the product. Ideal for one-off purchases.
+  </Card>
+  <Card title="Recurring Subscription" icon="repeat">
+    Customer is billed automatically at regular intervals. Perfect for ongoing services.
+  </Card>
+</CardGroup>
+
+### Identifier Formats
+
+Each entity has a unique identifier with a distinctive prefix:
+
+| Entity | Prefix | Example |
+|--------|--------|---------|
+| Product | `prod_` | `prod_abc123def456...` |
+| Variant (SKU) | `sku_` | `sku_xyz789ghi012...` |
+| Price | `price_` | `price_eur_monthly_001...` |
+| Coupon | `coupon_` | `coupon_summer_2024...` |
+| Promo Code | `promo_` | `promo_SUMMER20...` |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Create your first product"
+    icon="plus"
+    href="/en/products/products#create-a-product"
+  >
+    Learn how to create and configure a complete product
+  </Card>
+  <Card
+    title="Configure pricing"
+    icon="sliders"
+    href="/en/products/prices"
+  >
+    Define your pricing and subscription strategies
+  </Card>
+</CardGroup>
