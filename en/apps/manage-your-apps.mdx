@@ -1,0 +1,105 @@
+---
+title: "Manage your Apps"
+description: "View, configure and uninstall the Apps installed on your Yabetoo account."
+icon: "sliders"
+---
+
+Once an App is installed, you keep full control from your dashboard: you can see its permissions, its installation date, and uninstall it at any time.
+
+## View your installed Apps
+
+From [app.yabetoo.com](https://app.yabetoo.com), click **Apps** in the sidebar. The **Installed** tab lists all Apps currently active on your account.
+
+![List of installed Apps](/images/apps/manage-step-1.png)
+
+Each row displays:
+
+- The App's **name and icon**
+- Its **installation date**
+- Its **status**: active, suspended, or being uninstalled
+- A shortcut to **launch** the App or open its **detail page**
+
+## App detail page
+
+Click an App to open its detail page. You'll find:
+
+![Detail page of an installed App](/images/apps/manage-step-2.png)
+
+<AccordionGroup>
+  <Accordion title="Access key (sk_app_…)" icon="key">
+    The access key Yabetoo generated for this App at installation. It's **masked by default** (e.g. `sk_app_****abc1`). You can reveal it temporarily for verification, but it's managed automatically by Yabetoo — you don't need to share it manually.
+  </Accordion>
+  <Accordion title="Granted permissions (scopes)" icon="shield-check">
+    The exact list of permissions you approved at installation. This list is **immutable**: if the App needs new permissions, you'll have to explicitly approve them during an update.
+  </Accordion>
+  <Accordion title="Installation date" icon="calendar">
+    The exact date and time you installed the App.
+  </Accordion>
+  <Accordion title="Status" icon="circle-info">
+    Current operating state: **active** (all good), **suspended** (for safety), or **being uninstalled**.
+  </Accordion>
+</AccordionGroup>
+
+## Uninstall an App
+
+You can uninstall an App at any time from its detail page.
+
+<Steps>
+  <Step title="Open the App's detail page">
+    From **Apps > Installed**, click the App you want to uninstall.
+  </Step>
+  <Step title="Click 'Uninstall'">
+    The button is at the bottom of the detail page.
+  </Step>
+  <Step title="Confirm your identity">
+    For security reasons, Yabetoo requires a **strong confirmation** (password or second factor). This is a sensitive operation: we make sure it's really you.
+  </Step>
+  <Step title="Confirm uninstallation">
+    Read the summary of what will happen (tokens revoked, 30-day retention window), then confirm.
+  </Step>
+</Steps>
+
+![Uninstall confirmation screen with security step-up](/images/apps/manage-step-3.png)
+
+## What happens after uninstallation?
+
+<CardGroup cols={3}>
+  <Card title="Tokens revoked immediately" icon="ban">
+    The App instantly loses access to your account. No new API call will be accepted on its behalf.
+  </Card>
+  <Card title="Data kept for 30 days" icon="clock">
+    Your business data (menu, orders, configuration) is **stored for 30 days** in the App, read-only.
+  </Card>
+  <Card title="Automatic purge" icon="trash">
+    After 30 days, your data is **permanently deleted** in line with our GDPR commitments.
+  </Card>
+</CardGroup>
+
+<Tip>
+  **Changed your mind?** If you reinstall the App **within the 30-day window**, your previous data is automatically reactivated — you pick up where you left off. Beyond that window, the installation starts from a clean slate.
+</Tip>
+
+<Warning>
+  Uninstallation is an **immediate and global** action: all devices, integrations and users tied to this App lose access as soon as you confirm. Let your team know before proceeding.
+</Warning>
+
+## Special cases
+
+### App suspended by Yabetoo
+
+In rare cases (security incident, publisher anomaly), Yabetoo may **temporarily suspend** an App. You'll be notified by email and in the dashboard. A suspended App keeps your data but cannot call our APIs until the issue is resolved.
+
+### Deleting your Yabetoo account
+
+If you delete your Yabetoo account, all your Apps are automatically uninstalled in cascade, and the 30-day retention window applies to each one.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Discover Takumi (Restaurant)" icon="utensils" href="/en/apps/restaurant/introduction">
+    The Yabetoo point of sale for restaurants.
+  </Card>
+  <Card title="Install another App" icon="download" href="/en/apps/install-an-app">
+    Browse the catalogue and install an additional App.
+  </Card>
+</CardGroup>
