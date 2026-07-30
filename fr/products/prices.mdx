@@ -108,9 +108,15 @@ Les prix se créent sur l'endpoint de collection `POST /v1/prices`, en indiquant
 
 <Warning>
   La création d'un prix **désactive automatiquement** le prix qui était actif pour le même
-  produit, la même devise et le même type. Deux prix récurrents dans la même devise sur le
-  même produit (par exemple mensuel et annuel) ne peuvent donc pas être actifs en même
-  temps — utilisez un produit distinct pour chacun.
+  produit, la même devise, le même type **et la même portée**. La portée, c'est : un prix
+  rattaché à un SKU ne remplace que le prix actif de *ce SKU-là*, et un prix rattaché
+  directement au produit ne remplace qu'un autre prix de niveau produit. Deux SKU d'un même
+  produit gardent chacun leur prix actif.
+
+  À en retenir la conséquence : un prix mensuel et un prix annuel partagent le même `type`
+  (`recurring`), donc au sein d'une même portée le second désactive le premier. Pour
+  proposer les deux, rattachez-les à deux SKU différents, ou utilisez un produit distinct
+  pour chacun.
 </Warning>
 
 ## Types de tarification
@@ -441,8 +447,9 @@ Proposez une réduction pour l'abonnement annuel :
 </Tip>
 
 <Note>
-  Les deux prix appartiennent à deux produits distincts : un même produit ne peut pas
-  porter deux prix récurrents actifs dans la même devise, le second désactivant le premier.
+  Les deux prix appartiennent à deux produits distincts. Au sein d'une même portée — le même
+  SKU, ou le niveau produit — un second prix récurrent dans la même devise désactive le
+  premier : mensuel et annuel demandent donc soit deux SKU, soit deux produits.
 </Note>
 
 ### Tarification par paliers
@@ -486,7 +493,7 @@ price.isOneTime    // true si type === 'one_time'
   <Accordion title="Prix actifs/inactifs">
     - Désactivez les anciens prix plutôt que de les supprimer
     - Gardez les prix actifs au minimum nécessaire
-    - Gardez en tête qu'un nouveau prix désactive le prix actif de même produit, devise et type
+    - Gardez en tête qu'un nouveau prix désactive le prix actif de même produit, devise, type et portée (même SKU, ou niveau produit)
   </Accordion>
 
   <Accordion title="Périodes d'essai">

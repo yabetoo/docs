@@ -108,9 +108,14 @@ Prices are created on the collection endpoint `POST /v1/prices`, with the produc
 
 <Warning>
   Creating a price **automatically deactivates** the price that was active for the same
-  product, currency and type. Two recurring prices in the same currency on the same
-  product (for example monthly and yearly) therefore cannot be active at the same time —
-  use a separate product for each.
+  product, currency, type **and scope**. Scope means: a price attached to a SKU only
+  replaces the active price of *that same SKU*, and a price attached directly to the
+  product only replaces another product-level price. Two SKUs of the same product keep
+  their own active prices.
+
+  Note the consequence: a monthly price and a yearly price share the same `type`
+  (`recurring`), so within one scope the second deactivates the first. To offer both,
+  attach them to two different SKUs, or use a separate product for each.
 </Warning>
 
 ## Pricing Types
@@ -441,8 +446,9 @@ Offer a discount for annual subscription:
 </Tip>
 
 <Note>
-  The two prices belong to two distinct products: a single product cannot hold two active
-  recurring prices in the same currency, since the second one deactivates the first.
+  The two prices belong to two distinct products. Within a single scope — the same SKU, or
+  the product level — a second recurring price in the same currency deactivates the first,
+  so monthly and yearly need either two SKUs or two products.
 </Note>
 
 ### Tiered Pricing
@@ -486,7 +492,7 @@ price.isOneTime    // true if type === 'one_time'
   <Accordion title="Active/inactive prices">
     - Deactivate old prices rather than deleting them
     - Keep active prices to the minimum necessary
-    - Remember that a new price deactivates the active price with the same product, currency and type
+    - Remember that a new price deactivates the active price with the same product, currency, type and scope (same SKU, or product level)
   </Accordion>
 
   <Accordion title="Trial periods">
