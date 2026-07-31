@@ -5,7 +5,7 @@ description: "Configurez vos stratégies de prix : paiements uniques, abonnement
 
 ## Qu'est-ce qu'un Price ?
 
-Un **Price** (Prix) définit comment un SKU est facturé. Il peut s'agir d'un paiement unique ou d'un abonnement récurrent avec différentes périodicités.
+Un **Price** (Prix) définit comment un produit est facturé. Il peut s'agir d'un paiement unique ou d'un abonnement récurrent avec différentes périodicités.
 
 <Info>
   **Format de l'identifiant** : `price_` suivi de 36 caractères alphanumériques.
@@ -13,17 +13,24 @@ Un **Price** (Prix) définit comment un SKU est facturé. Il peut s'agir d'un pa
   Exemple : `price_abc123def456ghi789jkl012mno345`
 </Info>
 
-## Relation SKU → Price
+## Relation Produit → Price
 
-Un SKU peut avoir plusieurs prix pour différentes stratégies tarifaires :
+Un prix est rattaché à un **produit**. `productId` est le lien canonique, et un produit peut porter plusieurs prix pour différentes stratégies tarifaires :
 
 ```
-SKU "Formation Pro"
-├── Price 99€ one-time (paiement unique)
-├── Price 19€/mois (abonnement mensuel)
-├── Price 199€/an (abonnement annuel avec économie)
-└── Price 65 000 XOF one-time (marché africain)
+Produit "Formation Pro"
+├── Price 25 000 XAF one-time (paiement unique)
+├── Price 5 000 XAF/mois (abonnement mensuel)
+├── Price 50 000 XAF/an (abonnement annuel avec économie)
+└── Price 25 000 XOF one-time (marché ouest-africain)
 ```
+
+<Warning>
+  **`skuId` est déprécié.** Un prix était auparavant rattaché à un SKU (une variante de
+  produit). `skuId` reste accepté sur `POST /v1/prices` pendant la fenêtre de
+  compatibilité — le serveur en déduit alors `productId` — mais il sera retiré. Les
+  nouvelles intégrations doivent envoyer `productId`. Aucune date de retrait n'est annoncée.
+</Warning>
 
 <Note>
   Cette flexibilité permet de proposer plusieurs options de paiement pour le même produit et de gérer plusieurs devises.
@@ -36,9 +43,10 @@ SKU "Formation Pro"
 | Attribut | Type | Description |
 |----------|------|-------------|
 | `id` | string | Identifiant unique du prix |
-| `skuId` | string | Référence au SKU parent |
-| `amount` | number | Montant en unité entière |
-| `currency` | string | Code devise (EUR, XOF, USD, etc.) |
+| `productId` | string | Référence au produit parent |
+| `skuId` | string \| null | Référence à un SKU. Déprécié, et `null` pour un prix rattaché au produit |
+| `amount` | string | Montant dans l'unité principale de la devise, renvoyé sous forme de chaîne décimale (`"25000.00"`) |
+| `currency` | string | Code devise, renvoyé en minuscules (`"xaf"`) |
 | `type` | enum | `one_time` ou `recurring` |
 | `active` | boolean | Prix actif et utilisable |
 
@@ -49,6 +57,68 @@ SKU "Formation Pro"
 | `billingInterval` | enum | `day`, `week`, `month`, `year` |
 | `billingIntervalCount` | number | Nombre d'intervalles (ex: 3 = tous les 3 mois) |
 | `trialPeriodDays` | number \| null | Jours d'essai gratuit |
+
+## Créer un prix
+
+Les prix se créent sur l'endpoint de collection `POST /v1/prices`, en indiquant dans le corps le produit auquel ils se rattachent.
+
+### Corps de la requête
+
+<ParamField body="productId" type="string" required>
+  Identifiant du produit auquel le prix se rattache. Obligatoire, sauf si le champ déprécié `skuId` est fourni.
+</ParamField>
+
+<ParamField body="skuId" type="string" deprecated>
+  Identifiant d'un SKU. Déprécié : lorsqu'il est fourni, le serveur en déduit `productId`. À ne plus utiliser dans une nouvelle intégration.
+</ParamField>
+
+<ParamField body="amount" type="number" required>
+  Montant dans l'unité principale de la devise. Strictement positif et au maximum `99999999.99`.
+</ParamField>
+
+<ParamField body="currency" type="string" default="XAF">
+  Code devise, exactement 3 caractères. Stocké et renvoyé en minuscules.
+</ParamField>
+
+<ParamField body="type" type="enum" default="one_time">
+  `one_time` ou `recurring`.
+</ParamField>
+
+<ParamField body="billingInterval" type="enum">
+  `day`, `week`, `month` ou `year`. Prix récurrents uniquement.
+</ParamField>
+
+<ParamField body="billingIntervalCount" type="number">
+  Nombre d'intervalles par cycle de facturation. Strictement positif.
+</ParamField>
+
+<ParamField body="trialPeriodDays" type="number">
+  Jours d'essai gratuit, `0` ou plus.
+</ParamField>
+
+<ParamField body="active" type="boolean" default="true">
+  Passez `false` pour créer le prix déjà désactivé.
+</ParamField>
+
+<Note>
+  Le produit doit exister avant son prix. Il n'a besoin d'aucun SKU : omettez `skus` à la
+  création du produit — c'est ainsi qu'on modélise un plan SaaS ou un service — puis
+  rattachez le prix au produit avec `productId`. À noter qu'un tableau `skus: []`
+  explicitement vide reste refusé avec un `422`.
+</Note>
+
+<Warning>
+  La création d'un prix **désactive automatiquement** le prix qui était actif pour le même
+  produit, la même devise, le même type **et la même portée**. La portée, c'est : un prix
+  rattaché à un SKU ne remplace que le prix actif de *ce SKU-là*, et un prix rattaché
+  directement au produit ne remplace qu'un autre prix de niveau produit. Deux SKU d'un même
+  produit gardent chacun leur prix actif.
+
+  À en retenir la conséquence : un prix mensuel et un prix annuel partagent le même `type`
+  (`recurring`), donc au sein d'une même portée le second désactive le premier. Pour
+  proposer les deux, rattachez-les à deux SKU différents, ou utilisez un produit distinct
+  pour chacun.
+</Warning>
 
 ## Types de tarification
 
@@ -65,12 +135,13 @@ SKU "Formation Pro"
     - Accès à vie
 
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/skus/sku_abc123/prices \
+    curl -X POST https://api.yabetoo.com/v1/prices \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
-        "amount": 99,
-        "currency": "EUR",
+        "productId": "prod_abc123",
+        "amount": 25000,
+        "currency": "XAF",
         "type": "one_time"
       }'
     ```
@@ -88,12 +159,13 @@ SKU "Formation Pro"
     - Maintenance
 
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/skus/sku_abc123/prices \
+    curl -X POST https://api.yabetoo.com/v1/prices \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
-        "amount": 19,
-        "currency": "EUR",
+        "productId": "prod_abc123",
+        "amount": 5000,
+        "currency": "XAF",
         "type": "recurring",
         "billingInterval": "month",
         "billingIntervalCount": 1,
@@ -120,10 +192,11 @@ Pour les prix récurrents, définissez la fréquence de facturation :
 ```json
 // Facturation trimestrielle
 {
+  "productId": "prod_abc123",
   "type": "recurring",
   "billingInterval": "month",
   "billingIntervalCount": 3,
-  "amount": 45
+  "amount": 15000
 }
 ```
 
@@ -133,11 +206,12 @@ Offrez une période d'essai gratuit pour attirer de nouveaux clients :
 
 ```json
 {
+  "productId": "prod_abc123",
   "type": "recurring",
   "billingInterval": "month",
   "billingIntervalCount": 1,
-  "amount": 29,
-  "currency": "EUR",
+  "amount": 9000,
+  "currency": "XAF",
   "trialPeriodDays": 14
 }
 ```
@@ -163,25 +237,25 @@ Offrez une période d'essai gratuit pour attirer de nouveaux clients :
 
 ## Gestion multi-devises
 
-Créez plusieurs prix pour le même SKU dans différentes devises :
+Créez plusieurs prix pour le même produit dans différentes devises. Chaque prix correspond à un appel `POST /v1/prices` distinct :
 
 ```json
 {
-  "sku": "sku_formation_pro",
+  "productId": "prod_abc123",
   "prices": [
     {
-      "amount": 99,
-      "currency": "EUR",
+      "amount": 25000,
+      "currency": "XAF",
       "type": "one_time"
     },
     {
-      "amount": 109,
-      "currency": "USD",
-      "type": "one_time"
-    },
-    {
-      "amount": 65000,
+      "amount": 25000,
       "currency": "XOF",
+      "type": "one_time"
+    },
+    {
+      "amount": 39,
+      "currency": "EUR",
       "type": "one_time"
     }
   ]
@@ -192,28 +266,62 @@ Créez plusieurs prix pour le même SKU dans différentes devises :
 
 | Code | Devise | Pays/Région |
 |------|--------|-------------|
-| `EUR` | Euro | Europe |
-| `USD` | Dollar américain | États-Unis |
-| `XOF` | Franc CFA BCEAO | Afrique de l'Ouest |
 | `XAF` | Franc CFA BEAC | Afrique Centrale |
+| `XOF` | Franc CFA BCEAO | Afrique de l'Ouest |
 | `GNF` | Franc guinéen | Guinée |
 | `CDF` | Franc congolais | RD Congo |
+| `EUR` | Euro | Europe |
+| `USD` | Dollar américain | États-Unis |
+
+<Note>
+  Lorsque `currency` est omis, le prix est créé en **XAF**, la devise par défaut.
+</Note>
 
 <Tip>
-  Tous les montants sont exprimés en unités entières. Par exemple : 99 EUR = 99 €, 65000 XOF = 65 000 XOF.
+  Tous les montants sont exprimés dans l'unité principale de la devise, jamais en centimes. Par exemple : 25000 XAF = 25 000 XAF, 39 EUR = 39 €.
 </Tip>
 
 ## Réponse API
+
+L'objet price expose `product` et `sku` **côte à côte**, à la racine de l'objet. Il n'y a plus de `sku.product` imbriqué.
+
+<ResponseField name="productId" type="string">
+  Identifiant du produit parent.
+</ResponseField>
+
+<ResponseField name="product" type="object">
+  Le produit parent, toujours présent.
+</ResponseField>
+
+<ResponseField name="skuId" type="string | null">
+  Déprécié. Vaut `null` lorsque le prix est rattaché au produit.
+</ResponseField>
+
+<ResponseField name="sku" type="object | null">
+  Le SKU dont provient le prix, ou **`null`** lorsque le prix est rattaché au produit.
+</ResponseField>
+
+<Warning>
+  **`price.sku` peut valoir `null`.** Toute intégration qui lit `price.sku.product` — ou
+  qui déréférence `price.sku` tout court — doit se prémunir contre `null`, sans quoi elle
+  casse dès qu'un prix est rattaché à un produit. Lisez le produit dans `price.product` ou
+  `price.productId`.
+</Warning>
 
 <Tabs>
   <Tab title="Prix unique">
     ```json
     {
       "id": "price_abc123def456ghi789",
-      "object": "price",
-      "skuId": "sku_xyz789abc123def456",
-      "amount": 99,
-      "currency": "EUR",
+      "productId": "prod_xyz789abc123def456",
+      "product": {
+        "id": "prod_xyz789abc123def456",
+        "name": "Formation Pro"
+      },
+      "skuId": null,
+      "sku": null,
+      "amount": "25000.00",
+      "currency": "xaf",
       "type": "one_time",
       "billingInterval": null,
       "billingIntervalCount": null,
@@ -229,10 +337,15 @@ Créez plusieurs prix pour le même SKU dans différentes devises :
     ```json
     {
       "id": "price_def456ghi789jkl012",
-      "object": "price",
-      "skuId": "sku_xyz789abc123def456",
-      "amount": 19,
-      "currency": "EUR",
+      "productId": "prod_xyz789abc123def456",
+      "product": {
+        "id": "prod_xyz789abc123def456",
+        "name": "Formation Pro"
+      },
+      "skuId": null,
+      "sku": null,
+      "amount": "5000.00",
+      "currency": "xaf",
       "type": "recurring",
       "billingInterval": "month",
       "billingIntervalCount": 1,
@@ -250,12 +363,13 @@ Créez plusieurs prix pour le même SKU dans différentes devises :
 ### Créer un prix
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/skus/sku_abc123/prices \
+curl -X POST https://api.yabetoo.com/v1/prices \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
-    "amount": 29,
-    "currency": "EUR",
+    "productId": "prod_abc123",
+    "amount": 9000,
+    "currency": "XAF",
     "type": "recurring",
     "billingInterval": "month",
     "billingIntervalCount": 1
@@ -269,6 +383,22 @@ curl https://api.yabetoo.com/v1/prices/price_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 
+### Lister les prix d'un produit
+
+```bash
+curl "https://api.yabetoo.com/v1/prices?productId=prod_abc123" \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+`GET /v1/prices` accepte les filtres suivants, combinables entre eux :
+
+| Filtre | Description |
+|--------|-------------|
+| `productId` | Uniquement les prix de ce produit |
+| `skuId` | Uniquement les prix de ce SKU. Déprécié, comme le champ lui-même |
+| `type` | `one_time` ou `recurring` |
+| `active` | `true` ou `false` |
+
 ### Désactiver un prix
 
 <Note>
@@ -276,19 +406,12 @@ curl https://api.yabetoo.com/v1/prices/price_abc123 \
 </Note>
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/prices/price_abc123 \
+curl -X PUT https://api.yabetoo.com/v1/prices/price_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
     "active": false
   }'
-```
-
-### Lister les prix d'un SKU
-
-```bash
-curl https://api.yabetoo.com/v1/skus/sku_abc123/prices \
-  -H "Authorization: Bearer sk_live_..."
 ```
 
 ## Stratégies de tarification
@@ -299,18 +422,19 @@ Proposez une réduction pour l'abonnement annuel :
 
 ```json
 {
-  "sku": "sku_saas_pro",
   "prices": [
     {
-      "amount": 29,
-      "currency": "EUR",
+      "productId": "prod_saas_pro_mensuel",
+      "amount": 9000,
+      "currency": "XAF",
       "type": "recurring",
       "billingInterval": "month",
       "billingIntervalCount": 1
     },
     {
-      "amount": 290,
-      "currency": "EUR",
+      "productId": "prod_saas_pro_annuel",
+      "amount": 90000,
+      "currency": "XAF",
       "type": "recurring",
       "billingInterval": "year",
       "billingIntervalCount": 1
@@ -320,31 +444,23 @@ Proposez une réduction pour l'abonnement annuel :
 ```
 
 <Tip>
-  29 €/mois vs 290 €/an représente environ 2 mois gratuits, ce qui incite les clients à s'engager sur l'année.
+  9 000 XAF/mois vs 90 000 XAF/an représente environ 2 mois gratuits, ce qui incite les clients à s'engager sur l'année.
 </Tip>
+
+<Note>
+  Les deux prix appartiennent à deux produits distincts. Au sein d'une même portée — le même
+  SKU, ou le niveau produit — un second prix récurrent dans la même devise désactive le
+  premier : mensuel et annuel demandent donc soit deux SKU, soit deux produits.
+</Note>
 
 ### Tarification par paliers
 
-Créez des SKUs différents pour chaque niveau de service :
+Créez un produit par niveau de service, chacun avec son prix :
 
-```json
-{
-  "product": "App Cloud",
-  "skus": [
-    {
-      "skuCode": "CLOUD-STARTER",
-      "prices": [{ "amount": 9, "currency": "EUR", "type": "recurring", "billingInterval": "month" }]
-    },
-    {
-      "skuCode": "CLOUD-PRO",
-      "prices": [{ "amount": 29, "currency": "EUR", "type": "recurring", "billingInterval": "month" }]
-    },
-    {
-      "skuCode": "CLOUD-ENTERPRISE",
-      "prices": [{ "amount": 99, "currency": "EUR", "type": "recurring", "billingInterval": "month" }]
-    }
-  ]
-}
+```
+Produit "App Cloud — Starter"     → Price 5 000 XAF/mois
+Produit "App Cloud — Pro"         → Price 15 000 XAF/mois
+Produit "App Cloud — Enterprise"  → Price 50 000 XAF/mois
 ```
 
 ## Getters utiles
@@ -361,16 +477,24 @@ price.isOneTime    // true si type === 'one_time'
 
 <AccordionGroup>
   <Accordion title="Format des montants">
-    Les montants sont exprimés en unités entières de la devise :
-    - EUR : 99 = 99 €
-    - USD : 109 = 109 $
-    - XOF : 65000 = 65 000 XOF
+    Les montants sont exprimés dans l'unité principale de la devise, jamais en centimes :
+    - XAF : 25000 = 25 000 XAF
+    - XOF : 25000 = 25 000 XOF
+    - EUR : 39 = 39 €
+
+    Les décimales sont acceptées et le montant ne peut pas dépasser `99999999.99`. L'API le renvoie sous forme de chaîne décimale (`"25000.00"`).
+  </Accordion>
+
+  <Accordion title="Rattachement d'un prix">
+    - Envoyez toujours `productId` : c'est le lien canonique
+    - `skuId` ne subsiste que pour les intégrations existantes, et il est déprécié
+    - Lisez le produit dans `price.product`, jamais dans `price.sku.product`
   </Accordion>
 
   <Accordion title="Prix actifs/inactifs">
     - Désactivez les anciens prix plutôt que de les supprimer
     - Gardez les prix actifs au minimum nécessaire
-    - Utilisez des prix différents pour les promotions
+    - Gardez en tête qu'un nouveau prix désactive le prix actif de même produit, devise, type et portée (même SKU, ou niveau produit)
   </Accordion>
 
   <Accordion title="Périodes d'essai">
@@ -382,7 +506,7 @@ price.isOneTime    // true si type === 'one_time'
   <Accordion title="Multi-devises">
     - Ajustez les prix pour chaque marché (pas de simple conversion)
     - Tenez compte du pouvoir d'achat local
-    - Utilisez des prix psychologiques (29€ plutôt que 28,73€)
+    - Utilisez des prix psychologiques (9 000 XAF plutôt que 8 750 XAF)
   </Accordion>
 </AccordionGroup>
 
