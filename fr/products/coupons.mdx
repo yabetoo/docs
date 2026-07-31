@@ -51,7 +51,7 @@ Un **Coupon** définit le type et le montant de la réduction. Il peut être ré
 | `maxRedemptions` | number \| null | Nombre max d'utilisations |
 | `timesRedeemed` | number | Utilisations actuelles |
 | `redeemBy` | DateTime \| null | Date d'expiration |
-| `appliesToSkus` | string[] | SKUs éligibles (optionnel) |
+| `appliesToSkus` | string[] | Identifiants de **produit** auxquels le coupon est limité — malgré son nom (optionnel) |
 | `valid` | boolean | Coupon actif |
 
 ### Types de réduction
@@ -157,9 +157,9 @@ Un **Coupon** définit le type et le montant de la réduction. Il peut être ré
 }
 ```
 
-### Restrictions par SKU
+### Restrictions par produit
 
-Limitez un coupon à certains produits/SKUs :
+Limitez un coupon à certains produits :
 
 ```json
 {
@@ -167,16 +167,33 @@ Limitez un coupon à certains produits/SKUs :
   "percentOff": 30,
   "duration": "once",
   "appliesToSkus": [
-    "sku_formation_js",
-    "sku_formation_react",
-    "sku_formation_node"
+    "prod_formation_js",
+    "prod_formation_react",
+    "prod_formation_node"
   ]
 }
 ```
 
 <Warning>
-  Si `appliesToSkus` est défini, la réduction ne s'applique qu'aux SKUs listés. Les autres articles du panier ne bénéficient pas de la réduction.
+  **`appliesToSkus` attend des identifiants de PRODUIT (`prod_…`), pas de SKU.** Le nom du
+  champ est un faux ami : la colonne a été renommée de `applies_to_products` en
+  `applies_to_skus`, mais ce qu'elle contient n'a jamais changé. L'éligibilité s'évalue en
+  résolvant chaque article du panier vers son produit parent, puis en testant **ce
+  produit-là** contre la liste.
+
+  Rien n'attrape l'erreur — le validateur accepte n'importe quel tableau de chaînes, sans
+  vérifier que les identifiants existent ni ce qu'ils désignent. Mettez-y des valeurs `sku_…`
+  et la comparaison n'est tout simplement jamais vraie : chaque validation sort en
+  `SKUS_NOT_ELIGIBLE` et **le coupon ne s'applique jamais**, sans le moindre message
+  expliquant pourquoi.
 </Warning>
+
+<Note>
+  Si `appliesToSkus` est défini, la réduction ne s'applique qu'aux produits listés — les autres
+  articles du panier n'en bénéficient pas. Un article est résolu vers son produit qu'il soit
+  désigné par `skuId` ou par `priceId` : un produit sans aucun SKU se cible donc comme les
+  autres.
+</Note>
 
 ---
 
@@ -320,8 +337,9 @@ Lors de l'utilisation d'un code promo, le système effectue plusieurs vérificat
   <Step title="Client autorisé">
     Si `customerIds` défini, vérifier que le client est dans la liste
   </Step>
-  <Step title="SKUs éligibles">
-    Si le coupon a `appliesToSkus`, vérifier que le panier contient ces SKUs
+  <Step title="Produits éligibles">
+    Si le coupon a `appliesToSkus`, vérifier que le panier contient au moins un article
+    appartenant à ces **produits**
   </Step>
   <Step title="Devise supportée">
     La devise de la commande doit être supportée par le coupon
@@ -337,7 +355,7 @@ Lors de l'utilisation d'un code promo, le système effectue plusieurs vérificat
 | `MAX_REDEMPTIONS` | Limite d'utilisations atteinte |
 | `MINIMUM_NOT_MET` | Montant minimum non atteint |
 | `NOT_FIRST_PURCHASE` | Réservé aux premiers achats |
-| `SKUS_NOT_ELIGIBLE` | Aucun SKU éligible dans le panier |
+| `SKUS_NOT_ELIGIBLE` | Aucun article du panier n'appartient à un produit éligible (le nom du code dit SKU, la vérification porte sur les produits) |
 | `CURRENCY_MISMATCH` | Devise non supportée |
 | `CUSTOMER_NOT_ALLOWED` | Client non autorisé |
 | `COUPON_INVALID` | Coupon désactivé |
