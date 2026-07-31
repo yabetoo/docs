@@ -24,28 +24,37 @@ Yabetoo's product catalog allows you to manage your entire commercial offering. 
 
 ## Catalog Architecture
 
-Yabetoo's catalog follows a clear and flexible hierarchy:
+The **product** is the centre of the catalog. Prices and variants (SKUs) hang off it as **two
+parallel branches** — a product can have prices without having a single SKU:
 
 ```
-Product
-├── Variant 1 (SKU)
-│   ├── Price EUR monthly
-│   ├── Price EUR yearly
-│   └── Price XOF monthly
-├── Variant 2 (SKU)
-│   └── One-time Price EUR
-└── Documents (images, files)
+Product "Pro Course"
+├── Price[]                       prices attached to the product
+│   ├── Price 25,000 XAF one-time
+│   └── Price 5,000 XAF/month
+├── SKU[] (variants)              optional — a product may have none
+│   ├── Variant "S White"
+│   └── Variant "M Black"
+└── Document[] (images, files)
 ```
+
+<Warning>
+  **Prices are no longer under variants.** A price is attached to a **product** through
+  `productId`, which is the canonical link. `skuId` — the old link to a variant — is still
+  accepted during the compatibility window but is **deprecated**. See
+  [Pricing](/en/products/prices).
+</Warning>
 
 <Steps>
   <Step title="Create a Product">
     Define basic information: name, description, type (physical, digital, service)
   </Step>
-  <Step title="Add Variants (SKUs)">
-    Create variations with their attributes (size, color, etc.) and stock
+  <Step title="Add Variants (SKUs) — optional">
+    Create variations with their attributes (size, color, etc.) and stock. A SaaS plan or a
+    service is created without any variant.
   </Step>
   <Step title="Define Prices">
-    Associate one or more prices with each variant: one-time or recurring
+    Attach one or more prices to the product: one-time or recurring
   </Step>
   <Step title="Configure Promotions">
     Create coupons and promo codes to offer discounts

@@ -24,28 +24,37 @@ Le catalogue produits de Yabetoo vous permet de gérer l'ensemble de votre offre
 
 ## Architecture du catalogue
 
-Le catalogue Yabetoo suit une hiérarchie claire et flexible :
+Le **produit** est au centre du catalogue. Les prix et les variantes (SKU) s'y rattachent en
+**deux branches parallèles** — un produit peut porter des prix sans avoir le moindre SKU :
 
 ```
-Produit (Product)
-├── Variante 1 (SKU)
-│   ├── Prix EUR mensuel
-│   ├── Prix EUR annuel
-│   └── Prix XOF mensuel
-├── Variante 2 (SKU)
-│   └── Prix unique EUR
-└── Documents (images, fichiers)
+Produit "Formation Pro"
+├── Price[]                       prix rattachés au produit
+│   ├── Price 25 000 XAF one-time
+│   └── Price 5 000 XAF/mois
+├── SKU[] (variantes)             optionnel — un produit peut n'en avoir aucune
+│   ├── Variante "S Blanc"
+│   └── Variante "M Noir"
+└── Document[] (images, fichiers)
 ```
+
+<Warning>
+  **Les prix ne sont plus sous les variantes.** Un prix est rattaché à un **produit** via
+  `productId`, qui est le lien canonique. `skuId` — l'ancien lien vers une variante — reste
+  accepté pendant la fenêtre de compatibilité mais il est **déprécié**. Voir
+  [Tarification](/fr/products/prices).
+</Warning>
 
 <Steps>
   <Step title="Créer un Produit">
     Définissez les informations de base : nom, description, type (physique, numérique, service)
   </Step>
-  <Step title="Ajouter des Variantes (SKUs)">
-    Créez des déclinaisons avec leurs attributs (taille, couleur, etc.) et stock
+  <Step title="Ajouter des Variantes (SKUs) — optionnel">
+    Créez des déclinaisons avec leurs attributs (taille, couleur, etc.) et stock. Un plan SaaS
+    ou une prestation de service se crée sans aucune variante.
   </Step>
   <Step title="Définir les Prix">
-    Associez un ou plusieurs prix à chaque variante : paiement unique ou récurrent
+    Rattachez un ou plusieurs prix au produit : paiement unique ou récurrent
   </Step>
   <Step title="Configurer les Promotions">
     Créez des coupons et codes promo pour offrir des réductions

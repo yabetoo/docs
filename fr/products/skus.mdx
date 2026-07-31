@@ -26,8 +26,16 @@ Produit "T-shirt Premium"
 ```
 
 <Note>
-  Un produit peut avoir plusieurs SKUs, et chaque SKU peut avoir plusieurs prix (différentes devises, abonnements mensuels/annuels, etc.).
+  **Les SKU sont optionnels.** Un produit n'a besoin de variantes que s'il a réellement des
+  déclinaisons. Un plan SaaS ou une prestation de service est un produit sans aucun SKU, dont le
+  prix est rattaché directement au produit.
 </Note>
+
+<Warning>
+  **Les prix ne sont plus sous les SKU.** Un prix est rattaché à un **produit** via `productId`.
+  `skuId` — le lien vers une variante — reste accepté pendant la fenêtre de compatibilité mais
+  il est **déprécié**. Voir [Tarification](/fr/products/prices).
+</Warning>
 
 ## Attributs du SKU
 
@@ -86,12 +94,16 @@ curl -X POST https://api.yabetoo.com/v1/products/prod_abc123/skus \
   }'
 ```
 
+<Note>
+  La création d'un SKU bascule le `hasSkus` du produit parent à `true`. Vous ne renseignez
+  jamais ce champ vous-même — voir [Produits](/fr/products/products).
+</Note>
+
 ## Réponse API
 
 ```json
 {
   "id": "sku_xyz789abc123def456",
-  "object": "sku",
   "productId": "prod_abc123def456ghi789",
   "skuCode": "TSHIRT-M-WHITE",
   "name": "T-shirt M Blanc",
@@ -105,6 +117,12 @@ curl -X POST https://api.yabetoo.com/v1/products/prod_abc123/skus \
   "updatedAt": "2024-01-15T10:30:00.000Z"
 }
 ```
+
+<Note>
+  Les endpoints de lecture (`GET /v1/skus/{id}` et `GET /v1/products/{id}/skus`) ajoutent un
+  tableau `prices` contenant les prix **actifs** du SKU. `GET /v1/skus/{id}` embarque en plus le
+  `product` parent.
+</Note>
 
 ## Gestion du stock
 
@@ -185,10 +203,21 @@ curl https://api.yabetoo.com/v1/products/prod_abc123/skus \
   -H "Authorization: Bearer sk_live_..."
 ```
 
-### Mettre à jour un SKU
+### Récupérer un SKU
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/skus/sku_xyz789 \
+curl https://api.yabetoo.com/v1/skus/sku_xyz789 \
+  -H "Authorization: Bearer sk_live_..."
+```
+
+### Mettre à jour un SKU
+
+Le verbe est **`PUT`**, et la mise à jour est partielle : seuls les champs présents dans le
+corps sont modifiés. Les champs modifiables sont `name`, `attributes`, `stockTracking` et
+`stockQuantity` — `skuCode` n'est pas modifiable.
+
+```bash
+curl -X PUT https://api.yabetoo.com/v1/skus/sku_xyz789 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -197,32 +226,49 @@ curl -X PATCH https://api.yabetoo.com/v1/skus/sku_xyz789 \
   }'
 ```
 
-### Mettre à jour le stock
+<Note>
+  **Il n'existe pas d'endpoint dédié au stock.** Le stock se met à jour par ce même
+  `PUT /v1/skus/{id}`, en envoyant `stockQuantity`.
+</Note>
+
+### Supprimer un SKU
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/skus/sku_xyz789/stock \
-  -H "Authorization: Bearer sk_live_..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "stockQuantity": 200
-  }'
+curl -X DELETE https://api.yabetoo.com/v1/skus/sku_xyz789 \
+  -H "Authorization: Bearer sk_live_..."
 ```
 
-## Relation SKU → Prix
+<Warning>
+  Supprimer un SKU supprime aussi les prix qui lui sont rattachés. L'appel est refusé en **409**
+  tant que le SKU porte des réservations de stock actives — attendez leur expiration ou leur
+  libération. Une fois le dernier SKU d'un produit supprimé, son `hasSkus` repasse à `false`.
+</Warning>
 
-Chaque SKU peut avoir plusieurs prix pour différentes stratégies tarifaires :
+## SKU et prix
+
+Un prix est rattaché au **produit**, pas à la variante. Un SKU peut encore porter ses propres
+prix via le `skuId` déprécié, qui est aujourd'hui la façon d'exprimer un prix par variante :
 
 ```
-SKU "Formation Pro"
-├── Prix 99€ (paiement unique)
-├── Prix 19€/mois (abonnement mensuel)
-├── Prix 199€/an (abonnement annuel)
-└── Prix 65 000 XOF (paiement unique Afrique)
+Produit "T-shirt Premium"
+├── Price[]                             prix rattachés au produit
+├── SKU "T-shirt S Blanc" → Price[]     prix rattachés au SKU (skuId, déprécié)
+└── SKU "T-shirt M Noir"  → Price[]
 ```
+
+<Note>
+  Les deux portées coexistent. La création d'un prix ne désactive que le prix actif de **sa
+  propre portée** : un prix de SKU remplace le prix actif de *ce* SKU, un prix de produit
+  remplace un autre prix de niveau produit. Deux SKU d'un même produit gardent chacun leur prix
+  actif.
+</Note>
 
 Voir [Documentation des Prix](/fr/products/prices) pour configurer la tarification.
 
 ## Exemples complets
+
+Les jeux de variantes ci-dessous illustrent l'agencement d'un catalogue. `hasSkus` n'y figure
+jamais : le serveur le dérive des SKU existants.
 
 <Tabs>
   <Tab title="E-commerce vêtements">
@@ -230,8 +276,7 @@ Voir [Documentation des Prix](/fr/products/prices) pour configurer la tarificati
     {
       "product": {
         "name": "Jean Slim",
-        "type": "physical",
-        "hasSkus": true
+        "type": "physical"
       },
       "skus": [
         {
@@ -266,8 +311,7 @@ Voir [Documentation des Prix](/fr/products/prices) pour configurer la tarificati
       "product": {
         "name": "App Cloud",
         "type": "service",
-        "subscriptionEligible": true,
-        "hasSkus": true
+        "subscriptionEligible": true
       },
       "skus": [
         {
@@ -310,8 +354,7 @@ Voir [Documentation des Prix](/fr/products/prices) pour configurer la tarificati
     {
       "product": {
         "name": "Masterclass Marketing Digital",
-        "type": "digital",
-        "hasSkus": true
+        "type": "digital"
       },
       "skus": [
         {
@@ -347,7 +390,7 @@ Voir [Documentation des Prix](/fr/products/prices) pour configurer la tarificati
     icon="money-bill"
     href="/fr/products/prices"
   >
-    Définissez la tarification pour chaque SKU
+    Rattachez les prix au produit, et comprenez la portée SKU dépréciée
   </Card>
   <Card
     title="Créer des promotions"

@@ -51,7 +51,7 @@ A **Coupon** defines the type and amount of discount. It can be reused by multip
 | `maxRedemptions` | number \| null | Maximum number of uses |
 | `timesRedeemed` | number | Current number of uses |
 | `redeemBy` | DateTime \| null | Expiration date |
-| `appliesToSkus` | string[] | Eligible SKUs (optional) |
+| `appliesToSkus` | string[] | **Product** identifiers the coupon is limited to — despite the name (optional) |
 | `valid` | boolean | Coupon active |
 
 ### Discount Types
@@ -157,9 +157,9 @@ A **Coupon** defines the type and amount of discount. It can be reused by multip
 }
 ```
 
-### SKU Restrictions
+### Product Restrictions
 
-Limit a coupon to certain products/SKUs:
+Limit a coupon to certain products:
 
 ```json
 {
@@ -167,16 +167,30 @@ Limit a coupon to certain products/SKUs:
   "percentOff": 30,
   "duration": "once",
   "appliesToSkus": [
-    "sku_course_js",
-    "sku_course_react",
-    "sku_course_node"
+    "prod_course_js",
+    "prod_course_react",
+    "prod_course_node"
   ]
 }
 ```
 
 <Warning>
-  If `appliesToSkus` is defined, the discount only applies to the listed SKUs. Other cart items don't get the discount.
+  **`appliesToSkus` expects PRODUCT identifiers (`prod_…`), not SKU identifiers.** The field
+  name is a false friend: the column was renamed from `applies_to_products` to
+  `applies_to_skus`, but what it holds never changed. Eligibility is evaluated by resolving
+  each cart item to its parent product and testing **that product** against the list.
+
+  Nothing catches the mistake — the validator accepts any array of strings, without checking
+  that the identifiers exist or what kind of object they point at. Put `sku_…` values in
+  there and the comparison is simply never true: every validation ends in
+  `SKUS_NOT_ELIGIBLE` and **the coupon never applies**, with no message saying why.
 </Warning>
+
+<Note>
+  If `appliesToSkus` is defined, the discount only applies to the listed products — other cart
+  items don't get the discount. A cart item is resolved to its product whether it is designated
+  by `skuId` or by `priceId`, so a product without any SKU can be targeted like any other.
+</Note>
 
 ---
 
@@ -320,8 +334,9 @@ When using a promo code, the system performs several checks:
   <Step title="Customer authorized">
     If `customerIds` defined, verify customer is in the list
   </Step>
-  <Step title="Eligible SKUs">
-    If coupon has `appliesToSkus`, verify cart contains these SKUs
+  <Step title="Eligible products">
+    If coupon has `appliesToSkus`, verify the cart contains at least one item belonging to
+    these **products**
   </Step>
   <Step title="Currency supported">
     Order currency must be supported by the coupon
@@ -337,7 +352,7 @@ When using a promo code, the system performs several checks:
 | `MAX_REDEMPTIONS` | Usage limit reached |
 | `MINIMUM_NOT_MET` | Minimum amount not reached |
 | `NOT_FIRST_PURCHASE` | Reserved for first purchases |
-| `SKUS_NOT_ELIGIBLE` | No eligible SKU in cart |
+| `SKUS_NOT_ELIGIBLE` | No item in the cart belongs to an eligible product (the code name says SKU, the check is on products) |
 | `CURRENCY_MISMATCH` | Currency not supported |
 | `CUSTOMER_NOT_ALLOWED` | Customer not authorized |
 | `COUPON_INVALID` | Coupon deactivated |

@@ -7,6 +7,10 @@ description: "Create and manage your product catalog with different types, statu
 
 A **Product** represents an item or service you sell. It's the core entity of your catalog around which variants (SKUs), prices, and promotions are organized.
 
+Prices and variants hang off the product as **two parallel branches**: a price is attached to the
+product through `productId`, and variants are optional. A SaaS plan or a service is therefore a
+product with prices and no SKU at all.
+
 <Info>
   **Identifier format**: `prod_` followed by 36 alphanumeric characters.
 
@@ -27,7 +31,9 @@ A **Product** represents an item or service you sell. It's the core entity of yo
 | `price` | number \| null | Default price (optional) |
 | `category` | number | Product category |
 | `subscriptionEligible` | boolean | Can be sold as subscription |
-| `hasSkus` | boolean | Indicates if product has variants |
+| `hasSkus` | boolean | Whether the product has variants. **Read-only**: derived from the SKUs that actually exist, never sent by the caller |
+| `skus` | array | The product variants. Empty for a product without SKU |
+| `prices` | array | The **active** prices attached to the product. Prices attached to a SKU stay under `skus[].prices` |
 
 ## Product Types
 
@@ -48,8 +54,7 @@ A **Product** represents an item or service you sell. It's the core entity of yo
     {
       "name": "Premium T-shirt",
       "type": "physical",
-      "description": "100% organic cotton T-shirt",
-      "hasSkus": true
+      "description": "100% organic cotton T-shirt"
     }
     ```
   </Tab>
@@ -126,9 +131,60 @@ enum ProductStatus {
 
 ## Create a Product
 
+Products are created on `POST /v1/products`.
+
+### Request body
+
+<ParamField body="name" type="string" required>
+  Product name, from 3 to 70 characters.
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Product description, from 10 to 255 characters.
+</ParamField>
+
+<ParamField body="type" type="enum" required>
+  `physical`, `digital` or `service`.
+</ParamField>
+
+<ParamField body="category" type="number" required>
+  Product category, strictly positive.
+</ParamField>
+
+<ParamField body="subscriptionEligible" type="boolean" required>
+  Whether the product can be sold as a subscription.
+</ParamField>
+
+<ParamField body="accountId" type="string" required>
+  Identifier of the account the product belongs to. It must match the account of the API key —
+  any other value is rejected.
+</ParamField>
+
+<ParamField body="status" type="enum" default="draft">
+  `active`, `draft` or `archived`.
+</ParamField>
+
+<ParamField body="skus" type="array">
+  The product variants, each with its own `price`. **Optional**: omit it for a product without
+  variants.
+</ParamField>
+
+<Note>
+  `hasSkus` is **not** a field you send. The server derives it from the variants that actually
+  exist, and keeps it in sync when a SKU is added or deleted.
+</Note>
+
+<Warning>
+  **Omitting `skus` is allowed, sending `skus: []` is not.** A product without variants — a SaaS
+  plan, a service — is created by leaving the field out entirely. An explicit empty array is
+  rejected with **422** (`The skus field must have at least 1 items`): it is almost always a
+  caller bug (a form serializing an empty list), and accepting it silently would produce the
+  same product as an omission while hiding the mistake.
+</Warning>
+
 <Steps>
-  <Step title="Define basic information">
-    Enter the name, description, and product type.
+  <Step title="Create the product">
+    A product without variants — its price is attached afterward with `productId`.
 
     ```bash
     curl -X POST https://api.yabetoo.com/v1/products \
@@ -137,39 +193,81 @@ enum ProductStatus {
       -d '{
         "name": "JavaScript Course",
         "description": "Master JavaScript from A to Z",
-        "type": "digital"
+        "type": "digital",
+        "category": 1,
+        "subscriptionEligible": false,
+        "accountId": "acct_abc123"
       }'
     ```
   </Step>
 
-  <Step title="Configure options">
-    Define if the product can be sold as subscription and if it has variants.
-
-    ```json
-    {
-      "subscriptionEligible": true,
-      "hasSkus": false
-    }
-    ```
-  </Step>
-
   <Step title="Add variants (optional)">
-    If `hasSkus` is `true`, create product variants.
+    Only for products that really have variations (size, color, plan…). Each variant can be
+    created inline through `skus`, or later on `POST /v1/products/{id}/skus`.
 
     See [SKU Documentation](/en/products/skus)
   </Step>
 
   <Step title="Define prices">
-    Associate one or more prices with the product or its variants.
+    Attach one or more prices to the product with `POST /v1/prices` and `productId`.
 
     See [Price Documentation](/en/products/prices)
   </Step>
 </Steps>
 
+### Creating with variants inline
+
+When `skus` is provided, each entry **requires** a `price`, whose `currency` is limited to
+`eur` or `xaf` on this endpoint:
+
+```bash
+curl -X POST https://api.yabetoo.com/v1/products \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Premium T-shirt",
+    "description": "100% organic cotton T-shirt",
+    "type": "physical",
+    "category": 2,
+    "subscriptionEligible": false,
+    "accountId": "acct_abc123",
+    "skus": [
+      {
+        "skuCode": "TSHIRT-M-WHITE",
+        "name": "T-shirt M White",
+        "attributes": { "size": "M", "color": "white" },
+        "stockTracking": true,
+        "stockQuantity": 100,
+        "price": {
+          "amount": 15000,
+          "currency": "xaf",
+          "type": "one_time"
+        }
+      }
+    ]
+  }'
+```
+
 ## API Response
 
+`GET /v1/products` and `GET /v1/products/{id}` expose the two branches side by side.
+
+<ResponseField name="skus" type="array">
+  The product variants, each carrying its own active prices under `skus[].prices`.
+</ResponseField>
+
+<ResponseField name="prices" type="array">
+  The prices attached **directly to the product** (`skuId` null). **Active prices only** —
+  deactivated prices are not returned.
+</ResponseField>
+
+<Note>
+  The two lists never overlap: a price attached to a SKU appears under `skus[].prices` and
+  **never** under the product-level `prices`. Summing both is therefore safe.
+</Note>
+
 <Tabs>
-  <Tab title="Simple product">
+  <Tab title="Product without SKU">
     ```json
     {
       "id": "prod_abc123def456ghi789",
@@ -182,6 +280,21 @@ enum ProductStatus {
       "category": 1,
       "subscriptionEligible": true,
       "hasSkus": false,
+      "skus": [],
+      "prices": [
+        {
+          "id": "price_abc123def456ghi789",
+          "productId": "prod_abc123def456ghi789",
+          "skuId": null,
+          "amount": "25000.00",
+          "currency": "xaf",
+          "type": "one_time",
+          "billingInterval": null,
+          "billingIntervalCount": null,
+          "trialPeriodDays": null,
+          "active": true
+        }
+      ],
       "createdAt": "2024-01-15T10:30:00.000Z",
       "updatedAt": "2024-01-15T10:30:00.000Z"
     }
@@ -211,7 +324,18 @@ enum ProductStatus {
             "color": "white"
           },
           "stockQuantity": 50,
-          "stockTracking": true
+          "stockTracking": true,
+          "prices": [
+            {
+              "id": "price_def456ghi789jkl012",
+              "productId": "prod_xyz789abc123def456",
+              "skuId": "sku_small_white",
+              "amount": "15000.00",
+              "currency": "xaf",
+              "type": "one_time",
+              "active": true
+            }
+          ]
         },
         {
           "id": "sku_medium_black",
@@ -222,15 +346,23 @@ enum ProductStatus {
             "color": "black"
           },
           "stockQuantity": 30,
-          "stockTracking": true
+          "stockTracking": true,
+          "prices": []
         }
       ],
+      "prices": [],
       "createdAt": "2024-01-15T10:30:00.000Z",
       "updatedAt": "2024-01-15T10:30:00.000Z"
     }
     ```
   </Tab>
 </Tabs>
+
+<Warning>
+  A price of a SKU carries `productId` too — it has been backfilled on **every** price. Do not
+  use `productId` alone to tell a product-level price from a SKU price: the discriminator is
+  `skuId`, which is `null` only for product-level prices.
+</Warning>
 
 ## Common Operations
 
@@ -243,8 +375,11 @@ curl https://api.yabetoo.com/v1/products/prod_abc123 \
 
 ### Update a product
 
+The verb is **`PUT`**, and the update is partial: only the fields present in the body are
+changed.
+
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -253,10 +388,15 @@ curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
   }'
 ```
 
+<Note>
+  `skus` and `prices` are not editable here. Variants go through the SKU endpoints, prices
+  through `POST /v1/prices` and `PUT /v1/prices/{id}`.
+</Note>
+
 ### Archive a product
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -279,14 +419,19 @@ curl -X DELETE https://api.yabetoo.com/v1/products/prod_abc123 \
 
 ```
 Product
+├── Price[] (prices attached to the product — productId)
 ├── ProductSku[] (variants)
-│   └── Price[] (prices)
+│   └── Price[] (prices attached to a SKU — skuId, deprecated)
 ├── Document[] (images, files)
 └── ProductLink[] (related products)
     ├── Cross-sell (complementary products)
     ├── Upsell (upgraded products)
     └── Related (associated products)
 ```
+
+`Price[]` and `ProductSku[]` are **two parallel branches** of the product, not one nested inside
+the other. A price still points at a SKU as long as `skuId` exists, but that link is
+[deprecated](/en/products/prices).
 
 ## Best Practices
 
@@ -306,6 +451,8 @@ Product
   <Accordion title="Catalog organization">
     - Group similar products by category
     - Use variants (SKUs) for variations of the same product
+    - A product with nothing to vary — a SaaS plan, a service — needs no SKU: attach its price
+      directly to the product
     - Configure related products for cross-selling
   </Accordion>
 </AccordionGroup>
