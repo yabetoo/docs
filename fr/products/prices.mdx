@@ -101,9 +101,10 @@ Les prix se créent sur l'endpoint de collection `POST /v1/prices`, en indiquant
 </ParamField>
 
 <Note>
-  Le produit doit exister avant son prix. La création d'un produit exige aujourd'hui encore
-  au moins un SKU dans la charge utile : créez le produit avec son SKU, puis rattachez le
-  prix au produit avec `productId`.
+  Le produit doit exister avant son prix. Il n'a besoin d'aucun SKU : omettez `skus` à la
+  création du produit — c'est ainsi qu'on modélise un plan SaaS ou un service — puis
+  rattachez le prix au produit avec `productId`. À noter qu'un tableau `skus: []`
+  explicitement vide reste refusé avec un `422`.
 </Note>
 
 <Warning>

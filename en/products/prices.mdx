@@ -101,9 +101,10 @@ Prices are created on the collection endpoint `POST /v1/prices`, with the produc
 </ParamField>
 
 <Note>
-  A product must exist before its price. Creating a product currently still requires at
-  least one SKU in the payload — create the product with its SKU, then attach the price to
-  the product with `productId`.
+  A product must exist before its price. It does not need any SKU: omit `skus` when
+  creating the product — that is how you model a SaaS plan or a service — then attach the
+  price to the product with `productId`. Note that an explicit empty `skus: []` is still
+  rejected with a `422`.
 </Note>
 
 <Warning>
