@@ -26,10 +26,20 @@ Authorization: Bearer YOUR_SECRET_KEY
 | `accountId` | `string` | Yes | Your Yabetoo account ID |
 | `successUrl` | `string` | Yes | URL to redirect after successful payment |
 | `cancelUrl` | `string` | Yes | URL to redirect if payment is cancelled |
-| `items` | `array` | No | List of items being purchased |
+| `items` | `array` | Yes | List of items being purchased |
 | `metadata` | `object` | No | Custom key-value data for your reference |
 
 ### Item structure
+
+Every field of an item is required. Omitting one returns `422` with
+`field: "items.*.<name>"`.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `productId` | `string` | Yes | Your product identifier |
+| `productName` | `string` | Yes | Label shown on the checkout page |
+| `quantity` | `number` | Yes | Number of units |
+| `price` | `number` | Yes | Unit price in the smallest currency unit |
 
 ```json
 {
@@ -170,30 +180,71 @@ Session session = yabetoo.sessions().create(request);
 
 ## Response
 
-### 200 OK
+### 201 Created
+
+The session is returned as a `checkout.session` object, with **snake_case** field
+names.
 
 ```json
 {
-  "accountId": "acct_iNXIGeot1lqyhGI5eP7KL0LcWTCTgFLytfRa",
-  "successUrl": "https://your-site.com/checkout-success",
-  "cancelUrl": "https://your-site.com/checkout-cancel",
-  "orderId": "ord_KowaIWyMlD25Lhb8MyY3GQyvN8nFaxTZ7ji7",
-  "expiresAt": "2024-05-28T13:33:51.760+00:00",
-  "id": "session_ajrw3pQUUZD8UI2eFkWyUgLxJ4kGuXCoaQeb",
-  "createdAt": "2024-05-28T12:33:51.762+00:00",
-  "updatedAt": "2024-05-28T12:33:51.762+00:00"
+  "id": "cs_QVdT8sK2mR7xLpZ0aB4nCjE1",
+  "object": "checkout.session",
+  "mode": "payment",
+  "status": "open",
+  "payment_status": "unpaid",
+  "url": "https://pay.yabetoo.com/c/cs_QVdT8sK2mR7xLpZ0aB4nCjE1",
+  "success_url": "https://your-site.com/checkout-success",
+  "cancel_url": "https://your-site.com/checkout-cancel",
+  "customer": null,
+  "customer_email": null,
+  "client_reference_id": null,
+  "amount_subtotal": 200000,
+  "amount_total": 200000,
+  "currency": "xaf",
+  "expires_at": 1786355639,
+  "created": 1786269239,
+  "livemode": false
 }
 ```
 
-### 400 Bad Request
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Session identifier, prefixed `cs_` |
+| `object` | `string` | Always `checkout.session` |
+| `mode` | `string` | `payment` for this endpoint |
+| `status` | `string` | `open`, `complete` or `expired` |
+| `payment_status` | `string` | `unpaid`, `paid` or `no_payment_required` |
+| `url` | `string` | Hosted checkout page — redirect your customer here |
+| `success_url` / `cancel_url` | `string` | The URLs you supplied |
+| `customer` | `string \| null` | Customer identifier, `null` if none was resolved |
+| `customer_email` | `string \| null` | Customer email, `null` if not supplied |
+| `client_reference_id` | `string \| null` | Your own reference, `null` if not supplied |
+| `amount_subtotal` / `amount_total` | `number` | Amounts in the smallest currency unit |
+| `currency` | `string` | Lowercase currency code |
+| `expires_at` | `number` | Expiry, **Unix timestamp in seconds** |
+| `created` | `number` | Creation, **Unix timestamp in seconds** |
+| `livemode` | `boolean` | `false` when the request used a test key |
+
+<Warning>
+  This endpoint does **not** return `orderId`, `expiresAt`, `createdAt` or
+  `updatedAt`, and the identifier is prefixed `cs_` — not `session_`. Code that
+  reads those camelCase fields gets `undefined`, and code that filters on a
+  `session_` prefix matches nothing. Read `id`, `url` and `expires_at` instead.
+</Warning>
+
+### 422 Unprocessable Entity
+
+Validation failures return `422` — not `400`. Each entry names the failing
+`field` and the `rule` that rejected it; `field` uses `items.*.<name>` for a
+field inside an item.
 
 ```json
 {
   "errors": [
     {
+      "message": "The productId field must be defined",
       "rule": "required",
-      "field": "currency",
-      "message": "required validation failed"
+      "field": "items.*.productId"
     }
   ]
 }
@@ -201,8 +252,22 @@ Session session = yabetoo.sessions().create(request);
 
 ### 401 Unauthorized
 
+A **missing** `Authorization` header returns a plain-text body
+(`content-type: text/plain`):
+
+```
+Unauthorized
+```
+
+An **invalid or expired** key returns JSON:
+
 ```json
 {
-  "message": "Unauthorized"
+  "status": 401,
+  "path": "/v1/sessions",
+  "timestamp": "2026-08-09T09:54:11.157+00:00",
+  "code": "E_UNAUTHORIZED",
+  "message": "Unauthorized",
+  "detail": "You are not authorized to access this resource."
 }
 ```
