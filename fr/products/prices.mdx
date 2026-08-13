@@ -15,7 +15,8 @@ Un **Price** (Prix) définit comment un produit est facturé. Il peut s'agir d'u
 
 ## Relation Produit → Price
 
-Un prix est rattaché à un **produit**. `productId` est le lien canonique, et un produit peut porter plusieurs prix pour différentes stratégies tarifaires :
+Un prix est rattaché à un **produit** via `productId`, et un produit peut porter plusieurs
+prix pour différentes stratégies tarifaires :
 
 ```
 Produit "Formation Pro"
@@ -24,13 +25,6 @@ Produit "Formation Pro"
 ├── Price 50 000 XAF/an (abonnement annuel avec économie)
 └── Price 25 000 XOF one-time (marché ouest-africain)
 ```
-
-<Warning>
-  **`skuId` est déprécié.** Un prix était auparavant rattaché à un SKU (une variante de
-  produit). `skuId` reste accepté sur `POST /v1/prices` pendant la fenêtre de
-  compatibilité — le serveur en déduit alors `productId` — mais il sera retiré. Les
-  nouvelles intégrations doivent envoyer `productId`. Aucune date de retrait n'est annoncée.
-</Warning>
 
 <Note>
   Cette flexibilité permet de proposer plusieurs options de paiement pour le même produit et de gérer plusieurs devises.
@@ -44,7 +38,6 @@ Produit "Formation Pro"
 |----------|------|-------------|
 | `id` | string | Identifiant unique du prix |
 | `productId` | string | Référence au produit parent |
-| `skuId` | string \| null | Référence à un SKU. Déprécié, et `null` pour un prix rattaché au produit |
 | `amount` | string | Montant dans l'unité principale de la devise, renvoyé sous forme de chaîne décimale (`"25000.00"`) |
 | `currency` | string | Code devise, renvoyé en minuscules (`"xaf"`) |
 | `type` | enum | `one_time` ou `recurring` |
@@ -60,24 +53,24 @@ Produit "Formation Pro"
 
 ## Créer un prix
 
-Les prix se créent sur l'endpoint de collection `POST /v1/prices`, en indiquant dans le corps le produit auquel ils se rattachent.
+Un premier prix se pose à la création du produit avec `defaultPriceData` (voir
+[Produits](/fr/products/products)). `POST /v1/prices` est la porte du **second** prix — un
+tarif annuel à côté du mensuel, ou une seconde devise — en indiquant dans le corps le produit
+auquel il se rattache.
 
 ### Corps de la requête
 
 <ParamField body="productId" type="string" required>
-  Identifiant du produit auquel le prix se rattache. Obligatoire, sauf si le champ déprécié `skuId` est fourni.
-</ParamField>
-
-<ParamField body="skuId" type="string" deprecated>
-  Identifiant d'un SKU. Déprécié : lorsqu'il est fourni, le serveur en déduit `productId`. À ne plus utiliser dans une nouvelle intégration.
+  Identifiant du produit auquel le prix se rattache.
 </ParamField>
 
 <ParamField body="amount" type="number" required>
   Montant dans l'unité principale de la devise. Strictement positif et au maximum `99999999.99`.
 </ParamField>
 
-<ParamField body="currency" type="string" default="XAF">
-  Code devise, exactement 3 caractères. Stocké et renvoyé en minuscules.
+<ParamField body="currency" type="string" required>
+  Code devise, exactement 3 caractères. Stocké et renvoyé en minuscules. **Obligatoire** — il
+  n'y a pas de devise par défaut.
 </ParamField>
 
 <ParamField body="type" type="enum" default="one_time">
@@ -100,24 +93,12 @@ Les prix se créent sur l'endpoint de collection `POST /v1/prices`, en indiquant
   Passez `false` pour créer le prix déjà désactivé.
 </ParamField>
 
-<Note>
-  Le produit doit exister avant son prix. Il n'a besoin d'aucun SKU : omettez `skus` à la
-  création du produit — c'est ainsi qu'on modélise un plan SaaS ou un service — puis
-  rattachez le prix au produit avec `productId`. À noter qu'un tableau `skus: []`
-  explicitement vide reste refusé avec un `422`.
-</Note>
-
 <Warning>
-  La création d'un prix **désactive automatiquement** le prix qui était actif pour le même
-  produit, la même devise, le même type **et la même portée**. La portée, c'est : un prix
-  rattaché à un SKU ne remplace que le prix actif de *ce SKU-là*, et un prix rattaché
-  directement au produit ne remplace qu'un autre prix de niveau produit. Deux SKU d'un même
-  produit gardent chacun leur prix actif.
-
-  À en retenir la conséquence : un prix mensuel et un prix annuel partagent le même `type`
-  (`recurring`), donc au sein d'une même portée le second désactive le premier. Pour
-  proposer les deux, rattachez-les à deux SKU différents, ou utilisez un produit distinct
-  pour chacun.
+  **Un prix est immuable.** `PUT /v1/prices/{id}` ne modifie que le champ `active` — aucun
+  autre champ n'est lu, même s'il est présent dans le corps. Pour changer un montant, une
+  devise ou une cadence, **créez un nouveau prix** : à dimensions égales (produit × devise ×
+  type × cadence), l'ancien prix actif est **désactivé automatiquement**. Détail de cette
+  règle de remplacement plus bas, dans la section Réponse API.
 </Warning>
 
 ## Types de tarification
@@ -141,7 +122,7 @@ Les prix se créent sur l'endpoint de collection `POST /v1/prices`, en indiquant
       -d '{
         "productId": "prod_abc123",
         "amount": 25000,
-        "currency": "XAF",
+        "currency": "xaf",
         "type": "one_time"
       }'
     ```
@@ -165,7 +146,7 @@ Les prix se créent sur l'endpoint de collection `POST /v1/prices`, en indiquant
       -d '{
         "productId": "prod_abc123",
         "amount": 5000,
-        "currency": "XAF",
+        "currency": "xaf",
         "type": "recurring",
         "billingInterval": "month",
         "billingIntervalCount": 1,
@@ -196,7 +177,8 @@ Pour les prix récurrents, définissez la fréquence de facturation :
   "type": "recurring",
   "billingInterval": "month",
   "billingIntervalCount": 3,
-  "amount": 15000
+  "amount": 15000,
+  "currency": "xaf"
 }
 ```
 
@@ -211,7 +193,7 @@ Offrez une période d'essai gratuit pour attirer de nouveaux clients :
   "billingInterval": "month",
   "billingIntervalCount": 1,
   "amount": 9000,
-  "currency": "XAF",
+  "currency": "xaf",
   "trialPeriodDays": 14
 }
 ```
@@ -237,29 +219,19 @@ Offrez une période d'essai gratuit pour attirer de nouveaux clients :
 
 ## Gestion multi-devises
 
-Créez plusieurs prix pour le même produit dans différentes devises. Chaque prix correspond à un appel `POST /v1/prices` distinct :
+Créez un prix par devise pour le même produit. Chaque prix correspond à un appel
+`POST /v1/prices` distinct :
 
-```json
-{
-  "productId": "prod_abc123",
-  "prices": [
-    {
-      "amount": 25000,
-      "currency": "XAF",
-      "type": "one_time"
-    },
-    {
-      "amount": 25000,
-      "currency": "XOF",
-      "type": "one_time"
-    },
-    {
-      "amount": 39,
-      "currency": "EUR",
-      "type": "one_time"
-    }
-  ]
-}
+```bash
+curl -X POST https://api.yabetoo.com/v1/prices \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productId": "prod_abc123",
+    "amount": 39,
+    "currency": "eur",
+    "type": "one_time"
+  }'
 ```
 
 ### Devises supportées
@@ -273,17 +245,13 @@ Créez plusieurs prix pour le même produit dans différentes devises. Chaque pr
 | `EUR` | Euro | Europe |
 | `USD` | Dollar américain | États-Unis |
 
-<Note>
-  Lorsque `currency` est omis, le prix est créé en **XAF**, la devise par défaut.
-</Note>
-
 <Tip>
   Tous les montants sont exprimés dans l'unité principale de la devise, jamais en centimes. Par exemple : 25000 XAF = 25 000 XAF, 39 EUR = 39 €.
 </Tip>
 
 ## Réponse API
 
-L'objet price expose `product` et `sku` **côte à côte**, à la racine de l'objet. Il n'y a plus de `sku.product` imbriqué.
+`GET /v1/prices/{id}` expose `product` à la racine de l'objet.
 
 <ResponseField name="productId" type="string">
   Identifiant du produit parent.
@@ -293,70 +261,36 @@ L'objet price expose `product` et `sku` **côte à côte**, à la racine de l'ob
   Le produit parent, toujours présent.
 </ResponseField>
 
-<ResponseField name="skuId" type="string | null">
-  Déprécié. Vaut `null` lorsque le prix est rattaché au produit.
-</ResponseField>
+```json
+{
+  "id": "price_abc123def456ghi789",
+  "productId": "prod_xyz789abc123def456",
+  "product": {
+    "id": "prod_xyz789abc123def456",
+    "name": "Formation Pro"
+  },
+  "amount": "25000.00",
+  "currency": "xaf",
+  "type": "one_time",
+  "billingInterval": null,
+  "billingIntervalCount": null,
+  "trialPeriodDays": null,
+  "active": true,
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
 
-<ResponseField name="sku" type="object | null">
-  Le SKU dont provient le prix, ou **`null`** lorsque le prix est rattaché au produit.
-</ResponseField>
+<Note>
+  **Règle de remplacement.** La création d'un prix **désactive automatiquement** le prix qui
+  était actif pour le même produit, la même devise, le même type **et la même cadence**
+  (`billingInterval` + `billingIntervalCount`). C'est ce qui rend un prix immuable : au lieu
+  de modifier un prix existant, on en crée un nouveau, et le remplacement se fait tout seul.
 
-<Warning>
-  **`price.sku` peut valoir `null`.** Toute intégration qui lit `price.sku.product` — ou
-  qui déréférence `price.sku` tout court — doit se prémunir contre `null`, sans quoi elle
-  casse dès qu'un prix est rattaché à un produit. Lisez le produit dans `price.product` ou
-  `price.productId`.
-</Warning>
-
-<Tabs>
-  <Tab title="Prix unique">
-    ```json
-    {
-      "id": "price_abc123def456ghi789",
-      "productId": "prod_xyz789abc123def456",
-      "product": {
-        "id": "prod_xyz789abc123def456",
-        "name": "Formation Pro"
-      },
-      "skuId": null,
-      "sku": null,
-      "amount": "25000.00",
-      "currency": "xaf",
-      "type": "one_time",
-      "billingInterval": null,
-      "billingIntervalCount": null,
-      "trialPeriodDays": null,
-      "active": true,
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z"
-    }
-    ```
-  </Tab>
-
-  <Tab title="Prix récurrent">
-    ```json
-    {
-      "id": "price_def456ghi789jkl012",
-      "productId": "prod_xyz789abc123def456",
-      "product": {
-        "id": "prod_xyz789abc123def456",
-        "name": "Formation Pro"
-      },
-      "skuId": null,
-      "sku": null,
-      "amount": "5000.00",
-      "currency": "xaf",
-      "type": "recurring",
-      "billingInterval": "month",
-      "billingIntervalCount": 1,
-      "trialPeriodDays": 14,
-      "active": true,
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z"
-    }
-    ```
-  </Tab>
-</Tabs>
+  Conséquence à connaître : un prix mensuel et un prix annuel ont le même `type`
+  (`recurring`) mais une cadence différente, donc ils coexistent sans se remplacer — c'est
+  ainsi qu'on propose les deux options sur le même produit.
+</Note>
 
 ## Opérations courantes
 
@@ -369,7 +303,7 @@ curl -X POST https://api.yabetoo.com/v1/prices \
   -d '{
     "productId": "prod_abc123",
     "amount": 9000,
-    "currency": "XAF",
+    "currency": "xaf",
     "type": "recurring",
     "billingInterval": "month",
     "billingIntervalCount": 1
@@ -395,14 +329,13 @@ curl "https://api.yabetoo.com/v1/prices?productId=prod_abc123" \
 | Filtre | Description |
 |--------|-------------|
 | `productId` | Uniquement les prix de ce produit |
-| `skuId` | Uniquement les prix de ce SKU. Déprécié, comme le champ lui-même |
 | `type` | `one_time` ou `recurring` |
 | `active` | `true` ou `false` |
 
 ### Désactiver un prix
 
 <Note>
-  Les prix ne peuvent pas être supprimés s'ils sont associés à des abonnements actifs. Utilisez la désactivation à la place.
+  Les prix ne peuvent pas être supprimés s'ils sont associés à des abonnements actifs. Utilisez la désactivation à la place — c'est le **seul** changement qu'accepte `PUT`.
 </Note>
 
 ```bash
@@ -418,40 +351,36 @@ curl -X PUT https://api.yabetoo.com/v1/prices/price_abc123 \
 
 ### Offre mensuelle vs annuelle
 
-Proposez une réduction pour l'abonnement annuel :
+Proposez une réduction pour l'abonnement annuel — deux appels `POST /v1/prices` sur le même
+produit, avec deux cadences différentes :
 
 ```json
+// Prix mensuel
 {
-  "prices": [
-    {
-      "productId": "prod_saas_pro_mensuel",
-      "amount": 9000,
-      "currency": "XAF",
-      "type": "recurring",
-      "billingInterval": "month",
-      "billingIntervalCount": 1
-    },
-    {
-      "productId": "prod_saas_pro_annuel",
-      "amount": 90000,
-      "currency": "XAF",
-      "type": "recurring",
-      "billingInterval": "year",
-      "billingIntervalCount": 1
-    }
-  ]
+  "productId": "prod_saas_pro",
+  "amount": 9000,
+  "currency": "xaf",
+  "type": "recurring",
+  "billingInterval": "month",
+  "billingIntervalCount": 1
+}
+```
+
+```json
+// Prix annuel — même produit, cadence différente : les deux coexistent
+{
+  "productId": "prod_saas_pro",
+  "amount": 90000,
+  "currency": "xaf",
+  "type": "recurring",
+  "billingInterval": "year",
+  "billingIntervalCount": 1
 }
 ```
 
 <Tip>
   9 000 XAF/mois vs 90 000 XAF/an représente environ 2 mois gratuits, ce qui incite les clients à s'engager sur l'année.
 </Tip>
-
-<Note>
-  Les deux prix appartiennent à deux produits distincts. Au sein d'une même portée — le même
-  SKU, ou le niveau produit — un second prix récurrent dans la même devise désactive le
-  premier : mensuel et annuel demandent donc soit deux SKU, soit deux produits.
-</Note>
 
 ### Tarification par paliers
 
@@ -485,16 +414,17 @@ price.isOneTime    // true si type === 'one_time'
     Les décimales sont acceptées et le montant ne peut pas dépasser `99999999.99`. L'API le renvoie sous forme de chaîne décimale (`"25000.00"`).
   </Accordion>
 
-  <Accordion title="Rattachement d'un prix">
-    - Envoyez toujours `productId` : c'est le lien canonique
-    - `skuId` ne subsiste que pour les intégrations existantes, et il est déprécié
-    - Lisez le produit dans `price.product`, jamais dans `price.sku.product`
+  <Accordion title="Reprixer un produit">
+    - Un prix est immuable : ne comptez jamais sur `PUT` pour changer un montant, une devise
+      ou une cadence — il ne touche que `active`
+    - Créez un nouveau prix ; l'ancien prix actif de mêmes dimensions se désactive tout seul
+    - Lisez le produit dans `price.product`
   </Accordion>
 
   <Accordion title="Prix actifs/inactifs">
     - Désactivez les anciens prix plutôt que de les supprimer
     - Gardez les prix actifs au minimum nécessaire
-    - Gardez en tête qu'un nouveau prix désactive le prix actif de même produit, devise, type et portée (même SKU, ou niveau produit)
+    - Gardez en tête qu'un nouveau prix désactive le prix actif de même produit, devise, type et cadence
   </Accordion>
 
   <Accordion title="Périodes d'essai">

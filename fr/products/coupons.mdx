@@ -51,7 +51,7 @@ Un **Coupon** définit le type et le montant de la réduction. Il peut être ré
 | `maxRedemptions` | number \| null | Nombre max d'utilisations |
 | `timesRedeemed` | number | Utilisations actuelles |
 | `redeemBy` | DateTime \| null | Date d'expiration |
-| `appliesToSkus` | string[] | Identifiants de **produit** auxquels le coupon est limité — malgré son nom (optionnel) |
+| `appliesToProducts` | string[] | Identifiants de **produit** auxquels le coupon est limité (optionnel) |
 | `valid` | boolean | Coupon actif |
 
 ### Types de réduction
@@ -166,7 +166,7 @@ Limitez un coupon à certains produits :
   "name": "Promo Formations",
   "percentOff": 30,
   "duration": "once",
-  "appliesToSkus": [
+  "appliesToProducts": [
     "prod_formation_js",
     "prod_formation_react",
     "prod_formation_node"
@@ -175,24 +175,20 @@ Limitez un coupon à certains produits :
 ```
 
 <Warning>
-  **`appliesToSkus` attend des identifiants de PRODUIT (`prod_…`), pas de SKU.** Le nom du
-  champ est un faux ami : la colonne a été renommée de `applies_to_products` en
-  `applies_to_skus`, mais ce qu'elle contient n'a jamais changé. L'éligibilité s'évalue en
-  résolvant chaque article du panier vers son produit parent, puis en testant **ce
-  produit-là** contre la liste.
+  **`appliesToProducts` attend des identifiants de PRODUIT (`prod_…`).** L'éligibilité
+  s'évalue en résolvant chaque article du panier vers son produit parent, puis en testant
+  **ce produit-là** contre la liste.
 
   Rien n'attrape l'erreur — le validateur accepte n'importe quel tableau de chaînes, sans
-  vérifier que les identifiants existent ni ce qu'ils désignent. Mettez-y des valeurs `sku_…`
-  et la comparaison n'est tout simplement jamais vraie : chaque validation sort en
-  `SKUS_NOT_ELIGIBLE` et **le coupon ne s'applique jamais**, sans le moindre message
-  expliquant pourquoi.
+  vérifier que les identifiants existent ni ce qu'ils désignent. Un identifiant mal formé ne
+  provoque jamais d'erreur : la comparaison n'est simplement jamais vraie et **le coupon ne
+  s'applique jamais**, sans le moindre message expliquant pourquoi.
 </Warning>
 
 <Note>
-  Si `appliesToSkus` est défini, la réduction ne s'applique qu'aux produits listés — les autres
-  articles du panier n'en bénéficient pas. Un article est résolu vers son produit qu'il soit
-  désigné par `skuId` ou par `priceId` : un produit sans aucun SKU se cible donc comme les
-  autres.
+  Si `appliesToProducts` est défini, la réduction ne s'applique qu'aux produits listés — les
+  autres articles du panier n'en bénéficient pas. Chaque article du panier est résolu vers son
+  produit avant d'être comparé à la liste.
 </Note>
 
 ---
@@ -338,7 +334,7 @@ Lors de l'utilisation d'un code promo, le système effectue plusieurs vérificat
     Si `customerIds` défini, vérifier que le client est dans la liste
   </Step>
   <Step title="Produits éligibles">
-    Si le coupon a `appliesToSkus`, vérifier que le panier contient au moins un article
+    Si le coupon a `appliesToProducts`, vérifier que le panier contient au moins un article
     appartenant à ces **produits**
   </Step>
   <Step title="Devise supportée">
@@ -355,7 +351,6 @@ Lors de l'utilisation d'un code promo, le système effectue plusieurs vérificat
 | `MAX_REDEMPTIONS` | Limite d'utilisations atteinte |
 | `MINIMUM_NOT_MET` | Montant minimum non atteint |
 | `NOT_FIRST_PURCHASE` | Réservé aux premiers achats |
-| `SKUS_NOT_ELIGIBLE` | Aucun article du panier n'appartient à un produit éligible (le nom du code dit SKU, la vérification porte sur les produits) |
 | `CURRENCY_MISMATCH` | Devise non supportée |
 | `CUSTOMER_NOT_ALLOWED` | Client non autorisé |
 | `COUPON_INVALID` | Coupon désactivé |
@@ -433,7 +428,7 @@ Calcul:
       "maxRedemptions": 1000,
       "timesRedeemed": 156,
       "redeemBy": "2024-08-31T23:59:59.000Z",
-      "appliesToSkus": null,
+      "appliesToProducts": null,
       "valid": true,
       "createdAt": "2024-06-01T00:00:00.000Z",
       "updatedAt": "2024-07-15T14:30:00.000Z"

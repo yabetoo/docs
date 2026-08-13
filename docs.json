@@ -39,7 +39,6 @@
                 "pages": [
                   "fr/products/overview",
                   "fr/products/products",
-                  "fr/products/skus",
                   "fr/products/prices",
                   "fr/products/coupons"
                 ],
@@ -258,7 +257,6 @@
                 "pages": [
                   "en/products/overview",
                   "en/products/products",
-                  "en/products/skus",
                   "en/products/prices",
                   "en/products/coupons"
                 ],

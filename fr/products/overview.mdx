@@ -1,6 +1,6 @@
 ---
 title: "Catalogue Produits"
-description: "Comprendre les concepts fondamentaux du catalogue produits Yabetoo : produits, variantes, prix et promotions"
+description: "Comprendre les concepts fondamentaux du catalogue produits Yabetoo : produits, prix et promotions"
 ---
 
 ## Vue d'ensemble
@@ -10,9 +10,6 @@ Le catalogue produits de Yabetoo vous permet de gérer l'ensemble de votre offre
 <CardGroup cols={2}>
   <Card title="Produits" icon="box" href="/fr/products/products">
     Créez et gérez votre catalogue de produits avec différents types et statuts
-  </Card>
-  <Card title="Variantes (SKUs)" icon="tags" href="/fr/products/skus">
-    Gérez les déclinaisons de vos produits : tailles, couleurs, options
   </Card>
   <Card title="Tarification" icon="money-bill" href="/fr/products/prices">
     Définissez vos prix : paiement unique ou abonnement récurrent
@@ -24,37 +21,24 @@ Le catalogue produits de Yabetoo vous permet de gérer l'ensemble de votre offre
 
 ## Architecture du catalogue
 
-Le **produit** est au centre du catalogue. Les prix et les variantes (SKU) s'y rattachent en
-**deux branches parallèles** — un produit peut porter des prix sans avoir le moindre SKU :
+Le **produit** est au centre du catalogue. Le prix lui est directement rattaché :
 
 ```
 Produit "Formation Pro"
 ├── Price[]                       prix rattachés au produit
 │   ├── Price 25 000 XAF one-time
 │   └── Price 5 000 XAF/mois
-├── SKU[] (variantes)             optionnel — un produit peut n'en avoir aucune
-│   ├── Variante "S Blanc"
-│   └── Variante "M Noir"
 └── Document[] (images, fichiers)
 ```
 
-<Warning>
-  **Les prix ne sont plus sous les variantes.** Un prix est rattaché à un **produit** via
-  `productId`, qui est le lien canonique. `skuId` — l'ancien lien vers une variante — reste
-  accepté pendant la fenêtre de compatibilité mais il est **déprécié**. Voir
-  [Tarification](/fr/products/prices).
-</Warning>
-
 <Steps>
   <Step title="Créer un Produit">
-    Définissez les informations de base : nom, description, type (physique, numérique, service)
-  </Step>
-  <Step title="Ajouter des Variantes (SKUs) — optionnel">
-    Créez des déclinaisons avec leurs attributs (taille, couleur, etc.) et stock. Un plan SaaS
-    ou une prestation de service se crée sans aucune variante.
+    Définissez les informations de base — nom, description, type (physique, numérique,
+    service) — et son prix par défaut dans le même appel avec `defaultPriceData`.
   </Step>
   <Step title="Définir les Prix">
-    Rattachez un ou plusieurs prix au produit : paiement unique ou récurrent
+    Rattachez un second prix au produit avec `POST /v1/prices` — un tarif annuel à côté du
+    mensuel, ou une seconde devise.
   </Step>
   <Step title="Configurer les Promotions">
     Créez des coupons et codes promo pour offrir des réductions
@@ -89,7 +73,6 @@ Chaque entité possède un identifiant unique avec un préfixe distinctif :
 | Entité | Préfixe | Exemple |
 |--------|---------|---------|
 | Produit | `prod_` | `prod_abc123def456...` |
-| Variante (SKU) | `sku_` | `sku_xyz789ghi012...` |
 | Prix | `price_` | `price_eur_monthly_001...` |
 | Coupon | `coupon_` | `coupon_summer_2024...` |
 | Code promo | `promo_` | `promo_SUMMER20...` |
