@@ -61,8 +61,11 @@ product it attaches to.
 
 ### Request Body
 
-<ParamField body="productId" type="string" required>
-  Identifier of the product this price attaches to.
+<ParamField body="productId" type="string">
+  Identifier of the product this price attaches to. **Either `productId` or `skuId` is**
+  **required** — neither is individually mandatory at the validator level, but the request
+  is rejected if both are absent. `skuId` is a legacy form, kept for compatibility;
+  `productId` remains the normal path.
 </ParamField>
 
 <ParamField body="amount" type="number" required>
@@ -358,7 +361,12 @@ curl "https://api.yabetoo.com/v1/prices?productId=prod_abc123" \
 ### Deactivate a Price
 
 <Note>
-  Prices cannot be deleted if they are associated with active subscriptions. Use deactivation instead — it's the **only** change `PUT` accepts.
+  🛑 **This page long claimed that "prices cannot be deleted if they are associated with**
+  **active subscriptions" — that's false, and not just nuanced: there is no condition at**
+  **all.** `DELETE /v1/prices/{id}` doesn't delete anything and never checks any
+  subscription — it unconditionally **deactivates** the price (`active: false`) and returns
+  `{"message": "Price deactivated"}`. `PUT` produces the same effect, and it's the **only**
+  change it accepts.
 </Note>
 
 ```bash
