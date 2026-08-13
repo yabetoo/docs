@@ -29,6 +29,8 @@ A price is attached to the product through `productId`. A SaaS plan or a service
 | `price` | number \| null | Default price (optional) |
 | `category` | number | Product category |
 | `subscriptionEligible` | boolean | Can be sold as a subscription |
+| `hasSkus` | boolean | **Inherited.** `false` for any product created today — derived from the product's legacy variants, never a field you send |
+| `skus` | array | **Inherited.** The product's legacy variants. Empty for any product created today |
 | `prices` | array | The **active** prices attached to the product |
 
 ## Product Types
@@ -204,7 +206,8 @@ call**.
 </ParamField>
 
 <ParamField body="currency" type="string" required>
-  Currency code, exactly 3 characters. **Required** — there is no default currency.
+  Currency code. **Required** — there is no default currency. Limited to `xaf` and `eur`: see
+  [Supported Currencies](/en/products/prices).
 </ParamField>
 
 <ParamField body="type" type="enum" required>
@@ -233,7 +236,16 @@ call**.
 
 ## API Response
 
-`GET /v1/products` and `GET /v1/products/{id}` return the product with its prices.
+`GET /v1/products` and `GET /v1/products/{id}` return the product with its prices, plus
+`hasSkus` and `skus` — fields **inherited** from the variant model this guide has retired.
+
+<ResponseField name="hasSkus" type="boolean">
+  **Inherited.** `false` for any product created today.
+</ResponseField>
+
+<ResponseField name="skus" type="array">
+  **Inherited.** Empty for any product created today.
+</ResponseField>
 
 <ResponseField name="prices" type="array">
   The prices attached to the product. **Active prices only** — deactivated prices are not
@@ -251,6 +263,8 @@ call**.
   "price": null,
   "category": 1,
   "subscriptionEligible": true,
+  "hasSkus": false,
+  "skus": [],
   "prices": [
     {
       "id": "price_abc123def456ghi789",

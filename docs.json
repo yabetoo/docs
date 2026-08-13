@@ -452,6 +452,16 @@
       "anchors": []
     }
   },
+  "redirects": [
+    {
+      "source": "/fr/products/skus",
+      "destination": "/fr/products/prices"
+    },
+    {
+      "source": "/en/products/skus",
+      "destination": "/en/products/prices"
+    }
+  ],
   "logo": {
     "light": "/logo/yb_light.svg",
     "dark": "/logo/yb_dark.svg"

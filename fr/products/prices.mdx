@@ -23,7 +23,7 @@ Produit "Formation Pro"
 ├── Price 25 000 XAF one-time (paiement unique)
 ├── Price 5 000 XAF/mois (abonnement mensuel)
 ├── Price 50 000 XAF/an (abonnement annuel avec économie)
-└── Price 25 000 XOF one-time (marché ouest-africain)
+└── Price 39 EUR one-time (marché européen)
 ```
 
 <Note>
@@ -38,6 +38,7 @@ Produit "Formation Pro"
 |----------|------|-------------|
 | `id` | string | Identifiant unique du prix |
 | `productId` | string | Référence au produit parent |
+| `skuId` | string \| null | **Hérité.** Lien vers une variante historique. `null` pour tout prix créé au niveau produit — ce n'est plus une façon de créer un prix, voir la note ci-dessous |
 | `amount` | string | Montant dans l'unité principale de la devise, renvoyé sous forme de chaîne décimale (`"25000.00"`) |
 | `currency` | string | Code devise, renvoyé en minuscules (`"xaf"`) |
 | `type` | enum | `one_time` ou `recurring` |
@@ -69,8 +70,8 @@ auquel il se rattache.
 </ParamField>
 
 <ParamField body="currency" type="string" required>
-  Code devise, exactement 3 caractères. Stocké et renvoyé en minuscules. **Obligatoire** — il
-  n'y a pas de devise par défaut.
+  Code devise, stocké et renvoyé en minuscules. **Obligatoire** — il n'y a pas de devise par
+  défaut. Limité à `xaf` et `eur`, voir la section Devises supportées plus bas.
 </ParamField>
 
 <ParamField body="type" type="enum" default="one_time">
@@ -236,14 +237,16 @@ curl -X POST https://api.yabetoo.com/v1/prices \
 
 ### Devises supportées
 
+<Warning>
+  **La liste est fermée, pas indicative.** `currency` est validée contre une énumération —
+  toute autre valeur, y compris un code ISO 4217 réel comme `XOF` ou `USD`, est refusée en
+  **422**. Il n'y a que deux devises acceptées aujourd'hui.
+</Warning>
+
 | Code | Devise | Pays/Région |
 |------|--------|-------------|
 | `XAF` | Franc CFA BEAC | Afrique Centrale |
-| `XOF` | Franc CFA BCEAO | Afrique de l'Ouest |
-| `GNF` | Franc guinéen | Guinée |
-| `CDF` | Franc congolais | RD Congo |
 | `EUR` | Euro | Europe |
-| `USD` | Dollar américain | États-Unis |
 
 <Tip>
   Tous les montants sont exprimés dans l'unité principale de la devise, jamais en centimes. Par exemple : 25000 XAF = 25 000 XAF, 39 EUR = 39 €.
@@ -251,7 +254,7 @@ curl -X POST https://api.yabetoo.com/v1/prices \
 
 ## Réponse API
 
-`GET /v1/prices/{id}` expose `product` à la racine de l'objet.
+`GET /v1/prices/{id}` expose `product` et `sku` à la racine de l'objet.
 
 <ResponseField name="productId" type="string">
   Identifiant du produit parent.
@@ -261,6 +264,23 @@ curl -X POST https://api.yabetoo.com/v1/prices \
   Le produit parent, toujours présent.
 </ResponseField>
 
+<ResponseField name="skuId" type="string | null">
+  **Hérité.** `null` pour un prix créé au niveau produit — la voie normale aujourd'hui.
+</ResponseField>
+
+<ResponseField name="sku" type="object | null">
+  **Hérité.** La variante dont provient le prix, pour les prix créés avant que le SKU quitte
+  le contrat de création. `null` sinon.
+</ResponseField>
+
+<Warning>
+  **`price.sku` peut valoir un objet non nul.** Un prix créé par l'ancien chemin (rattaché à
+  une variante) le porte encore et le portera tant qu'il n'a pas été remplacé par un nouveau
+  prix. Toute intégration qui déréférence `price.sku` — par exemple `price.sku.product` — doit
+  se prémunir contre `null`, dans les deux sens : ne pas planter s'il est absent, et ne pas
+  supposer qu'il l'est toujours.
+</Warning>
+
 ```json
 {
   "id": "price_abc123def456ghi789",
@@ -269,6 +289,8 @@ curl -X POST https://api.yabetoo.com/v1/prices \
     "id": "prod_xyz789abc123def456",
     "name": "Formation Pro"
   },
+  "skuId": null,
+  "sku": null,
   "amount": "25000.00",
   "currency": "xaf",
   "type": "one_time",
@@ -408,7 +430,6 @@ price.isOneTime    // true si type === 'one_time'
   <Accordion title="Format des montants">
     Les montants sont exprimés dans l'unité principale de la devise, jamais en centimes :
     - XAF : 25000 = 25 000 XAF
-    - XOF : 25000 = 25 000 XOF
     - EUR : 39 = 39 €
 
     Les décimales sont acceptées et le montant ne peut pas dépasser `99999999.99`. L'API le renvoie sous forme de chaîne décimale (`"25000.00"`).

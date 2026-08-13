@@ -23,7 +23,7 @@ Product "Pro Course"
 ├── Price 25,000 XAF one-time
 ├── Price 5,000 XAF/month (monthly subscription)
 ├── Price 50,000 XAF/year (annual subscription with savings)
-└── Price 25,000 XOF one-time (West African market)
+└── Price 39 EUR one-time (European market)
 ```
 
 <Note>
@@ -38,6 +38,7 @@ Product "Pro Course"
 |-----------|------|-------------|
 | `id` | string | Unique price identifier |
 | `productId` | string | Reference to the parent product |
+| `skuId` | string \| null | **Inherited.** Link to a legacy variant. `null` for any price created at the product level — no longer a way to create a price, see the note below |
 | `amount` | string | Amount in the currency's main unit, returned as a decimal string (`"25000.00"`) |
 | `currency` | string | Currency code, returned lowercase (`"xaf"`) |
 | `type` | enum | `one_time` or `recurring` |
@@ -69,8 +70,8 @@ product it attaches to.
 </ParamField>
 
 <ParamField body="currency" type="string" required>
-  Currency code, exactly 3 characters. Stored and returned lowercase. **Required** — there is
-  no default currency.
+  Currency code, stored and returned lowercase. **Required** — there is no default currency.
+  Limited to `xaf` and `eur`, see the Supported Currencies section further down.
 </ParamField>
 
 <ParamField body="type" type="enum" default="one_time">
@@ -236,14 +237,16 @@ curl -X POST https://api.yabetoo.com/v1/prices \
 
 ### Supported Currencies
 
+<Warning>
+  **The list is closed, not indicative.** `currency` is validated against an enumeration —
+  any other value, including a real ISO 4217 code like `XOF` or `USD`, is refused with
+  **422**. Only two currencies are accepted today.
+</Warning>
+
 | Code | Currency | Country/Region |
 |------|----------|-----------------|
 | `XAF` | Central African CFA Franc | Central Africa |
-| `XOF` | West African CFA Franc | West Africa |
-| `GNF` | Guinean Franc | Guinea |
-| `CDF` | Congolese Franc | DR Congo |
 | `EUR` | Euro | Europe |
-| `USD` | US Dollar | United States |
 
 <Tip>
   All amounts are expressed in the currency's main unit, never in cents. For example: 25000 XAF = 25,000 XAF, 39 EUR = €39.
@@ -251,7 +254,7 @@ curl -X POST https://api.yabetoo.com/v1/prices \
 
 ## API Response
 
-`GET /v1/prices/{id}` exposes `product` at the root of the object.
+`GET /v1/prices/{id}` exposes `product` and `sku` at the root of the object.
 
 <ResponseField name="productId" type="string">
   Identifier of the parent product.
@@ -261,6 +264,23 @@ curl -X POST https://api.yabetoo.com/v1/prices \
   The parent product, always present.
 </ResponseField>
 
+<ResponseField name="skuId" type="string | null">
+  **Inherited.** `null` for a price created at the product level — the normal path today.
+</ResponseField>
+
+<ResponseField name="sku" type="object | null">
+  **Inherited.** The variant the price comes from, for prices created before the SKU left the
+  creation contract. `null` otherwise.
+</ResponseField>
+
+<Warning>
+  **`price.sku` can hold a non-null object.** A price created through the legacy path
+  (attached to a variant) still carries it, and will keep carrying it until it's replaced by a
+  new price. Any integration that dereferences `price.sku` — for example
+  `price.sku.product` — must guard against `null` in both directions: don't crash when it's
+  absent, and don't assume it always is.
+</Warning>
+
 ```json
 {
   "id": "price_abc123def456ghi789",
@@ -269,6 +289,8 @@ curl -X POST https://api.yabetoo.com/v1/prices \
     "id": "prod_xyz789abc123def456",
     "name": "Pro Course"
   },
+  "skuId": null,
+  "sku": null,
   "amount": "25000.00",
   "currency": "xaf",
   "type": "one_time",
@@ -408,7 +430,6 @@ price.isOneTime    // true if type === 'one_time'
   <Accordion title="Amount Format">
     Amounts are expressed in the currency's main unit, never in cents:
     - XAF: 25000 = 25,000 XAF
-    - XOF: 25000 = 25,000 XOF
     - EUR: 39 = €39
 
     Decimals are accepted and the amount cannot exceed `99999999.99`. The API returns it as a decimal string (`"25000.00"`).

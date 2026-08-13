@@ -29,6 +29,8 @@ Un prix est rattaché au produit via `productId`. Un plan SaaS ou une prestation
 | `price` | number \| null | Prix par défaut (optionnel) |
 | `category` | number | Catégorie du produit |
 | `subscriptionEligible` | boolean | Peut être vendu en abonnement |
+| `hasSkus` | boolean | **Hérité.** `false` pour tout produit créé aujourd'hui — dérivé des variantes historiques du produit, jamais un champ que vous envoyez |
+| `skus` | array | **Hérité.** Les variantes historiques du produit. Vide pour tout produit créé aujourd'hui |
 | `prices` | array | Les prix **actifs** rattachés au produit |
 
 ## Types de produits
@@ -206,7 +208,8 @@ appel**.
 </ParamField>
 
 <ParamField body="currency" type="string" required>
-  Code devise, exactement 3 caractères. **Obligatoire** — il n'y a pas de devise par défaut.
+  Code devise. **Obligatoire** — il n'y a pas de devise par défaut. Limité à `xaf` et `eur` :
+  voir [Devises supportées](/fr/products/prices).
 </ParamField>
 
 <ParamField body="type" type="enum" required>
@@ -235,7 +238,16 @@ appel**.
 
 ## Réponse API
 
-`GET /v1/products` et `GET /v1/products/{id}` renvoient le produit avec ses prix.
+`GET /v1/products` et `GET /v1/products/{id}` renvoient le produit avec ses prix, ainsi que
+`hasSkus` et `skus` — des champs **hérités** du modèle par variantes retiré de ce guide.
+
+<ResponseField name="hasSkus" type="boolean">
+  **Hérité.** `false` pour tout produit créé aujourd'hui.
+</ResponseField>
+
+<ResponseField name="skus" type="array">
+  **Hérité.** Vide pour tout produit créé aujourd'hui.
+</ResponseField>
 
 <ResponseField name="prices" type="array">
   Les prix rattachés au produit. **Prix actifs uniquement** — les prix désactivés ne sont pas
@@ -253,6 +265,8 @@ appel**.
   "price": null,
   "category": 1,
   "subscriptionEligible": true,
+  "hasSkus": false,
+  "skus": [],
   "prices": [
     {
       "id": "price_abc123def456ghi789",
