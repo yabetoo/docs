@@ -39,7 +39,6 @@
                 "pages": [
                   "fr/products/overview",
                   "fr/products/products",
-                  "fr/products/skus",
                   "fr/products/prices",
                   "fr/products/coupons"
                 ],
@@ -258,7 +257,6 @@
                 "pages": [
                   "en/products/overview",
                   "en/products/products",
-                  "en/products/skus",
                   "en/products/prices",
                   "en/products/coupons"
                 ],
@@ -454,6 +452,16 @@
       "anchors": []
     }
   },
+  "redirects": [
+    {
+      "source": "/fr/products/skus",
+      "destination": "/fr/products/prices"
+    },
+    {
+      "source": "/en/products/skus",
+      "destination": "/en/products/prices"
+    }
+  ],
   "logo": {
     "light": "/logo/yb_light.svg",
     "dark": "/logo/yb_dark.svg"

@@ -51,7 +51,7 @@ A **Coupon** defines the type and amount of discount. It can be reused by multip
 | `maxRedemptions` | number \| null | Maximum number of uses |
 | `timesRedeemed` | number | Current number of uses |
 | `redeemBy` | DateTime \| null | Expiration date |
-| `appliesToSkus` | string[] | **Product** identifiers the coupon is limited to — despite the name (optional) |
+| `appliesToProducts` | string[] | **Product** identifiers the coupon is limited to (optional) |
 | `valid` | boolean | Coupon active |
 
 ### Discount Types
@@ -166,7 +166,7 @@ Limit a coupon to certain products:
   "name": "Course Promo",
   "percentOff": 30,
   "duration": "once",
-  "appliesToSkus": [
+  "appliesToProducts": [
     "prod_course_js",
     "prod_course_react",
     "prod_course_node"
@@ -175,21 +175,20 @@ Limit a coupon to certain products:
 ```
 
 <Warning>
-  **`appliesToSkus` expects PRODUCT identifiers (`prod_…`), not SKU identifiers.** The field
-  name is a false friend: the column was renamed from `applies_to_products` to
-  `applies_to_skus`, but what it holds never changed. Eligibility is evaluated by resolving
-  each cart item to its parent product and testing **that product** against the list.
+  **`appliesToProducts` expects PRODUCT identifiers (`prod_…`).** Eligibility is evaluated by
+  resolving each cart item to its parent product and testing **that product** against the
+  list.
 
   Nothing catches the mistake — the validator accepts any array of strings, without checking
-  that the identifiers exist or what kind of object they point at. Put `sku_…` values in
-  there and the comparison is simply never true: every validation ends in
-  `SKUS_NOT_ELIGIBLE` and **the coupon never applies**, with no message saying why.
+  that the identifiers exist or what kind of object they point at. A malformed identifier never
+  raises an error: the comparison is simply never true and **the coupon never applies**, with
+  no message saying why.
 </Warning>
 
 <Note>
-  If `appliesToSkus` is defined, the discount only applies to the listed products — other cart
-  items don't get the discount. A cart item is resolved to its product whether it is designated
-  by `skuId` or by `priceId`, so a product without any SKU can be targeted like any other.
+  If `appliesToProducts` is defined, the discount only applies to the listed products — other
+  cart items don't get the discount. Every cart item is resolved to its product before being
+  compared against the list.
 </Note>
 
 ---
@@ -335,7 +334,7 @@ When using a promo code, the system performs several checks:
     If `customerIds` defined, verify customer is in the list
   </Step>
   <Step title="Eligible products">
-    If coupon has `appliesToSkus`, verify the cart contains at least one item belonging to
+    If coupon has `appliesToProducts`, verify the cart contains at least one item belonging to
     these **products**
   </Step>
   <Step title="Currency supported">
@@ -352,7 +351,7 @@ When using a promo code, the system performs several checks:
 | `MAX_REDEMPTIONS` | Usage limit reached |
 | `MINIMUM_NOT_MET` | Minimum amount not reached |
 | `NOT_FIRST_PURCHASE` | Reserved for first purchases |
-| `SKUS_NOT_ELIGIBLE` | No item in the cart belongs to an eligible product (the code name says SKU, the check is on products) |
+| `SKUS_NOT_ELIGIBLE` | No cart item belongs to a product listed in `appliesToProducts` — the inherited code name no longer reflects what it checks |
 | `CURRENCY_MISMATCH` | Currency not supported |
 | `CUSTOMER_NOT_ALLOWED` | Customer not authorized |
 | `COUPON_INVALID` | Coupon deactivated |
@@ -430,7 +429,7 @@ Calculation:
       "maxRedemptions": 1000,
       "timesRedeemed": 156,
       "redeemBy": "2024-08-31T23:59:59.000Z",
-      "appliesToSkus": null,
+      "appliesToProducts": null,
       "valid": true,
       "createdAt": "2024-06-01T00:00:00.000Z",
       "updatedAt": "2024-07-15T14:30:00.000Z"

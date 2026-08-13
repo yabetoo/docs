@@ -1,11 +1,11 @@
 ---
-title: "Pricing"
+title: "Pricing (Prices)"
 description: "Configure your pricing strategies: one-time payments, recurring subscriptions, trial periods, and multi-currency"
 ---
 
 ## What is a Price?
 
-A **Price** defines how a product is billed. It can be a one-time payment or a recurring subscription with different billing intervals.
+A **Price** defines how a product is billed. It can be a one-time payment or a recurring subscription with different billing frequencies.
 
 <Info>
   **Identifier format**: `price_` followed by 36 alphanumeric characters.
@@ -15,25 +15,19 @@ A **Price** defines how a product is billed. It can be a one-time payment or a r
 
 ## Product → Price Relationship
 
-A price is attached to a **product**. `productId` is the canonical link, and a product can carry several prices for different pricing strategies:
+A price is attached to a **product** through `productId`, and a product can carry several
+prices for different pricing strategies:
 
 ```
 Product "Pro Course"
-├── Price 25,000 XAF one-time (single payment)
+├── Price 25,000 XAF one-time
 ├── Price 5,000 XAF/month (monthly subscription)
-├── Price 50,000 XAF/year (yearly subscription with savings)
-└── Price 25,000 XOF one-time (West African market)
+├── Price 50,000 XAF/year (annual subscription with savings)
+└── Price 39 EUR one-time (European market)
 ```
 
-<Warning>
-  **`skuId` is deprecated.** A price used to be attached to a SKU (a product variant).
-  `skuId` is still accepted on `POST /v1/prices` during the compatibility window — the
-  server then derives `productId` from the SKU — but it will be removed. New integrations
-  must send `productId`. No removal date has been announced.
-</Warning>
-
 <Note>
-  This flexibility allows you to offer multiple payment options for the same product and manage multiple currencies.
+  This flexibility lets you offer multiple payment options for the same product and support multiple currencies.
 </Note>
 
 ## Price Attributes
@@ -44,40 +38,43 @@ Product "Pro Course"
 |-----------|------|-------------|
 | `id` | string | Unique price identifier |
 | `productId` | string | Reference to the parent product |
-| `skuId` | string \| null | Reference to a SKU. Deprecated, and `null` for a price attached to the product |
-| `amount` | string | Amount in the main unit of the currency, returned as a decimal string (`"25000.00"`) |
-| `currency` | string | Currency code, returned in lowercase (`"xaf"`) |
+| `skuId` | string \| null | **Inherited.** Link to a legacy variant. `null` for any price created at the product level — no longer a way to create a price, see the note below |
+| `amount` | string | Amount in the currency's main unit, returned as a decimal string (`"25000.00"`) |
+| `currency` | string | Currency code, returned lowercase (`"xaf"`) |
 | `type` | enum | `one_time` or `recurring` |
-| `active` | boolean | Price active and usable |
+| `active` | boolean | Whether the price is active and usable |
 
-### Recurring Attributes (subscriptions)
+### Recurring Attributes (Subscriptions)
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
 | `billingInterval` | enum | `day`, `week`, `month`, `year` |
-| `billingIntervalCount` | number | Number of intervals (e.g., 3 = every 3 months) |
+| `billingIntervalCount` | number | Number of intervals (e.g. 3 = every 3 months) |
 | `trialPeriodDays` | number \| null | Free trial days |
 
 ## Create a Price
 
-Prices are created on the collection endpoint `POST /v1/prices`, with the product they belong to in the body.
+A first price is posed at product creation with `defaultPriceData` (see
+[Products](/en/products/products)). `POST /v1/prices` is the door for the **second** price —
+an annual tier next to the monthly one, or a second currency — by indicating in the body the
+product it attaches to.
 
-### Request body
+### Request Body
 
-<ParamField body="productId" type="string" required>
-  Identifier of the product the price belongs to. Required unless the deprecated `skuId` is provided.
-</ParamField>
-
-<ParamField body="skuId" type="string" deprecated>
-  Identifier of a SKU. Deprecated: when provided, the server derives `productId` from the SKU. Do not use in new integrations.
+<ParamField body="productId" type="string">
+  Identifier of the product this price attaches to. **Either `productId` or `skuId` is**
+  **required** — neither is individually mandatory at the validator level, but the request
+  is rejected if both are absent. `skuId` is a legacy form, kept for compatibility;
+  `productId` remains the normal path.
 </ParamField>
 
 <ParamField body="amount" type="number" required>
-  Amount in the main unit of the currency. Must be strictly positive and at most `99999999.99`.
+  Amount in the currency's main unit. Strictly positive, up to `99999999.99`.
 </ParamField>
 
-<ParamField body="currency" type="string" default="XAF">
-  Currency code, exactly 3 characters. Stored and returned in lowercase.
+<ParamField body="currency" type="string" required>
+  Currency code, stored and returned lowercase. **Required** — there is no default currency.
+  Limited to `xaf` and `eur`, see the Supported Currencies section further down.
 </ParamField>
 
 <ParamField body="type" type="enum" default="one_time">
@@ -85,11 +82,11 @@ Prices are created on the collection endpoint `POST /v1/prices`, with the produc
 </ParamField>
 
 <ParamField body="billingInterval" type="enum">
-  `day`, `week`, `month` or `year`. Recurring prices only.
+  `day`, `week`, `month`, or `year`. Recurring prices only.
 </ParamField>
 
 <ParamField body="billingIntervalCount" type="number">
-  Number of intervals per billing cycle. Must be strictly positive.
+  Number of intervals per billing cycle. Strictly positive.
 </ParamField>
 
 <ParamField body="trialPeriodDays" type="number">
@@ -97,32 +94,21 @@ Prices are created on the collection endpoint `POST /v1/prices`, with the produc
 </ParamField>
 
 <ParamField body="active" type="boolean" default="true">
-  Set to `false` to create the price already deactivated.
+  Pass `false` to create the price already deactivated.
 </ParamField>
 
-<Note>
-  A product must exist before its price. It does not need any SKU: omit `skus` when
-  creating the product — that is how you model a SaaS plan or a service — then attach the
-  price to the product with `productId`. Note that an explicit empty `skus: []` is still
-  rejected with a `422`.
-</Note>
-
 <Warning>
-  Creating a price **automatically deactivates** the price that was active for the same
-  product, currency, type **and scope**. Scope means: a price attached to a SKU only
-  replaces the active price of *that same SKU*, and a price attached directly to the
-  product only replaces another product-level price. Two SKUs of the same product keep
-  their own active prices.
-
-  Note the consequence: a monthly price and a yearly price share the same `type`
-  (`recurring`), so within one scope the second deactivates the first. To offer both,
-  attach them to two different SKUs, or use a separate product for each.
+  **A price is immutable.** `PUT /v1/prices/{id}` only updates the `active` field — no other
+  field is read, even if present in the body. To change an amount, currency, or billing
+  cadence, **create a new price**: at matching dimensions (product × currency × type ×
+  cadence), the previously active price is **automatically deactivated**. Details of this
+  replacement rule further down, in the API Response section.
 </Warning>
 
 ## Pricing Types
 
 <Tabs>
-  <Tab title="One-time payment">
+  <Tab title="One-time Payment">
     ### One-Time (`one_time`)
 
     The customer pays once to access the product.
@@ -140,13 +126,13 @@ Prices are created on the collection endpoint `POST /v1/prices`, with the produc
       -d '{
         "productId": "prod_abc123",
         "amount": 25000,
-        "currency": "XAF",
+        "currency": "xaf",
         "type": "one_time"
       }'
     ```
   </Tab>
 
-  <Tab title="Recurring subscription">
+  <Tab title="Recurring Subscription">
     ### Recurring (`recurring`)
 
     The customer is billed automatically at regular intervals.
@@ -164,7 +150,7 @@ Prices are created on the collection endpoint `POST /v1/prices`, with the produc
       -d '{
         "productId": "prod_abc123",
         "amount": 5000,
-        "currency": "XAF",
+        "currency": "xaf",
         "type": "recurring",
         "billingInterval": "month",
         "billingIntervalCount": 1,
@@ -195,7 +181,8 @@ For recurring prices, define the billing frequency:
   "type": "recurring",
   "billingInterval": "month",
   "billingIntervalCount": 3,
-  "amount": 15000
+  "amount": 15000,
+  "currency": "xaf"
 }
 ```
 
@@ -210,20 +197,20 @@ Offer a free trial period to attract new customers:
   "billingInterval": "month",
   "billingIntervalCount": 1,
   "amount": 9000,
-  "currency": "XAF",
+  "currency": "xaf",
   "trialPeriodDays": 14
 }
 ```
 
 <Steps>
-  <Step title="Subscription start">
-    Customer signs up and starts their free trial period
+  <Step title="Subscription starts">
+    The customer signs up and starts their free trial period
   </Step>
   <Step title="Trial period">
-    For 14 days, customer has full access without being charged
+    For 14 days, the customer has full access without being billed
   </Step>
-  <Step title="Trial end">
-    At the end of the trial period, the first payment is automatically charged
+  <Step title="Trial ends">
+    At the end of the trial, the first payment is automatically charged
   </Step>
   <Step title="Recurring cycle">
     Subsequent payments are charged according to the defined interval
@@ -231,58 +218,46 @@ Offer a free trial period to attract new customers:
 </Steps>
 
 <Warning>
-  Make sure to clearly inform your customers about the trial duration and the amount that will be charged afterward.
+  Make sure to clearly inform your customers of the trial duration and the amount that will be billed afterward.
 </Warning>
 
-## Multi-Currency Management
+## Multi-currency Management
 
-Create multiple prices for the same product in different currencies. Each price is a separate `POST /v1/prices` call:
+Create one price per currency for the same product. Each price corresponds to a separate
+`POST /v1/prices` call:
 
-```json
-{
-  "productId": "prod_abc123",
-  "prices": [
-    {
-      "amount": 25000,
-      "currency": "XAF",
-      "type": "one_time"
-    },
-    {
-      "amount": 25000,
-      "currency": "XOF",
-      "type": "one_time"
-    },
-    {
-      "amount": 39,
-      "currency": "EUR",
-      "type": "one_time"
-    }
-  ]
-}
+```bash
+curl -X POST https://api.yabetoo.com/v1/prices \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productId": "prod_abc123",
+    "amount": 39,
+    "currency": "eur",
+    "type": "one_time"
+  }'
 ```
 
 ### Supported Currencies
 
-| Code | Currency | Country/Region |
-|------|----------|----------------|
-| `XAF` | CFA Franc BEAC | Central Africa |
-| `XOF` | CFA Franc BCEAO | West Africa |
-| `GNF` | Guinean Franc | Guinea |
-| `CDF` | Congolese Franc | DR Congo |
-| `EUR` | Euro | Europe |
-| `USD` | US Dollar | United States |
+<Warning>
+  **The list is closed, not indicative.** `currency` is validated against an enumeration —
+  any other value, including a real ISO 4217 code like `XOF` or `USD`, is refused with
+  **422**. Only two currencies are accepted today.
+</Warning>
 
-<Note>
-  When `currency` is omitted, the price is created in **XAF**, the default currency.
-</Note>
+| Code | Currency | Country/Region |
+|------|----------|-----------------|
+| `XAF` | Central African CFA Franc | Central Africa |
+| `EUR` | Euro | Europe |
 
 <Tip>
-  All amounts are expressed in the main unit of the currency, never in cents. For example: 25000 XAF = 25,000 XAF, 39 EUR = €39.
+  All amounts are expressed in the currency's main unit, never in cents. For example: 25000 XAF = 25,000 XAF, 39 EUR = €39.
 </Tip>
 
 ## API Response
 
-The price object exposes `product` and `sku` **side by side**, at the root of the object. There is no nested `sku.product` anymore.
+`GET /v1/prices/{id}` exposes `product` and `sku` at the root of the object.
 
 <ResponseField name="productId" type="string">
   Identifier of the parent product.
@@ -293,73 +268,58 @@ The price object exposes `product` and `sku` **side by side**, at the root of th
 </ResponseField>
 
 <ResponseField name="skuId" type="string | null">
-  Deprecated. `null` when the price is attached to the product.
+  **Inherited.** `null` for a price created at the product level — the normal path today.
 </ResponseField>
 
 <ResponseField name="sku" type="object | null">
-  The SKU the price came from, or **`null`** when the price is attached to the product.
+  **Inherited.** The variant the price comes from, for prices created before the SKU left the
+  creation contract. `null` otherwise.
 </ResponseField>
 
 <Warning>
-  **`price.sku` can be `null`.** Any integration that reads `price.sku.product` — or
-  dereferences `price.sku` at all — must guard against `null`, otherwise it breaks as soon
-  as a price is attached to a product. Read the product from `price.product` or
-  `price.productId`.
+  **`price.sku` can hold a non-null object.** A price created through the legacy path
+  (attached to a variant) still carries it, and will keep carrying it until it's replaced by a
+  new price. Any integration that dereferences `price.sku` — for example
+  `price.sku.product` — must guard against `null` in both directions: don't crash when it's
+  absent, and don't assume it always is.
 </Warning>
 
-<Tabs>
-  <Tab title="One-time price">
-    ```json
-    {
-      "id": "price_abc123def456ghi789",
-      "productId": "prod_xyz789abc123def456",
-      "product": {
-        "id": "prod_xyz789abc123def456",
-        "name": "Pro Course"
-      },
-      "skuId": null,
-      "sku": null,
-      "amount": "25000.00",
-      "currency": "xaf",
-      "type": "one_time",
-      "billingInterval": null,
-      "billingIntervalCount": null,
-      "trialPeriodDays": null,
-      "active": true,
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z"
-    }
-    ```
-  </Tab>
+```json
+{
+  "id": "price_abc123def456ghi789",
+  "productId": "prod_xyz789abc123def456",
+  "product": {
+    "id": "prod_xyz789abc123def456",
+    "name": "Pro Course"
+  },
+  "skuId": null,
+  "sku": null,
+  "amount": "25000.00",
+  "currency": "xaf",
+  "type": "one_time",
+  "billingInterval": null,
+  "billingIntervalCount": null,
+  "trialPeriodDays": null,
+  "active": true,
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
 
-  <Tab title="Recurring price">
-    ```json
-    {
-      "id": "price_def456ghi789jkl012",
-      "productId": "prod_xyz789abc123def456",
-      "product": {
-        "id": "prod_xyz789abc123def456",
-        "name": "Pro Course"
-      },
-      "skuId": null,
-      "sku": null,
-      "amount": "5000.00",
-      "currency": "xaf",
-      "type": "recurring",
-      "billingInterval": "month",
-      "billingIntervalCount": 1,
-      "trialPeriodDays": 14,
-      "active": true,
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z"
-    }
-    ```
-  </Tab>
-</Tabs>
+<Note>
+  **Replacement rule.** Creating a price **automatically deactivates** the price that was
+  active for the same product, the same currency, the same type **and the same cadence**
+  (`billingInterval` + `billingIntervalCount`). This is what makes a price immutable: instead
+  of editing an existing price, you create a new one, and the replacement happens on its own.
+
+  A consequence worth knowing: a monthly price and an annual price share the same `type`
+  (`recurring`) but a different cadence, so they coexist without replacing each other — this
+  is how you offer both options on the same product.
+</Note>
 
 ## Common Operations
 
-### Create a price
+### Create a Price
 
 ```bash
 curl -X POST https://api.yabetoo.com/v1/prices \
@@ -368,21 +328,21 @@ curl -X POST https://api.yabetoo.com/v1/prices \
   -d '{
     "productId": "prod_abc123",
     "amount": 9000,
-    "currency": "XAF",
+    "currency": "xaf",
     "type": "recurring",
     "billingInterval": "month",
     "billingIntervalCount": 1
   }'
 ```
 
-### Retrieve a price
+### Retrieve a Price
 
 ```bash
 curl https://api.yabetoo.com/v1/prices/price_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 
-### List the prices of a product
+### List a Product's Prices
 
 ```bash
 curl "https://api.yabetoo.com/v1/prices?productId=prod_abc123" \
@@ -393,15 +353,20 @@ curl "https://api.yabetoo.com/v1/prices?productId=prod_abc123" \
 
 | Filter | Description |
 |--------|-------------|
-| `productId` | Only the prices of this product |
-| `skuId` | Only the prices of this SKU. Deprecated, like the field itself |
+| `productId` | Only prices for this product |
+| `skuId` | **Inherited.** Only prices attached to this legacy variant |
 | `type` | `one_time` or `recurring` |
 | `active` | `true` or `false` |
 
-### Deactivate a price
+### Deactivate a Price
 
 <Note>
-  Prices cannot be deleted if they are associated with active subscriptions. Use deactivation instead.
+  🛑 **This page long claimed that "prices cannot be deleted if they are associated with**
+  **active subscriptions" — that's false, and not just nuanced: there is no condition at**
+  **all.** `DELETE /v1/prices/{id}` doesn't delete anything and never checks any
+  subscription — it unconditionally **deactivates** the price (`active: false`) and returns
+  `{"message": "Price deactivated"}`. `PUT` produces the same effect, and it's the **only**
+  change it accepts.
 </Note>
 
 ```bash
@@ -415,46 +380,42 @@ curl -X PUT https://api.yabetoo.com/v1/prices/price_abc123 \
 
 ## Pricing Strategies
 
-### Monthly vs Annual Offer
+### Monthly vs. Annual Pricing
 
-Offer a discount for annual subscription:
+Offer a discount for the annual subscription — two `POST /v1/prices` calls on the same
+product, with two different cadences:
 
 ```json
+// Monthly price
 {
-  "prices": [
-    {
-      "productId": "prod_saas_pro_monthly",
-      "amount": 9000,
-      "currency": "XAF",
-      "type": "recurring",
-      "billingInterval": "month",
-      "billingIntervalCount": 1
-    },
-    {
-      "productId": "prod_saas_pro_yearly",
-      "amount": 90000,
-      "currency": "XAF",
-      "type": "recurring",
-      "billingInterval": "year",
-      "billingIntervalCount": 1
-    }
-  ]
+  "productId": "prod_saas_pro",
+  "amount": 9000,
+  "currency": "xaf",
+  "type": "recurring",
+  "billingInterval": "month",
+  "billingIntervalCount": 1
+}
+```
+
+```json
+// Annual price — same product, different cadence: both coexist
+{
+  "productId": "prod_saas_pro",
+  "amount": 90000,
+  "currency": "xaf",
+  "type": "recurring",
+  "billingInterval": "year",
+  "billingIntervalCount": 1
 }
 ```
 
 <Tip>
-  9,000 XAF/month vs 90,000 XAF/year represents about 2 free months, which encourages customers to commit for the year.
+  9,000 XAF/month vs. 90,000 XAF/year works out to about 2 free months, which encourages customers to commit for the year.
 </Tip>
-
-<Note>
-  The two prices belong to two distinct products. Within a single scope — the same SKU, or
-  the product level — a second recurring price in the same currency deactivates the first,
-  so monthly and yearly need either two SKUs or two products.
-</Note>
 
 ### Tiered Pricing
 
-Create one product per service level, each with its own price:
+Create one product per service tier, each with its own price:
 
 ```
 Product "Cloud App — Starter"     → Price 5,000 XAF/month
@@ -464,10 +425,10 @@ Product "Cloud App — Enterprise"  → Price 50,000 XAF/month
 
 ## Useful Getters
 
-The Price model provides getters to facilitate checks:
+The Price model provides getters to simplify checks:
 
 ```typescript
-// Check price type
+// Check the price type
 price.isRecurring  // true if type === 'recurring'
 price.isOneTime    // true if type === 'one_time'
 ```
@@ -475,36 +436,37 @@ price.isOneTime    // true if type === 'one_time'
 ## Best Practices
 
 <AccordionGroup>
-  <Accordion title="Amount format">
-    Amounts are expressed in the main unit of the currency, never in cents:
+  <Accordion title="Amount Format">
+    Amounts are expressed in the currency's main unit, never in cents:
     - XAF: 25000 = 25,000 XAF
-    - XOF: 25000 = 25,000 XOF
     - EUR: 39 = €39
 
-    Decimals are allowed, and the amount cannot exceed `99999999.99`. The API returns it as a decimal string (`"25000.00"`).
+    Decimals are accepted and the amount cannot exceed `99999999.99`. The API returns it as a decimal string (`"25000.00"`).
   </Accordion>
 
-  <Accordion title="Attaching a price">
-    - Always send `productId`: it is the canonical link
-    - `skuId` only remains for existing integrations, and is deprecated
-    - Read the product from `price.product`, never from `price.sku.product`
+  <Accordion title="Repricing a Product">
+    - A price is immutable: never rely on `PUT` to change an amount, currency, or cadence — it
+      only touches `active`
+    - Create a new price; the previously active price of matching dimensions deactivates on
+      its own
+    - Read the product from `price.product`
   </Accordion>
 
-  <Accordion title="Active/inactive prices">
+  <Accordion title="Active/Inactive Prices">
     - Deactivate old prices rather than deleting them
-    - Keep active prices to the minimum necessary
-    - Remember that a new price deactivates the active price with the same product, currency, type and scope (same SKU, or product level)
+    - Keep the number of active prices to the minimum necessary
+    - Keep in mind that a new price deactivates the active price of the same product, currency, type, and cadence
   </Accordion>
 
-  <Accordion title="Trial periods">
+  <Accordion title="Trial Periods">
     - 7 to 14 days is generally optimal
     - Too short: not enough time to evaluate
-    - Too long: potential revenue loss
+    - Too long: potential loss of revenue
   </Accordion>
 
   <Accordion title="Multi-currency">
-    - Adjust prices for each market (not simple conversion)
-    - Consider local purchasing power
+    - Adjust prices for each market (not a straight conversion)
+    - Account for local purchasing power
     - Use psychological pricing (9,000 XAF rather than 8,750 XAF)
   </Accordion>
 </AccordionGroup>
@@ -513,14 +475,14 @@ price.isOneTime    // true if type === 'one_time'
 
 <CardGroup cols={2}>
   <Card
-    title="Create promotions"
+    title="Create Promotions"
     icon="percent"
     href="/en/products/coupons"
   >
     Apply discounts with coupons and promo codes
   </Card>
   <Card
-    title="Manage subscriptions"
+    title="Manage Subscriptions"
     icon="repeat"
     href="/en/subscriptions/overview"
   >
