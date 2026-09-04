@@ -12,7 +12,7 @@ sont refusées.
 
 Deux lignes s'appliquent à un encaissement Connect. Elles sont distinctes et se cumulent.
 
-| Ligne | Ce qu'elle facture | Barème standard (Congo, Mobile Money) |
+| Ligne | Ce qu'elle facture | Barème standard (Congo) |
 |---|---|---|
 | `collection` | l'encaissement lui-même — elle existe pour tout marchand | **3,5 % + 25 XAF** |
 | `connect` | la relation Connect : vérification des vendeurs, onboarding, rails de reversement | **1 %** |
@@ -269,8 +269,7 @@ frais, `ROUND_DOWN` pour le montant capturé). Le résidu d'arrondi revient à *
 vendeur et vous recevez des montants déterministes.
 
 <Note>
-Le XAF n'a pas de sous-unité. Les montants qui quittent réellement le système vers l'opérateur
-Mobile Money sont entiers ; les fractions restent internes au grand livre.
+Le XAF n'a pas de sous-unité. Les montants qui quittent réellement le système vers l'opérateur sont entiers ; les fractions restent internes au grand livre.
 </Note>
 
 ## Et le mode différé ?

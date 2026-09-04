@@ -55,7 +55,7 @@ in production as soon as an identifier slips from one tenant to another.
 
 <Warning>
 **Do not rely on automatic approval in test.** You will get the link, and the seller can
-submit their documents and Mobile Money number, but the file goes through a **review**: moving
+submit their documents and payout destination, but the file goes through a **review**: moving
 to `approved` is neither immediate nor guaranteed.
 
 To obtain an **approved** test seller — required to exercise withdrawals — contact
@@ -71,7 +71,7 @@ What you can verify without approval:
 
 ## 4. Test the collection and the cascade
 
-The split is computed at **capture** time. Use the usual Mobile Money test numbers to drive the
+The split is computed at **capture** time. Use the usual test numbers to drive the
 payment outcome — see
 [Test your integration](/en/developer-tools/test/overview).
 

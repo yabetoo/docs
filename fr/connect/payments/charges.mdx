@@ -17,7 +17,8 @@ meilleure traçabilité : chaque encaissement porte l'identité de son vendeur e
 Ajoutez **deux champs** à votre appel habituel de création d'intention de paiement.
 
 ```bash
-POST /v1/payment-intents
+POST https://pay.sandbox.yabetoopay.com/v1/payment-intents   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
 ```
 
 | Paramètre | Type | Description |
@@ -65,7 +66,7 @@ const res = await fetch(
 
 La confirmation de l'intention est ensuite **identique à un paiement ordinaire** : voir
 [Confirmer une intention](/fr/payments/api/confirm). Rien ne change côté client final — il paie
-avec son Mobile Money comme d'habitude.
+comme d'habitude.
 
 <Warning>
 **Collision de vocabulaire avec Stripe, à connaître.** Chez Stripe, `on_behalf_of` désigne le

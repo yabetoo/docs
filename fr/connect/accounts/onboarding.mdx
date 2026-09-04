@@ -5,7 +5,7 @@ icon: "id-card"
 ---
 
 Un vendeur qui vient d'être créé **ne peut rien recevoir**. Il lui faut d'abord ouvrir son
-dossier de vérification, y déposer ses pièces et son numéro Mobile Money de versement.
+dossier de vérification, y déposer ses pièces et sa destination de versement.
 
 Yabetoo héberge ce parcours. Vous générez un lien, vous le transmettez au vendeur, il le
 complète.
@@ -13,7 +13,8 @@ complète.
 ## Générer un lien d'onboarding
 
 ```bash
-POST /v1/connect/accounts/{acct}/onboarding_links
+POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts/{acct}/onboarding_links   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/accounts/{acct}/onboarding_links       # Production
 ```
 
 <CodeGroup>
@@ -58,7 +59,7 @@ autant de fois que nécessaire pour régénérer le lien d'un vendeur qui a perd
     Pièce d'identité et selfie pour le niveau 1. Justificatif d'adresse ou registre de
     commerce pour le niveau 2, qui relève les plafonds.
   </Step>
-  <Step title="Il enregistre son numéro Mobile Money">
+  <Step title="Il enregistre sa destination de versement">
     C'est **sa destination de versement**. C'est le vendeur qui la dépose, pas vous — et c'est
     pour cela que `phone` est refusé à la création du compte.
   </Step>

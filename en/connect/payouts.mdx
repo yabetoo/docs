@@ -4,10 +4,10 @@ description: "How a seller's funds mature, and how to pay them out."
 icon: "wallet"
 ---
 
-A seller's money goes through three states before it reaches their Mobile Money.
+A seller's money goes through three states before it reaches their payout destination.
 
 ```
-charge → pending balance → (maturation) → available balance → withdrawal → Mobile Money
+charge → pending balance → (maturation) → available balance → withdrawal → seller payout destination
 ```
 
 ## The three balances
@@ -71,7 +71,8 @@ GET /v1/connect/accounts/{acct}
 ## Pay a seller out
 
 ```bash
-POST /v1/connect/accounts/{acct}/withdrawals
+POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts/{acct}/withdrawals   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/accounts/{acct}/withdrawals       # Production
 ```
 
 **You** are the one who orders the withdrawal: a connected seller has no dashboard.
@@ -115,7 +116,7 @@ curl -X POST \
 ```
 
 <Warning>
-**The call is synchronous and waits for the Mobile Money operator.** Expect several seconds.
+**The call is synchronous and waits for the operator.** Expect several seconds.
 The `status` returned is the **final** state: `succeeded` or `failed`, never `processing`.
 
 An operator refusal returns **`201` with `status: "failed"`**, not an HTTP error. Always read

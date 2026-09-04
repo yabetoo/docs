@@ -4,10 +4,10 @@ description: "Comment les fonds d'un vendeur mûrissent, et comment les lui vers
 icon: "wallet"
 ---
 
-L'argent d'un vendeur passe par trois états avant d'atteindre son Mobile Money.
+L'argent d'un vendeur passe par trois états avant d'atteindre sa destination de versement.
 
 ```
-encaissement → solde en attente → (maturation) → solde disponible → retrait → Mobile Money
+encaissement → solde en attente → (maturation) → solde disponible → retrait → destination du vendeur
 ```
 
 ## Les trois soldes
@@ -72,7 +72,8 @@ GET /v1/connect/accounts/{acct}
 ## Verser à un vendeur
 
 ```bash
-POST /v1/connect/accounts/{acct}/withdrawals
+POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts/{acct}/withdrawals   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/accounts/{acct}/withdrawals       # Production
 ```
 
 C'est **vous** qui commandez le retrait : un vendeur connecté n'a pas de tableau de bord.
@@ -116,7 +117,7 @@ curl -X POST \
 ```
 
 <Warning>
-**L'appel est synchrone et attend l'opérateur Mobile Money.** Comptez plusieurs secondes. Le
+**L'appel est synchrone et attend l'opérateur.** Comptez plusieurs secondes. Le
 `status` rendu est l'état **final** : `succeeded` ou `failed`, jamais `processing`.
 
 Un refus de l'opérateur rend **`201` avec `status: "failed"`**, pas une erreur HTTP. Lisez

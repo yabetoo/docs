@@ -4,18 +4,18 @@ description: "Encaissez au nom de vos vendeurs, prélevez votre commission et re
 icon: "share-nodes"
 ---
 
-Yabetoo Connect permet à une **marketplace** d'encaisser des paiements Mobile Money au nom de
+Yabetoo Connect permet à une **marketplace** d'encaisser des paiements au nom de
 **vendeurs** qu'elle a connectés, de prélever sa commission au passage, et de reverser aux
-vendeurs sur leur numéro Mobile Money.
+vendeurs sur leur destination de versement.
 
 Vous gardez une seule intégration, une seule clé API et un seul flux de trésorerie. Yabetoo
 tient le grand livre de chaque vendeur.
 
 <Info>
-**Disponibilité.** Yabetoo Connect est en **accès anticipé**. Les endpoints décrits ici sont
-disponibles sur l'environnement de pré-production ; l'ouverture sandbox et production se fait
-compte par compte. Écrivez à [support@yabetoopay.com](mailto:support@yabetoopay.com) pour
-demander l'accès.
+**Environnements.** Connect s'utilise sur les mêmes hôtes que le reste de l'API Yabetoo :
+`https://pay.sandbox.yabetoopay.com` avec une clé `sk_test_`, et
+`https://pay.api.yabetoopay.com` avec une clé `sk_live_`. Les deux servent les mêmes
+endpoints.
 </Info>
 
 ## Les trois acteurs
@@ -36,7 +36,7 @@ On n'écrit jamais « plateforme » pour désigner la marketplace : dans le voca
 
 ## Comment l'argent circule
 
-L'argent atterrit **toujours** sur l'identité Mobile Money de Yabetoo, puis Connect le découpe
+L'argent atterrit **toujours** sur l'identité opérateur de Yabetoo, puis Connect le découpe
 au grand livre. Il n'y a aucun routage vers un compte opérateur tiers : le partage est
 scriptural, donc atomique.
 
@@ -47,7 +47,7 @@ scriptural, donc atomique.
   </Step>
   <Step title="Le vendeur passe la vérification">
     Vous lui envoyez un lien d'onboarding hébergé par Yabetoo. Il y dépose ses pièces
-    d'identité et son numéro Mobile Money de versement.
+    d'identité et sa destination de versement.
     Voir [Onboarding et vérification](/fr/connect/accounts/onboarding).
   </Step>
   <Step title="Vous encaissez">
@@ -61,7 +61,7 @@ scriptural, donc atomique.
     configurable. Voir [Soldes et disponibilité](/fr/connect/payouts).
   </Step>
   <Step title="Vous payez le vendeur">
-    Vous commandez le retrait de son solde disponible vers son numéro Mobile Money, à la
+    Vous commandez le retrait de son solde disponible vers sa destination de versement, à la
     demande ou selon une cadence automatique.
   </Step>
 </Steps>
@@ -106,7 +106,7 @@ Lisez [Commissions et tarification](/fr/connect/pricing) avant de choisir.
     marketplace.
   </Accordion>
   <Accordion title="Aucun portefeuille ne peut être négatif">
-    Le Mobile Money ne permet pas de débiter un portefeuille a posteriori. Yabetoo n'avance
+    On ne peut pas débiter a posteriori le portefeuille d'un vendeur. Yabetoo n'avance
     donc jamais de fonds : un remboursement qui n'est pas couvert par les soldes disponibles
     est **refusé**, il ne crée pas de dette. Voir [Remboursements](/fr/connect/refunds).
   </Accordion>

@@ -8,6 +8,15 @@ vous, il vous appartient exclusivement, et le lien est immuable.
 
 Guide d'intégration : [Créer un compte connecté](/fr/connect/accounts/create).
 
+## URL de base
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox — clé sk_test_
+https://pay.api.yabetoopay.com       # Production — clé sk_live_
+```
+
+Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les mêmes endpoints.
+
 ## L'objet `connect_account`
 
 <ResponseField name="id" type="string">
@@ -230,7 +239,7 @@ du solde disponible.
 ```
 
 <Warning>
-L'appel est **synchrone** et attend l'opérateur Mobile Money. `status` est l'état **final** :
+L'appel est **synchrone** et attend l'opérateur. `status` est l'état **final** :
 `succeeded` ou `failed`. Un refus opérateur rend `201` avec `status: "failed"`, pas une erreur
 HTTP.
 </Warning>

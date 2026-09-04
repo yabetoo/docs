@@ -17,7 +17,8 @@ traceability: every collection carries the identity of its seller and its commis
 Add **two fields** to your usual payment intent creation call.
 
 ```bash
-POST /v1/payment-intents
+POST https://pay.sandbox.yabetoopay.com/v1/payment-intents   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
 ```
 
 | Parameter | Type | Description |
@@ -65,7 +66,7 @@ const res = await fetch(
 
 Confirming the intent is then **identical to an ordinary payment**: see
 [Confirm an intent](/en/payments/api/confirm). Nothing changes for the end customer — they pay
-with their Mobile Money as usual.
+as usual.
 
 <Warning>
 **Vocabulary collision with Stripe, to be aware of.** At Stripe, `on_behalf_of` designates the

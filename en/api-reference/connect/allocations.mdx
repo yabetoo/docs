@@ -8,6 +8,15 @@ part of them.
 
 Integration guide: [Deferred mode](/en/connect/payments/allocations).
 
+## Base URL
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox — sk_test_ key
+https://pay.api.yabetoopay.com       # Production — sk_live_ key
+```
+
+The paths below are relative to this base. Both hosts serve the same endpoints.
+
 ## The `connect_allocation` object
 
 <ResponseField name="id" type="string">Unique identifier, prefixed `ctr_`.</ResponseField>

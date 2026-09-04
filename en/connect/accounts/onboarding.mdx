@@ -5,14 +5,15 @@ icon: "id-card"
 ---
 
 A seller who has just been created **can receive nothing**. They must first open their
-verification file and submit their documents and their Mobile Money payout number.
+verification file and submit their documents and their payout destination.
 
 Yabetoo hosts this flow. You generate a link, you pass it to the seller, they complete it.
 
 ## Generate an onboarding link
 
 ```bash
-POST /v1/connect/accounts/{acct}/onboarding_links
+POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts/{acct}/onboarding_links   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/accounts/{acct}/onboarding_links       # Production
 ```
 
 <CodeGroup>
@@ -57,7 +58,7 @@ regenerate the link of a seller who has lost theirs.
     Identity document and selfie for level 1. Proof of address or trade register for level 2,
     which raises the limits.
   </Step>
-  <Step title="They register their Mobile Money number">
+  <Step title="They register their payout destination">
     This is **their payout destination**. It is the seller who submits it, not you — and that
     is why `phone` is rejected when the account is created.
   </Step>

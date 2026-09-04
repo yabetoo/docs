@@ -6,6 +6,15 @@ description: "Activer Connect sur votre compte et configurer la cadence de verse
 Deux ressources **singleton**, clées par votre propre compte : il n'y a rien à identifier dans
 l'URL, la cible vient de votre clé API.
 
+## URL de base
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox — clé sk_test_
+https://pay.api.yabetoopay.com       # Production — clé sk_live_
+```
+
+Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les mêmes endpoints.
+
 ## L'objet `connect_activation`
 
 <ResponseField name="id" type="string">Votre compte, `acct_…`.</ResponseField>

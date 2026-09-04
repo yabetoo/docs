@@ -12,14 +12,15 @@ Une allocation transfère des fonds de votre portefeuille vers celui d'un vendeu
 
 <Note>
 **L'endpoint ne s'appelle pas `transfers`.** Yabetoo expose déjà `/v1/transfers`, qui signifie
-l'inverse : une sortie vers un numéro Mobile Money. `allocations` dit ce que l'opération fait —
+l'inverse : une sortie vers une destination externe. `allocations` dit ce que l'opération fait —
 attribuer à un vendeur une part de fonds déjà encaissés.
 </Note>
 
 ## Créer une allocation
 
 ```bash
-POST /v1/connect/allocations
+POST https://pay.sandbox.yabetoopay.com/v1/connect/allocations   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/allocations       # Production
 ```
 
 ### En-têtes

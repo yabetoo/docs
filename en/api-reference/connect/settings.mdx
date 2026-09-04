@@ -6,6 +6,15 @@ description: "Activate Connect on your account and configure the payout schedule
 Two **singleton** resources, keyed by your own account: there is nothing to identify in the
 URL, the target comes from your API key.
 
+## Base URL
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox — sk_test_ key
+https://pay.api.yabetoopay.com       # Production — sk_live_ key
+```
+
+The paths below are relative to this base. Both hosts serve the same endpoints.
+
 ## The `connect_activation` object
 
 <ResponseField name="id" type="string">Your account, `acct_…`.</ResponseField>

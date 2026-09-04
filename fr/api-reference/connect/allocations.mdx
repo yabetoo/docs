@@ -8,6 +8,15 @@ Une **allocation** transfère des fonds de votre portefeuille vers celui d'un ve
 
 Guide d'intégration : [Mode différé](/fr/connect/payments/allocations).
 
+## URL de base
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox — clé sk_test_
+https://pay.api.yabetoopay.com       # Production — clé sk_live_
+```
+
+Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les mêmes endpoints.
+
 ## L'objet `connect_allocation`
 
 <ResponseField name="id" type="string">Identifiant unique, préfixé `ctr_`.</ResponseField>

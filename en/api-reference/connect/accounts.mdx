@@ -8,6 +8,15 @@ it belongs to you exclusively, and the link is immutable.
 
 Integration guide: [Create a connected account](/en/connect/accounts/create).
 
+## Base URL
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox — sk_test_ key
+https://pay.api.yabetoopay.com       # Production — sk_live_ key
+```
+
+The paths below are relative to this base. Both hosts serve the same endpoints.
+
 ## The `connect_account` object
 
 <ResponseField name="id" type="string">
@@ -230,7 +239,7 @@ available balance.
 ```
 
 <Warning>
-The call is **synchronous** and waits for the Mobile Money operator. `status` is the **final**
+The call is **synchronous** and waits for the operator. `status` is the **final**
 state: `succeeded` or `failed`. An operator refusal returns `201` with `status: "failed"`, not
 an HTTP error.
 </Warning>

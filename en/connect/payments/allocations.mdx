@@ -12,14 +12,15 @@ An allocation moves funds from your wallet into a seller's wallet.
 
 <Note>
 **The endpoint is not called `transfers`.** Yabetoo already exposes `/v1/transfers`, which
-means the opposite: a payout to a Mobile Money number. `allocations` says what the operation
+means the opposite: a payout to an external destination. `allocations` says what the operation
 does — assign a seller a share of funds you have already collected.
 </Note>
 
 ## Create an allocation
 
 ```bash
-POST /v1/connect/allocations
+POST https://pay.sandbox.yabetoopay.com/v1/connect/allocations   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/allocations       # Production
 ```
 
 ### Headers

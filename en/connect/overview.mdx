@@ -4,17 +4,16 @@ description: "Collect payments on behalf of your sellers, take your commission a
 icon: "share-nodes"
 ---
 
-Yabetoo Connect lets a **marketplace** collect Mobile Money payments on behalf of **sellers**
-it has connected, take its commission along the way, and pay the sellers out to their Mobile
-Money number.
+Yabetoo Connect lets a **marketplace** collect payments on behalf of **sellers**
+it has connected, take its commission along the way, and pay the sellers out to their payout destination.
 
 You keep a single integration, a single API key and a single cash flow. Yabetoo maintains the
 ledger for each seller.
 
 <Info>
-**Availability.** Yabetoo Connect is in **early access**. The endpoints described here are
-available on the pre-production environment; sandbox and production are opened account by
-account. Write to [support@yabetoopay.com](mailto:support@yabetoopay.com) to request access.
+**Environments.** Connect runs on the same hosts as the rest of the Yabetoo API:
+`https://pay.sandbox.yabetoopay.com` with an `sk_test_` key, and
+`https://pay.api.yabetoopay.com` with an `sk_live_` key. Both serve the same endpoints.
 </Info>
 
 ## The three parties
@@ -35,7 +34,7 @@ Yabetoo itself.
 
 ## How the money flows
 
-The money **always** lands on Yabetoo's Mobile Money identity, then Connect splits it in the
+The money **always** lands on Yabetoo's operator identity, then Connect splits it in the
 ledger. There is no routing to a third-party operator account: the split is a book entry, so
 it is atomic.
 
@@ -46,7 +45,7 @@ it is atomic.
   </Step>
   <Step title="The seller completes verification">
     You send them an onboarding link hosted by Yabetoo. There they submit their identity
-    documents and their Mobile Money payout number.
+    documents and their payout destination.
     See [Onboarding and verification](/en/connect/accounts/onboarding).
   </Step>
   <Step title="You collect">
@@ -59,7 +58,7 @@ it is atomic.
     configurable delay. See [Balances and availability](/en/connect/payouts).
   </Step>
   <Step title="You pay the seller">
-    You order the withdrawal of their available balance to their Mobile Money number, on
+    You order the withdrawal of their available balance to their payout destination, on
     demand or on an automatic schedule.
   </Step>
 </Steps>
@@ -102,7 +101,7 @@ The same rate does not earn the same thing in both modes. A controller declaring
     Control depth is limited to 1. A connected account cannot become a marketplace.
   </Accordion>
   <Accordion title="No wallet can go negative">
-    Mobile Money does not allow a wallet to be debited after the fact. Yabetoo therefore never
+    A seller's wallet cannot be debited after the fact. Yabetoo therefore never
     advances funds: a refund that is not covered by the available balances is **refused**, it
     does not create a debt. See [Refunds](/en/connect/refunds).
   </Accordion>
