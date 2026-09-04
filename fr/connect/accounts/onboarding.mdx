@@ -60,7 +60,7 @@ autant de fois que nécessaire pour régénérer le lien d'un vendeur qui a perd
     commerce pour le niveau 2, qui relève les plafonds.
   </Step>
   <Step title="Il enregistre sa destination de versement">
-    C'est **sa destination de versement**. C'est le vendeur qui la dépose, pas vous — et c'est
+    C'est **sa destination de versement**. C'est le vendeur qui la dépose, pas vous, et c'est
     pour cela que `phone` est refusé à la création du compte.
   </Step>
   <Step title="Yabetoo instruit le dossier">
@@ -79,8 +79,8 @@ vous est notifiée par `postMessage`. Sinon, suivez l'avancement par les
 
 | | Autorisé |
 |---|---|
-| Le vendeur **encaisse** | ✅ Oui — ses fonds s'accumulent en solde en attente |
-| Le vendeur **retire** | ❌ Non — rien ne peut sortir avant approbation |
+| Le vendeur **encaisse** | ✅ Oui : ses fonds s'accumulent en solde en attente |
+| Le vendeur **retire** | ❌ Non : rien ne peut sortir avant approbation |
 
 C'est délibéré : votre vendeur peut vendre dès le premier jour, mais l'argent ne quitte pas le
 système tant que son identité n'est pas établie.
@@ -105,12 +105,12 @@ Voir [Gérer vos vendeurs](/fr/connect/accounts/manage).
 
 | Statut | Code | Cause |
 |---|---|---|
-| `401` | — | Vous visez un vendeur `live` avec une clé de test (ou l'inverse) |
-| `403` | — | Vendeur inconnu, identifiant malformé, ou vendeur d'une autre marketplace — **la réponse est identique dans les trois cas** |
+| `401` | n/a | Vous visez un vendeur `live` avec une clé de test (ou l'inverse) |
+| `403` | n/a | Vendeur inconnu, identifiant malformé, ou vendeur d'une autre marketplace : **la réponse est identique dans les trois cas** |
 | `422` | `rule: "derived"` | `country` ou `kycLevel` envoyé |
-| `502` | `E_CONNECT_ONBOARDING_UNSUPPORTED` | Aucun barème de conformité n'est configuré pour le pays de ce vendeur. Contactez le support — un réessai ne changera rien. |
+| `502` | `E_CONNECT_ONBOARDING_UNSUPPORTED` | Aucun barème de conformité n'est configuré pour le pays de ce vendeur. Contactez le support : un réessai ne changera rien. |
 | `502` | `E_REFERENTIAL_COUNTRY_MISSING` | Le pays du compte est introuvable dans le référentiel |
-| `503` | `E_SERVICE_UNAVAILABLE` | Le service de vérification est indisponible — réessayez |
+| `503` | `E_SERVICE_UNAVAILABLE` | Le service de vérification est indisponible, réessayez |
 
 <Note>
 Les codes `403` ne distinguent jamais « ce vendeur n'existe pas » de « ce vendeur n'est pas le

@@ -14,22 +14,24 @@ peut jamais viser un vendeur `live`.
 
 <Steps>
   <Step title="Activez Connect et choisissez votre mode">
-    Ce choix est **définitif**. Lisez [Commissions](/fr/connect/pricing) avant.
-
-    ```bash
-    curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/activations \
-      -H "Authorization: Bearer sk_test_..." \
-      -H "Content-Type: application/json" \
-      -d '{ "connect_mode": "marketplace" }'
-    ```
-
-    ```json 201
-    { "id": "acct_...", "object": "connect_activation", "connect_mode": "marketplace" }
-    ```
+    L'activation se fait dans votre [tableau de bord](https://app.yabetoo.com/dashboard/connect),
+    section **Connect**. Choisissez **marketplace** ou **plateforme**.
 
     <Warning>
-    Un `409` signifie « déjà activé », pas une erreur. Le mode est immuable.
+    Ce choix est **définitif** : le mode ne se modifie pas après coup. Lisez
+    [Commissions](/fr/connect/pricing) avant de confirmer.
     </Warning>
+
+    Votre intégration peut vérifier l'état à tout moment :
+
+    ```bash
+    curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+      -H "Authorization: Bearer sk_test_..."
+    ```
+
+    ```json 200
+    { "id": "acct_...", "object": "connect_activation", "connect_mode": "marketplace" }
+    ```
   </Step>
 
   <Step title="Créez un vendeur">
@@ -41,8 +43,8 @@ peut jamais viser un vendeur `live`.
       -H "Idempotency-Key: vendor-ada-001" \
       -H "Content-Type: application/json" \
       -d '{
-        "country": "CG",
-        "currency": "XAF",
+        "country": "cg",
+        "currency": "xaf",
         "name": "Boutique Ada",
         "email": "ada@example.com"
       }'
@@ -126,7 +128,7 @@ peut jamais viser un vendeur `live`.
   </Step>
 
   <Step title="Versez-lui son solde">
-    Corps **vide** — un retrait Connect transfère la totalité du solde disponible.
+    Corps **vide** : un retrait Connect transfère la totalité du solde disponible.
 
     ```bash
     curl -X POST \
@@ -148,7 +150,7 @@ peut jamais viser un vendeur `live`.
 
     <Warning>
     L'appel **attend l'opérateur** et rend l'état final. Un refus opérateur rend `201` avec
-    `status: "failed"` — lisez toujours le `status`, pas seulement le code HTTP.
+    `status: "failed"`. Lisez toujours le `status`, pas seulement le code HTTP.
     </Warning>
   </Step>
 </Steps>
@@ -163,7 +165,7 @@ peut jamais viser un vendeur `live`.
 | `403` sur un vendeur que vous venez de créer | Clé de test visant un vendeur `live`, ou inversement | Utilisez la clé du bon environnement |
 | `400 connect.application_fee_too_low` | Votre taux ne couvre pas les frais Yabetoo | Voir [Commissions](/fr/connect/pricing) |
 | `422 E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` au retrait | Le vendeur n'a pas terminé son onboarding | Renvoyez-lui son lien |
-| `422 E_CONNECT_VENDOR_EMPTY_BALANCE` | Solde disponible vide — les fonds sont encore en attente | Attendez la maturation |
+| `422 E_CONNECT_VENDOR_EMPTY_BALANCE` | Solde disponible vide : les fonds sont encore en attente | Attendez la maturation |
 
 ## Ensuite
 

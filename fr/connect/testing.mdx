@@ -10,9 +10,9 @@ Connect se teste avec vos clés `sk_test_`, sur les mêmes endpoints qu'en produ
 
 <Warning>
 **Une clé `sk_test_` ne crée que des vendeurs de test, et ne peut viser qu'eux.** L'environnement
-d'un compte connecté est hérité de la clé qui l'a créé — il n'y a pas de champ pour le choisir.
+d'un compte connecté est hérité de la clé qui l'a créé : il n'y a pas de champ pour le choisir.
 
-Viser un vendeur `live` avec une clé de test — ou l'inverse — rend `401`, sur **toutes** les
+Viser un vendeur `live` avec une clé de test (ou l'inverse) rend `401`, sur **toutes** les
 routes Connect. Ce n'est pas un bug de clé : c'est la barrière d'isolation.
 </Warning>
 
@@ -21,18 +21,21 @@ signifie presque toujours que vous avez changé de clé entre les deux appels.
 
 ## 1. Activez Connect sur votre compte de test
 
-```bash
-curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/activations \
-  -H "Authorization: Bearer sk_test_..." \
-  -H "Content-Type: application/json" \
-  -d '{ "connect_mode": "marketplace" }'
-```
+L'activation se fait dans votre [tableau de bord](https://app.yabetoo.com/dashboard/connect),
+section **Connect**, avec votre compte de test.
 
 <Warning>
 **Le mode est immuable, y compris en test.** Vous ne pourrez pas basculer votre compte de test
 de `marketplace` à `platform` pour comparer les deux cascades. Pour tester les deux modes, il
 vous faut **deux comptes marchands** distincts.
 </Warning>
+
+Vérifiez ensuite que votre intégration lit bien le mode :
+
+```bash
+curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+  -H "Authorization: Bearer sk_test_..."
+```
 
 ## 2. Créez des vendeurs de test
 
@@ -47,7 +50,7 @@ d'exercer les refus liés à la vérification (`403 E_VERIFICATION_REQUIRED`,
 
 <Tip>
 Créez aussi un vendeur sous un **second compte marchand**. C'est le seul moyen de vérifier que
-votre code traite correctement le `403` d'un vendeur qui ne vous appartient pas — un cas que
+votre code traite correctement le `403` d'un vendeur qui ne vous appartient pas, un cas que
 vous rencontrerez en production dès qu'un identifiant se glisse d'un tenant à l'autre.
 </Tip>
 
@@ -58,7 +61,7 @@ vous rencontrerez en production dès qu'un identifiant se glisse d'un tenant à 
 vendeur pourra déposer ses pièces et sa destination de versement, mais le dossier passe par une
 **revue** : son passage à `approved` n'est ni immédiat ni garanti.
 
-Pour obtenir un vendeur de test **approuvé** — nécessaire pour exercer les retraits —
+Pour obtenir un vendeur de test **approuvé** (nécessaire pour exercer les retraits),
 contactez [support@yabetoopay.com](mailto:support@yabetoopay.com).
 </Warning>
 
@@ -72,7 +75,7 @@ Ce que vous pouvez vérifier sans approbation :
 ## 4. Testez l'encaissement et la cascade
 
 Le partage est calculé à la **capture**. Utilisez les numéros de test habituels
-pour piloter l'issue du paiement — voir
+pour piloter l'issue du paiement. Voir
 [Tester votre intégration](/fr/developer-tools/test/overview).
 
 <Steps>
@@ -118,7 +121,7 @@ comme à 1 000 000. Inutile de chercher un montant qui le déclenche.
 
 <Warning>
 **C'est la principale difficulté du test de bout en bout.** Les fonds d'un vendeur arrivent en
-`pending_balance` et ne deviennent retirables qu'après le délai de disponibilité — **7 jours
+`pending_balance` et ne deviennent retirables qu'après le délai de disponibilité, **7 jours
 par défaut**. Il n'existe aucune horloge de test ni endpoint pour forcer la maturation.
 
 Pour tester la chaîne complète en une session, demandez au support un délai raccourci sur votre
@@ -130,7 +133,7 @@ En attendant, vous pouvez vérifier :
 - que `next_maturity_at` porte bien la date attendue ;
 - que `available_at` est renseigné et `matured_at` nul sur la transaction ;
 - qu'un retrait sur un solde encore en attente rend bien
-  `422 E_CONNECT_VENDOR_EMPTY_BALANCE` — et non une erreur générique.
+  `422 E_CONNECT_VENDOR_EMPTY_BALANCE`, et non une erreur générique.
 
 ## 6. Testez le mode différé sans attendre
 
@@ -148,7 +151,7 @@ C'est la façon la plus rapide de vérifier :
 
 <Tip>
 Rejouez chaque appel d'argent **avec la même `Idempotency-Key`** et vérifiez qu'aucune seconde
-opération n'a été créée — en relisant les soldes, pas en lisant le code HTTP.
+opération n'a été créée (en relisant les soldes, pas en lisant le code HTTP).
 
 Vérifiez aussi le cas inverse : la **même clé sur deux vendeurs différents** doit produire
 **deux** opérations. Une implémentation qui déduplique là ne paierait qu'un vendeur sur deux.
@@ -172,7 +175,7 @@ Vérifiez aussi le cas inverse : la **même clé sur deux vendeurs différents**
     production.
   </Step>
   <Step title="Recréez vos vendeurs">
-    Un vendeur de test n'existe pas en production. Aucune migration n'est possible — et sa
+    Un vendeur de test n'existe pas en production. Aucune migration n'est possible, et sa
     vérification est à refaire.
   </Step>
   <Step title="Rebranchez vos webhooks">

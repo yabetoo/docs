@@ -14,7 +14,7 @@ Deux lignes s'appliquent à un encaissement Connect. Elles sont distinctes et se
 
 | Ligne | Ce qu'elle facture | Barème standard (Congo) |
 |---|---|---|
-| `collection` | l'encaissement lui-même — elle existe pour tout marchand | **3,5 % + 25 XAF** |
+| `collection` | l'encaissement lui-même (elle existe pour tout marchand) | **3,5 % + 25 XAF** |
 | `connect` | la relation Connect : vérification des vendeurs, onboarding, rails de reversement | **1 %** |
 
 Sur 10 000 XAF de brut, Yabetoo perçoit donc `375 + 100 = 475 XAF`.
@@ -86,7 +86,7 @@ l'avez fixée à [l'activation](/fr/connect/activate). Le poster est refusé.
 ### La forme taux répercute notre frais fixe (mode marketplace uniquement)
 
 En mode `controller`, un taux de 5 % ne facture pas 5 % au vendeur : il facture
-**5 % + notre part fixe**. Vous ne déclarez qu'un nombre — le fixe est le nôtre, répercuté
+**5 % + notre part fixe**. Vous ne déclarez qu'un nombre : le fixe est le nôtre, répercuté
 automatiquement, pour que votre marge ne dépende pas du panier.
 
 ```
@@ -109,7 +109,7 @@ Votre marge vaut exactement `0,5 % × brut` dans les deux cas : elle ne dépend 
 pas « 5 % ».
 </Warning>
 
-## Les deux modes — `fee_payer`
+## Les deux modes : `fee_payer`
 
 Le mode décide **qui supporte les frais Yabetoo**. Il déplace la charge, il ne la supprime
 jamais : la surcharge Connect s'applique dans les deux modes.
@@ -139,7 +139,7 @@ jamais : la surcharge Connect s'applique dans les deux modes.
     ```
 
     Rien à financer, donc **aucun plancher** : votre commission peut être nulle. Et **aucune
-    répercussion du frais fixe** — l'ajouter le ferait payer deux fois au vendeur.
+    répercussion du frais fixe** : l'ajouter le ferait payer deux fois au vendeur.
   </Tab>
 </Tabs>
 
@@ -167,16 +167,16 @@ Dans les trois cas la somme fait exactement 10 000 : Connect ne crée ni ne dét
 
 <Note>
 Ligne « commission effectivement prélevée » : en mode `controller`, les 25 XAF de frais fixe
-sont **ajoutés** à votre taux (1 000 + 25) ; en mode `account`, ils ne le sont pas — le vendeur
+sont **ajoutés** à votre taux (1 000 + 25) ; en mode `account`, ils ne le sont pas : le vendeur
 les paie déjà séparément, les répercuter les lui ferait payer deux fois.
 </Note>
 
 ## Les refus, et comment les éviter
 
-### `connect.application_fee_too_low` — 400
+### `connect.application_fee_too_low` (400)
 
 <ResponseField name="Mode concerné" type="controller uniquement">
-  Votre commission doit **dépasser** — pas seulement couvrir — les frais Yabetoo. L'égalité est
+  Votre commission doit **dépasser** (pas seulement couvrir) les frais Yabetoo. L'égalité est
   refusée : elle vous laisserait à zéro net, ce qui n'est pas une opération viable.
 </ResponseField>
 
@@ -194,7 +194,7 @@ les paie déjà séparément, les répercuter les lui ferait payer deux fois.
 ```
 
 <ResponseField name="minimum_rate_excluded" type="number">
-  Le **plancher de taux**, en pourcentage. Sur le barème standard il vaut **4,5 %** — le taux
+  Le **plancher de taux**, en pourcentage. Sur le barème standard il vaut **4,5 %** : le taux
   de collection (3,5 %) plus celui de Connect (1 %).
 
   Il est dit *excluded* parce que la borne est **stricte** : à 4,5 % pile, c'est encore refusé.
@@ -213,7 +213,7 @@ votre_taux > taux_collection + taux_connect
 ```
 
 Un taux au-dessus du plancher passe à **tous** les montants. Un taux égal ou inférieur est
-refusé à **tous** les montants — vous ne verrez pas « quelques » captures échouer, vous les
+refusé à **tous** les montants. Vous ne verrez pas « quelques » captures échouer, vous les
 verrez toutes échouer.
 
 La remédiation est donc de revoir votre tarification, jamais la vente en cours.
@@ -226,10 +226,10 @@ peut être nulle. Ce refus ne s'y produit jamais.
 
 <Tip>
 **La règle simple :** déclarez un taux strictement supérieur au plancher de votre grille, et
-vous ne serez jamais refusé pour ce motif — quel que soit le montant de la vente.
+vous ne serez jamais refusé pour ce motif, quel que soit le montant de la vente.
 </Tip>
 
-### `connect.application_fee_too_high` — 400
+### `connect.application_fee_too_high` (400)
 
 Votre commission dépasse le montant encaissé.
 
@@ -243,23 +243,23 @@ Votre commission dépasse le montant encaissé.
 }
 ```
 
-### `connect.vendor_net_not_positive` — 422
+### `connect.vendor_net_not_positive` (422)
 
 Après tous les prélèvements, le vendeur recevrait zéro ou moins. Il n'y a rien à créditer.
 
-### `connect.incomplete_request` — 422
+### `connect.incomplete_request` (422)
 
 `on_behalf_of` et `application_fee_rate` doivent être fournis **ensemble**.
 
-### `connect.fee_payer_unset` — 422
+### `connect.fee_payer_unset` (422)
 
-Le compte connecté visé n'a pas de `fee_payer` exploitable — activez Connect sur votre compte
+Le compte connecté visé n'a pas de `fee_payer` exploitable. Activez Connect sur votre compte
 avant d'encaisser. Voir [Activer Connect](/fr/connect/activate).
 
-### `E_CONNECT_PRICING_UNAVAILABLE` — 503
+### `E_CONNECT_PRICING_UNAVAILABLE` (503)
 
 La grille de commission n'a pas pu être résolue. Connect **échoue fermé** : il ne facture jamais
-un tarif de repli. Réessayez ; si le refus persiste, contactez le support — une ligne de barème
+un tarif de repli. Réessayez ; si le refus persiste, contactez le support : une ligne de barème
 manque pour votre organisation.
 
 ## Arrondis
@@ -275,7 +275,7 @@ Le XAF n'a pas de sous-unité. Les montants qui quittent réellement le système
 ## Et le mode différé ?
 
 Une [allocation](/fr/connect/payments/allocations) porte elle aussi la surcharge Connect de 1 %,
-calculée sur le **montant alloué** — pas sur le brut d'origine. Sans cela, « encaisser sans
+calculée sur le **montant alloué**, pas sur le brut d'origine. Sans cela, « encaisser sans
 vendeur puis allouer » atteindrait le même résultat économique en payant 1 % de moins.
 
 Le `fee_payer` de la relation s'y applique de la même façon : en mode `controller` vous êtes

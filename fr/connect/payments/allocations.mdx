@@ -1,18 +1,18 @@
 ---
-title: "Mode différé — allocations"
+title: "Mode différé : allocations"
 description: "Encaissez sur votre compte, puis répartissez aux vendeurs quand vous le décidez."
 icon: "arrows-split-up-and-left"
 ---
 
-Quand vous ne connaissez pas le vendeur au moment de la vente — panier multi-vendeurs,
-répartition calculée après coup, commission variable — encaissez normalement sur votre propre
+Quand vous ne connaissez pas le vendeur au moment de la vente (panier multi-vendeurs,
+répartition calculée après coup, commission variable), encaissez normalement sur votre propre
 compte, puis **allouez** au vendeur.
 
 Une allocation transfère des fonds de votre portefeuille vers celui d'un vendeur.
 
 <Note>
 **L'endpoint ne s'appelle pas `transfers`.** Yabetoo expose déjà `/v1/transfers`, qui signifie
-l'inverse : une sortie vers une destination externe. `allocations` dit ce que l'opération fait —
+l'inverse : une sortie vers une destination externe. `allocations` dit ce que l'opération fait :
 attribuer à un vendeur une part de fonds déjà encaissés.
 </Note>
 
@@ -31,7 +31,7 @@ POST https://pay.api.yabetoopay.com/v1/connect/allocations       # Production
 | `Idempotency-Key` | Recommandé | Sans elle, **aucune déduplication n'est faite** : un retry réseau alloue deux fois. |
 
 <Warning>
-Contrairement à la création de vendeur, `Idempotency-Key` est **optionnelle** ici — mais son
+Contrairement à la création de vendeur, `Idempotency-Key` est **optionnelle** ici, mais son
 absence n'est pas neutre. Une allocation déplace de l'argent : envoyez toujours une clé.
 </Warning>
 
@@ -104,8 +104,8 @@ C'est cet `amount` qui plafonne une éventuelle reprise.
 <Note>
 **Pourquoi l'allocation est facturée.** Sans cela, « encaisser sans vendeur puis allouer »
 atteindrait le même résultat économique que le [mode direct](/fr/connect/payments/charges) en
-payant 1 % de moins. Le 1 % paie la relation Connect — vérification des vendeurs, onboarding,
-rails de versement — pas le mécanisme de partage.
+payant 1 % de moins. Le 1 % paie la relation Connect (vérification des vendeurs, onboarding,
+rails de versement), pas le mécanisme de partage.
 
 L'assiette est le **montant alloué**, pas le brut d'origine : votre propre commission n'est
 donc pas taxée par Connect.
@@ -168,7 +168,7 @@ Deux étages, dans cet ordre, et jamais un troisième :
 
 <Warning>
 **Vous n'êtes jamais le payeur de dernier ressort sur une reprise.** Si le vendeur ne peut pas
-rendre les fonds — parce qu'il les a déjà retirés — la reprise est **refusée en `402`**. Une
+rendre les fonds (parce qu'il les a déjà retirés), la reprise est **refusée en `402`**. Une
 allocation dont le vendeur a été payé est structurellement irréprenable.
 
 C'est l'inverse d'un [remboursement](/fr/connect/refunds), où vous êtes le dernier recours.
@@ -183,9 +183,9 @@ La surcharge Connect de 1 % **n'est pas rendue** par une reprise : reprendre int
 
 | Statut | Code | Cause |
 |---|---|---|
-| `400` | — | L'en-tête `Yabetoo-Account` a été envoyé — le vendeur se nomme dans le corps |
-| `401` | — | Clé de test visant un vendeur `live` |
-| `403` | — | Vendeur ou allocation inconnu, malformé, appartenant à une autre marketplace — **ou allocation vers vous-même** |
+| `400` | n/a | L'en-tête `Yabetoo-Account` a été envoyé : le vendeur se nomme dans le corps |
+| `401` | n/a | Clé de test visant un vendeur `live` |
+| `403` | n/a | Vendeur ou allocation inconnu, malformé, appartenant à une autre marketplace, **ou allocation vers vous-même** |
 | `402` | `connect.insufficient_funds_for_reversal` | Le vendeur ne peut pas rendre les fonds. Le corps porte `required`, `seller_available`, `shortfall`, `currency`. |
 | `409` | `E_DUPLICATE_OPERATION` | La même `Idempotency-Key` a déjà produit une opération |
 | `409` | `E_IDEMPOTENCY_CONFLICT` | Une requête avec la même clé est en cours |
@@ -195,5 +195,5 @@ La surcharge Connect de 1 % **n'est pas rendue** par une reprise : reprendre int
 | `422` | `connect.country_unsupported` | Aucun opérateur n'est configuré pour votre pays |
 | `422` | `connect.reversal_exceeds_remaining` | La reprise dépasse le reliquat. Le corps porte `requested` et `remaining`. |
 | `422` | `E_CURRENCY_MISMATCH` | Vos deux portefeuilles ne sont pas dans la même devise |
-| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | La surcharge Connect n'a pas pu être résolue — l'opération est refusée plutôt que facturée zéro |
+| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | La surcharge Connect n'a pas pu être résolue : l'opération est refusée plutôt que facturée zéro |
 | `503` | `E_CONNECT_AVAILABILITY_DELAY_UNSET` | Le délai de disponibilité n'est pas configuré |

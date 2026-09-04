@@ -42,7 +42,7 @@ curl "https://pay.sandbox.yabetoopay.com/v1/connect/accounts?limit=20" \
       "environment": "test",
       "fee_payer": "controller",
       "country": "CG",
-      "currency": "xaf",
+      "currency": "XAF",
       "created_at": "2026-09-01T09:12:00.000Z"
     }
   ],
@@ -87,7 +87,7 @@ GET /v1/connect/accounts/{acct}
 ```
 
 <ResponseField name="balances" type="array">
-  Une entrée **par devise**. Un vendeur créé mais jamais payé rend `[]` — c'est un état
+  Une entrée **par devise**. Un vendeur créé mais jamais payé rend `[]` : c'est un état
   nominal, et la réponse reste `200`.
 </ResponseField>
 
@@ -141,7 +141,7 @@ GET /v1/connect/accounts/{acct}/transactions
 ```
 
 <Note>
-Cette liste est paginée **par numéro de page**, pas par curseur — elle ne rend donc pas de
+Cette liste est paginée **par numéro de page**, pas par curseur : elle ne rend donc pas de
 `next_cursor`.
 </Note>
 
@@ -149,7 +149,7 @@ Les deux dates se lisent ensemble :
 
 | `available_at` | `matured_at` | Signification |
 |---|---|---|
-| une date | `null` | Crédit **en attente** — il deviendra disponible à cette date |
+| une date | `null` | Crédit **en attente** : il deviendra disponible à cette date |
 | une date | une date | Crédit **mûri** et disponible |
 | `null` | `null` | Crédit **directement disponible**, sans délai |
 

@@ -5,7 +5,7 @@ icon: "money-bill-transfer"
 ---
 
 C'est le mode **direct**. Vous nommez le vendeur sur l'intention de paiement, et Yabetoo
-répartit le brut entre lui, vous et Yabetoo **au moment où le client paie** — atomiquement.
+répartit le brut entre lui, vous et Yabetoo **au moment où le client paie**, atomiquement.
 
 <Tip>
 Préférez ce mode dès que vous connaissez le vendeur au moment de la vente. Il donne la
@@ -24,7 +24,7 @@ POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
 | Paramètre | Type | Description |
 |---|---|---|
 | `on_behalf_of` | `string` | L'identifiant du vendeur, `acct_…` |
-| `application_fee_rate` | `number` | Votre commission, **en pourcentage** — entre `0` et `100` |
+| `application_fee_rate` | `number` | Votre commission, **en pourcentage** (entre `0` et `100`) |
 
 <Warning>
 **Les deux vont ensemble, ou aucun.** N'en fournir qu'un rend `422 connect.incomplete_request`.
@@ -65,7 +65,7 @@ const res = await fetch(
 </CodeGroup>
 
 La confirmation de l'intention est ensuite **identique à un paiement ordinaire** : voir
-[Confirmer une intention](/fr/payments/api/confirm). Rien ne change côté client final — il paie
+[Confirmer une intention](/fr/payments/api/confirm). Rien ne change côté client final : il paie
 comme d'habitude.
 
 <Warning>
@@ -92,7 +92,7 @@ Sur 10 000 XAF, avec `application_fee_rate: 10`, en mode `controller` et au bar�
 
 | Poste | Montant | Destination |
 |---|---:|---|
-| Brut encaissé | 10 000 | — |
+| Brut encaissé | 10 000 | n/a |
 | Votre commission (10 % + 25 de frais fixe répercuté) | −1 025 | prélevée sur le brut |
 | **Net vendeur** | **8 975** | portefeuille du vendeur, en **solde en attente** |
 | Collection Yabetoo | −375 | Yabetoo |
@@ -119,7 +119,7 @@ délibéré : un refus de contrat doit atteindre votre développeur, pas votre a
     réponse.
   </Step>
   <Step title="Le mode de commission est connu">
-    Sinon `422 connect.fee_payer_unset` — activez Connect sur votre compte.
+    Sinon `422 connect.fee_payer_unset`. Activez Connect sur votre compte.
   </Step>
   <Step title="Votre commission couvre les frais Yabetoo">
     En mode `controller` uniquement. Sinon `400 connect.application_fee_too_low`, avec le
@@ -136,8 +136,8 @@ délibéré : un refus de contrat doit atteindre votre développeur, pas votre a
 |---|---|---|
 | `400` | `connect.application_fee_too_low` | Votre commission ne dépasse pas les frais Yabetoo |
 | `400` | `connect.application_fee_too_high` | Votre commission dépasse le montant encaissé |
-| `401` | — | Clé de test visant un vendeur `live` |
-| `403` | — | Vendeur inconnu, malformé, ou d'une autre marketplace |
+| `401` | n/a | Clé de test visant un vendeur `live` |
+| `403` | n/a | Vendeur inconnu, malformé, ou d'une autre marketplace |
 | `422` | `connect.incomplete_request` | `on_behalf_of` et `application_fee_rate` non fournis ensemble |
 | `422` | `connect.fee_payer_unset` | Connect n'est pas activé sur votre compte |
 | `422` | `connect.vendor_net_not_positive` | Le vendeur ne recevrait rien |
@@ -146,6 +146,6 @@ délibéré : un refus de contrat doit atteindre votre développeur, pas votre a
 
 ## L'alternative
 
-Si vous ne connaissez pas encore le vendeur au moment de la vente — panier multi-vendeurs,
-répartition calculée après coup — encaissez normalement sur votre compte et répartissez
+Si vous ne connaissez pas encore le vendeur au moment de la vente (panier multi-vendeurs,
+répartition calculée après coup), encaissez normalement sur votre compte et répartissez
 ensuite : [Mode différé](/fr/connect/payments/allocations).

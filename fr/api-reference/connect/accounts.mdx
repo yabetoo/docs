@@ -11,11 +11,18 @@ Guide d'intégration : [Créer un compte connecté](/fr/connect/accounts/create)
 ## URL de base
 
 ```bash
-https://pay.sandbox.yabetoopay.com   # Sandbox — clé sk_test_
-https://pay.api.yabetoopay.com       # Production — clé sk_live_
+https://pay.sandbox.yabetoopay.com   # Sandbox (clé sk_test_)
+https://pay.api.yabetoopay.com       # Production (clé sk_live_)
 ```
 
 Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les mêmes endpoints.
+
+<Note>
+**Casse des codes.** En entrée, `country` et `currency` sont acceptés dans n'importe quelle
+casse : `cg` et `CG` désignent le même pays. En sortie, l'objet `connect_account` les rend
+**normalisés en majuscules** par le référentiel, tandis que les objets d'argent (allocation,
+retrait, soldes) portent une devise en **minuscules**. Comparez sans tenir compte de la casse.
+</Note>
 
 ## L'objet `connect_account`
 
@@ -48,7 +55,7 @@ Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les 
 </ResponseField>
 
 <ResponseField name="status" type="string | null">
-  État du compte. `active` signifie que le **compte existe** — pas qu'il est vérifié ni qu'il
+  État du compte. `active` signifie que le **compte existe**, pas qu'il est vérifié ni qu'il
   peut recevoir des fonds.
 </ResponseField>
 
@@ -57,7 +64,7 @@ Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les 
 </ResponseField>
 
 <ResponseField name="fee_payer" type="string | null">
-  `controller` ou `account` — qui supporte les frais Yabetoo. Dérivé du `connect_mode` de la
+  `controller` ou `account` : qui supporte les frais Yabetoo. Dérivé du `connect_mode` de la
   marketplace, jamais fourni à la création.
 </ResponseField>
 
@@ -96,7 +103,7 @@ En-tête `Idempotency-Key` **obligatoire** (255 caractères maximum).
 
 ### Renvoie
 
-L'objet `connect_account`, en `201`. ⚠️ Ce corps ne porte **ni `country` ni `currency`** —
+L'objet `connect_account`, en `201`. ⚠️ Ce corps ne porte **ni `country` ni `currency`** :
 ils apparaissent sur la lecture et la liste.
 
 <CodeGroup>
@@ -105,7 +112,7 @@ curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts \
   -H "Authorization: Bearer YOUR_SECRET_KEY" \
   -H "Idempotency-Key: vendor-ada-001" \
   -H "Content-Type: application/json" \
-  -d '{"country":"CG","currency":"XAF","name":"Boutique Ada","email":"ada@example.com"}'
+  -d '{"country":"cg","currency":"xaf","name":"Boutique Ada","email":"ada@example.com"}'
 ```
 </CodeGroup>
 
@@ -158,11 +165,11 @@ GET /v1/connect/accounts/{acct}
 Un `connect_account` **sans** `type`, `currency` ni `created_at`, augmenté de `balances` :
 
 <ResponseField name="balances" type="array">
-  Une entrée par devise. `[]` pour un vendeur sans portefeuille — état nominal, réponse `200`.
+  Une entrée par devise. `[]` pour un vendeur sans portefeuille : état nominal, réponse `200`.
 
   <Expandable title="propriétés">
     <ResponseField name="currency" type="string">Devise du portefeuille.</ResponseField>
-    <ResponseField name="balance" type="number">Solde **disponible** — le seul retirable.</ResponseField>
+    <ResponseField name="balance" type="number">Solde **disponible**, le seul retirable.</ResponseField>
     <ResponseField name="pending_balance" type="number">Crédité, pas encore mûr. Saisissable par un remboursement.</ResponseField>
     <ResponseField name="held_balance" type="number">Engagé dans un retrait en vol.</ResponseField>
     <ResponseField name="next_maturity_at" type="string | null">Échéance du prochain crédit en attente.</ResponseField>
@@ -184,7 +191,7 @@ GET /v1/connect/accounts/{acct}/transactions
 
 ### Renvoie
 
-`{ object: "list", data, has_more }` — pagination **par page**, donc **sans `next_cursor`**.
+`{ object: "list", data, has_more }` : pagination **par page**, donc **sans `next_cursor`**.
 Chaque entrée porte `id`, `object`, `amount`, `currency`, `amount_fee`, `created_at`,
 `available_at`, `matured_at`.
 
@@ -218,7 +225,7 @@ Corps vide. Pas d'`Idempotency-Key` : l'appel **reprend** une session en cours.
 POST /v1/connect/accounts/{acct}/withdrawals
 ```
 
-En-tête `Idempotency-Key` **obligatoire**. Corps **vide** — le retrait porte sur la **totalité**
+En-tête `Idempotency-Key` **obligatoire**. Corps **vide** : le retrait porte sur la **totalité**
 du solde disponible.
 
 **Refusé (422)** : `amount`. Il n'existe pas de retrait partiel.
@@ -252,10 +259,10 @@ Voir la [référence des erreurs Connect](/fr/connect/errors).
 
 | Statut | Principaux codes |
 |---|---|
-| `401` / `403` | Refus de cible — corps `{"message": "Unauthorized"}` ou `{"message": "Forbidden"}`, sans `code` |
+| `401` / `403` | Refus de cible : corps `{"message": "Unauthorized"}` ou `{"message": "Forbidden"}`, sans `code` |
 | `409` | `E_IDEMPOTENCY_CONFLICT`, `E_DUPLICATE_OPERATION` |
 | `422` | `connect.controller_mode_unset`, `E_CONNECT_VENDOR_EMPTY_BALANCE`, `E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE`, `E_PENDING_WITHDRAW` |
-| `429` | `E_TOO_MANY_REQUESTS` — création et activation uniquement |
+| `429` | `E_TOO_MANY_REQUESTS` : création et activation uniquement |
 | `502` | `E_CONNECT_ONBOARDING_UNSUPPORTED`, `E_REFERENTIAL_COUNTRY_MISSING` |
 | `503` | `E_SSO_UNAVAILABLE`, `E_SERVICE_UNAVAILABLE` |
 

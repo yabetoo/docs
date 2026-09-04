@@ -1,6 +1,6 @@
 ---
 title: "Activation et cadence"
-description: "Activer Connect sur votre compte et configurer la cadence de versement."
+description: "Lire l'activation Connect de votre compte et configurer la cadence de versement."
 ---
 
 Deux ressources **singleton**, clées par votre propre compte : il n'y a rien à identifier dans
@@ -9,8 +9,8 @@ l'URL, la cible vient de votre clé API.
 ## URL de base
 
 ```bash
-https://pay.sandbox.yabetoopay.com   # Sandbox — clé sk_test_
-https://pay.api.yabetoopay.com       # Production — clé sk_live_
+https://pay.sandbox.yabetoopay.com   # Sandbox (clé sk_test_)
+https://pay.api.yabetoopay.com       # Production (clé sk_live_)
 ```
 
 Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les mêmes endpoints.
@@ -52,39 +52,12 @@ Rend **toujours 200**, jamais 404 : « pas encore activé » est un état de pre
 
 ## Activer Connect
 
-```bash
-POST /v1/connect/activations
-```
-
-| Paramètre | Type | Obligatoire | Description |
-|---|---|---|---|
-| `connect_mode` | `string` | Oui | `marketplace` ou `platform` |
-
-**Refusé (422)** : `account_id` dans le corps.
+L'activation n'a pas de surface API : elle se fait depuis le
+[tableau de bord marchand](https://app.yabetoo.com/dashboard/connect), section **Connect**.
 
 <Warning>
-Le mode est **immuable**. Un second appel — même avec la même valeur — rend `409`. Traitez-le
-comme « déjà activé », pas comme une erreur.
+`connect_mode` est **immuable** une fois posé. Voir [Activer Connect](/fr/connect/activate).
 </Warning>
-
-<CodeGroup>
-```bash cURL
-curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/activations \
-  -H "Authorization: Bearer YOUR_SECRET_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"connect_mode":"marketplace"}'
-```
-</CodeGroup>
-
-```json 201
-{
-  "id": "acct_01HZMARKETPLACE00000000000",
-  "object": "connect_activation",
-  "connect_mode": "marketplace"
-}
-```
-
-**Débit limité à 20 requêtes par minute.**
 
 ---
 
@@ -111,7 +84,7 @@ POST /v1/connect/payout_schedule
 
 ### Renvoie
 
-L'objet `connect_payout_schedule`, en **`200`** — pas `201` : la ressource est votre compte,
+L'objet `connect_payout_schedule`, en **`200`**, pas `201` : la ressource est votre compte,
 elle existe déjà. Reposter **remplace** la configuration.
 
 ```json 200
@@ -133,9 +106,7 @@ Cet endpoint est naturellement idempotent : il n'a ni `Idempotency-Key` ni limit
 
 | Statut | Code | Cause |
 |---|---|---|
-| `400` | — | En-tête `Yabetoo-Account` envoyé |
+| `400` | n/a | En-tête `Yabetoo-Account` envoyé |
 | `401` | `E_UNAUTHORIZED` | Clé absente ou invalide |
-| `409` | — (relayé) | Connect est déjà activé — le mode est immuable |
-| `422` | — | `connect_mode` ou `cadence` absent ou hors énumération. Le corps porte `meta.choices`. |
-| `429` | `E_TOO_MANY_REQUESTS` | Plus de 20 activations par minute |
+| `422` | n/a | `connect_mode` ou `cadence` absent ou hors énumération. Le corps porte `meta.choices`. |
 | `503` | `E_SSO_UNAVAILABLE` | Service d'identité indisponible |

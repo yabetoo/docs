@@ -11,8 +11,8 @@ Guide d'intégration : [Mode différé](/fr/connect/payments/allocations).
 ## URL de base
 
 ```bash
-https://pay.sandbox.yabetoopay.com   # Sandbox — clé sk_test_
-https://pay.api.yabetoopay.com       # Production — clé sk_live_
+https://pay.sandbox.yabetoopay.com   # Sandbox (clé sk_test_)
+https://pay.api.yabetoopay.com       # Production (clé sk_live_)
 ```
 
 Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les mêmes endpoints.
@@ -24,7 +24,7 @@ Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les 
 <ResponseField name="destination" type="string">L'`acct_` du vendeur crédité.</ResponseField>
 
 <ResponseField name="amount" type="number">
-  **Ce que le vendeur a reçu**, net de la surcharge Connect — pas nécessairement ce que vous
+  **Ce que le vendeur a reçu**, net de la surcharge Connect, pas nécessairement ce que vous
   avez demandé. C'est ce montant qui plafonne les reprises.
 </ResponseField>
 
@@ -136,9 +136,9 @@ fonds, la reprise est refusée en `402`.
 
 | Statut | Code | Cause |
 |---|---|---|
-| `400` | — | En-tête `Yabetoo-Account` envoyé |
-| `401` | — | Clé de test visant un vendeur `live` |
-| `403` | — | Cible inconnue, malformée, d'une autre marketplace, ou allocation vers vous-même |
+| `400` | n/a | En-tête `Yabetoo-Account` envoyé |
+| `401` | n/a | Clé de test visant un vendeur `live` |
+| `403` | n/a | Cible inconnue, malformée, d'une autre marketplace, ou allocation vers vous-même |
 | `402` | `connect.insufficient_funds_for_reversal` | Corps : `required`, `seller_available`, `shortfall`, `currency` |
 | `409` | `E_DUPLICATE_OPERATION` · `E_IDEMPOTENCY_CONFLICT` | Idempotence |
 | `422` | `connect.fee_payer_unset` | Connect n'est pas activé |
@@ -146,7 +146,7 @@ fonds, la reprise est refusée en `402`.
 | `422` | `connect.country_unsupported` | Aucun opérateur pour votre pays |
 | `422` | `connect.reversal_exceeds_remaining` | Corps : `requested`, `remaining` |
 | `422` | `E_CURRENCY_MISMATCH` | Devises différentes |
-| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | Surcharge non résolue — refus, jamais zéro |
+| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | Surcharge non résolue : refus, jamais zéro |
 | `503` | `E_CONNECT_AVAILABILITY_DELAY_UNSET` | Délai de disponibilité non configuré |
 
 ## Événements associés

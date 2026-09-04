@@ -5,7 +5,7 @@ icon: "rotate-left"
 ---
 
 Un remboursement sur un encaissement Connect se demande par la **route de remboursement
-habituelle** — il n'y a pas d'endpoint Connect dédié. Ce qui change est la façon dont les fonds
+habituelle** : il n'y a pas d'endpoint Connect dédié. Ce qui change est la façon dont les fonds
 sont repris.
 
 ## La politique : Yabetoo n'avance jamais de fonds
@@ -25,7 +25,7 @@ Trois étages, dans cet ordre, chacun plafonné à sa part :
 
 <Steps>
   <Step title="Le solde en attente du vendeur">
-    Les fonds pas encore mûrs sont saisis en premier — c'est précisément à cela que sert le
+    Les fonds pas encore mûrs sont saisis en premier : c'est précisément à cela que sert le
     délai de disponibilité.
   </Step>
   <Step title="Le solde disponible du vendeur">
@@ -49,7 +49,7 @@ vendeur.
 ## Ce que Yabetoo ne rend pas
 
 <Warning>
-**Les frais Yabetoo — collection et surcharge Connect — ne sont pas remboursables.** Ils
+**Les frais Yabetoo (collection et surcharge Connect) ne sont pas remboursables.** Ils
 restent acquis quel que soit le mode.
 </Warning>
 
@@ -59,7 +59,7 @@ résidu. Vous êtes donc en négatif de vos frais Yabetoo sur l'aller-retour. Ce
 pénalité ajoutée : c'est la conséquence directe du fait que vous les aviez déjà absorbés à
 l'encaissement.
 
-## Le refus — `402`
+## Le refus : `402`
 
 ```json 402
 {
@@ -97,7 +97,7 @@ Sans ce webhook, vous découvririez le `402` par un acheteur mécontent. Abonnez
 premier jour.
 </Warning>
 
-Pour réapprovisionner votre solde, utilisez un dépôt — il passe par une validation Yabetoo,
+Pour réapprovisionner votre solde, utilisez un dépôt : il passe par une validation Yabetoo,
 donc prévoyez le délai.
 
 ## Réduire votre exposition

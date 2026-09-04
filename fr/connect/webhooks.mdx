@@ -14,7 +14,7 @@ Déclarez vos endpoints comme pour n'importe quel événement Yabetoo (voir
 
 <Warning>
 **Abonnez-vous au nom nu, sans préfixe.** Le `type` porté par le corps de l'événement est
-`connect.transfer.created` — pas `evt.connect.transfer.created`. Un abonnement à la forme
+`connect.transfer.created`, pas `evt.connect.transfer.created`. Un abonnement à la forme
 préfixée ne matche **rien**.
 </Warning>
 
@@ -44,7 +44,7 @@ n'est pas votre identifiant que vous lirez.
 ## Le catalogue
 
 <AccordionGroup>
-  <Accordion title="connect.transfer.created — une allocation a été créée">
+  <Accordion title="connect.transfer.created : une allocation a été créée">
     Émis à chaque [allocation](/fr/connect/payments/allocations) réussie.
 
     `data` (camelCase) : `id` (`ctr_…`), `controllerAccountId`, `connectedAccountId`,
@@ -52,12 +52,12 @@ n'est pas votre identifiant que vous lirez.
     `availableAt`, `idempotencyReference`, `sandboxId`, `createdAt`, `updatedAt`, `account`.
   </Accordion>
 
-  <Accordion title="connect.transfer.reversed — une allocation a été reprise">
+  <Accordion title="connect.transfer.reversed : une allocation a été reprise">
     `data` (camelCase) : `id` (`ctrr_…`), `connectTransferId`, `controllerAccountId`, `amount`,
     `currency`, `idempotencyReference`, `sandboxId`, `createdAt`, `updatedAt`, `account`.
   </Accordion>
 
-  <Accordion title="connect.application_fee.created — votre commission a été prélevée">
+  <Accordion title="connect.application_fee.created : votre commission a été prélevée">
     Émis à la capture d'un [encaissement direct](/fr/connect/payments/charges).
 
     `data` (camelCase) : `id` (`afee_…`), `controllerAccountId`, `connectedAccountId`,
@@ -65,26 +65,26 @@ n'est pas votre identifiant que vous lirez.
     `idempotencyReference`, `sandboxId`, `createdAt`, `updatedAt`, `account`.
 
     <Warning>
-    **Il n'est pas émis quand votre commission vaut zéro** — en mode plateforme pure, aucune
+    **Il n'est pas émis quand votre commission vaut zéro** : en mode plateforme pure, aucune
     ligne de commission n'est écrite. Son absence ne veut pas dire que la capture a échoué.
     </Warning>
   </Accordion>
 
-  <Accordion title="connect.application_fee.refunded — votre commission a été reprise">
+  <Accordion title="connect.application_fee.refunded : votre commission a été reprise">
     `data` (snake_case) : `account`, `application_fee` (`afee_…`), `refund`, `amount` (ce que
     **ce** remboursement a repris), `refunded_amount` (cumul), `currency`.
 
     Non émis si le montant repris est nul.
   </Accordion>
 
-  <Accordion title="connect.funds.available — des fonds sont devenus disponibles">
+  <Accordion title="connect.funds.available : des fonds sont devenus disponibles">
     Émis quand un crédit passe du solde en attente au solde disponible. C'est le signal pour
     déclencher un versement.
 
     `data` (snake_case) : `account`, `wallet`, `amount`, `currency`, `source_transaction`.
   </Accordion>
 
-  <Accordion title="connect.refund.blocked_insufficient_funds — un remboursement a été refusé">
+  <Accordion title="connect.refund.blocked_insufficient_funds : un remboursement a été refusé">
     Le **seul** signal que la politique « pas de crédit » s'est déclenchée. Sans lui, vous
     découvrez le `402` par un acheteur mécontent.
 
@@ -92,7 +92,7 @@ n'est pas votre identifiant que vous lirez.
     `marketplace_balance`, `shortfall`, `currency`.
   </Accordion>
 
-  <Accordion title="connect.reversal.blocked_insufficient_funds — une reprise a été refusée">
+  <Accordion title="connect.reversal.blocked_insufficient_funds : une reprise a été refusée">
     `data` (snake_case) : `account`, `allocation` (`ctr_…`), `required`, `seller_available`,
     `shortfall`, `currency`.
 
@@ -106,7 +106,7 @@ n'est pas votre identifiant que vous lirez.
 <Warning>
 **La casse des champs de `data` n'est pas uniforme.** Les charges utiles dérivées d'un objet
 (`transfer`, `reversal`, `application_fee.created`) sont en **camelCase** ; les trois autres
-sont en **snake_case**. Ne présumez pas d'une convention unique — c'est un défaut de contrat
+sont en **snake_case**. Ne présumez pas d'une convention unique : c'est un défaut de contrat
 connu, à ne pas découvrir en production.
 </Warning>
 
@@ -122,11 +122,11 @@ vérification : lisez son état avec
 ## Idempotence de livraison
 
 Les deux événements `*_blocked_insufficient_funds` **n'ont aucune ancre d'idempotence** : trois
-refus successifs produisent trois événements. C'est correct — trois refus ont bien eu lieu —
+refus successifs produisent trois événements. C'est correct (trois refus ont bien eu lieu),
 mais c'est différent des cinq autres. Dédupliquez sur `event.id` si votre traitement n'est pas
 idempotent.
 
 ## Vérification et sécurité
 
 La vérification de signature et les règles de rejeu sont communes à tous les webhooks Yabetoo :
-voir [Webhooks — vue d'ensemble](/fr/developer-tools/webhook/overview).
+voir [Webhooks : vue d'ensemble](/fr/developer-tools/webhook/overview).

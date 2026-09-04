@@ -5,7 +5,7 @@ icon: "user-plus"
 ---
 
 Un **compte connecté** représente un vendeur. Sa création lui donne son identité, son
-organisation et son portefeuille chez Yabetoo — mais **pas** encore le droit de recevoir de
+organisation et son portefeuille chez Yabetoo, mais **pas** encore le droit de recevoir de
 l'argent : il lui faut d'abord passer la vérification.
 
 ```bash
@@ -37,8 +37,13 @@ créerait deux vendeurs permanents, et aucun endpoint ne permet de délier ou de
 
 <Warning>
 **`email` est obligatoire et doit être celui du vendeur, pas le vôtre.** C'est le seul canal par
-lequel Yabetoo joint le vendeur — notamment pour le code de confirmation de ses retraits.
+lequel Yabetoo joint le vendeur, notamment pour le code de confirmation de ses retraits.
 </Warning>
+
+<Note>
+`country` et `currency` sont acceptés dans n'importe quelle casse ; l'API les rend
+normalisés en majuscules.
+</Note>
 
 <Note>
 **Le pays est un choix métier, pas une copie du vôtre.** Il détermine le barème de conformité
@@ -48,7 +53,7 @@ autre pays supporté.
 
 ### Champs refusés
 
-Trois champs sont **explicitement rejetés en 422** — ils ne sont jamais ignorés en silence :
+Trois champs sont **explicitement rejetés en 422** (ils ne sont jamais ignorés en silence) :
 
 | Champ | Pourquoi |
 |---|---|
@@ -56,7 +61,7 @@ Trois champs sont **explicitement rejetés en 422** — ils ne sont jamais ignor
 | `type` | Un vendeur connecté est toujours `business`. Le type ne décide de rien : son dossier est ouvert avec le barème `connected_account`. |
 | `fee_payer` | Qui paie les frais Yabetoo est **dérivé** de votre `connect_mode`, posé une fois à [l'activation](/fr/connect/activate). |
 
-Si vous en envoyez plusieurs, ils sont **tous nommés dans la même réponse** — vous n'avez pas à
+Si vous en envoyez plusieurs, ils sont **tous nommés dans la même réponse** : vous n'avez pas à
 corriger champ par champ.
 
 ## Exemple
@@ -68,8 +73,8 @@ curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts \
   -H "Idempotency-Key: vendor-ada-2026-09-04" \
   -H "Content-Type: application/json" \
   -d '{
-    "country": "CG",
-    "currency": "XAF",
+    "country": "cg",
+    "currency": "xaf",
     "name": "Boutique Ada",
     "email": "ada@example.com"
   }'
@@ -86,8 +91,8 @@ const res = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      country: "CG",
-      currency: "XAF",
+      country: "cg",
+      currency: "xaf",
       name: "Boutique Ada",
       email: "ada@example.com",
     }),
@@ -107,8 +112,8 @@ res = requests.post(
         "Idempotency-Key": f"vendor-{local_vendor_id}",
     },
     json={
-        "country": "CG",
-        "currency": "XAF",
+        "country": "cg",
+        "currency": "xaf",
         "name": "Boutique Ada",
         "email": "ada@example.com",
     },
@@ -145,7 +150,7 @@ compte tant qu'il n'a pas terminé son
 <Note>
 L'`environment` du vendeur est **hérité de la clé utilisée** : une `sk_test_` ne peut produire
 qu'un vendeur de test. Il est ensuite impossible de viser un vendeur `live` avec une clé de
-test — la réponse est un `401`.
+test : la réponse est un `401`.
 </Note>
 
 ## Rejeu
@@ -163,7 +168,7 @@ fin du premier appel.
 |---|---|---|
 | `422` | `errors[].rule = "unsupported"` | `phone`, `type` ou `fee_payer` envoyé |
 | `422` | `errors[].field = "Idempotency-Key"` | En-tête absent ou trop long |
-| `422` | `connect.controller_mode_unset` | **Connect n'est pas activé sur votre compte** — voir [Activer Connect](/fr/connect/activate) |
+| `422` | `connect.controller_mode_unset` | **Connect n'est pas activé sur votre compte**, voir [Activer Connect](/fr/connect/activate) |
 | `422` | validation | `country`, `currency`, `name` ou `email` invalide, ou code pays/devise inconnu |
 | `409` | `E_IDEMPOTENCY_CONFLICT` | Une requête avec la même clé est en cours |
 | `429` | `E_TOO_MANY_REQUESTS` | Plus de **20 créations par minute** |

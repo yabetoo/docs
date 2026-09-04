@@ -16,7 +16,7 @@ Chaque portefeuille porte trois montants, et leur somme est ce que le compte dé
 réellement.
 
 <ResponseField name="pending_balance" type="number">
-  **Crédité, pas encore mûr.** Tout crédit vendeur atterrit ici. Non retirable — mais
+  **Crédité, pas encore mûr.** Tout crédit vendeur atterrit ici. Non retirable, mais
   **saisissable par un remboursement**.
 </ResponseField>
 
@@ -31,7 +31,7 @@ réellement.
 
 <Warning>
 Ne confondez pas `pending_balance` et `held_balance` : « pas encore mûr » et « en cours de
-retrait » sont deux états différents. Les mêler ne produit aucune erreur — il fausse
+retrait » sont deux états différents. Les mêler ne produit aucune erreur. Il fausse
 simplement votre réconciliation.
 </Warning>
 
@@ -126,7 +126,7 @@ toujours le `status`.
 
 <Note>
 Le retrait d'un vendeur connecté est **gratuit** : aucune commission n'est prélevée dessus.
-La `destination` est masquée — vous n'avez pas à lire le numéro de votre vendeur.
+La `destination` est masquée : vous n'avez pas à lire le numéro de votre vendeur.
 </Note>
 
 ### Préconditions
@@ -143,8 +143,8 @@ Un retrait est refusé tant que l'une de ces conditions n'est pas remplie :
     l'[onboarding](/fr/connect/accounts/onboarding).
   </Accordion>
   <Accordion title="Son solde disponible n'est pas vide">
-    Sinon `422 E_CONNECT_VENDOR_EMPTY_BALANCE`. C'est un **état nominal** — avant la première
-    allocation, ou juste après un retrait — pas une erreur à réessayer.
+    Sinon `422 E_CONNECT_VENDOR_EMPTY_BALANCE`. C'est un **état nominal** (avant la première
+    allocation, ou juste après un retrait), pas une erreur à réessayer.
   </Accordion>
   <Accordion title="Aucun retrait n'est déjà en vol sur ce portefeuille">
     Sinon `422 E_PENDING_WITHDRAW`.
@@ -156,7 +156,7 @@ Un retrait est refusé tant que l'une de ces conditions n'est pas remplie :
 <Warning>
 **Le contrat de rejeu diffère des autres routes d'argent.** Dans les 24 h, rejouer la même
 `Idempotency-Key` rend le **même `201`**. Au-delà, vous obtenez
-**`409 E_DUPLICATE_OPERATION`** — le service ne reconstruit pas la réponse d'origine.
+**`409 E_DUPLICATE_OPERATION`** : le service ne reconstruit pas la réponse d'origine.
 
 La même clé sur **deux vendeurs différents** paie bien les deux : la clé est scopée par
 endpoint et par vendeur.
@@ -210,13 +210,13 @@ manuel, ils dépendent entièrement de vous pour être payés.
 
 | Statut | Code | Cause |
 |---|---|---|
-| `401` | — | Clé de test visant un vendeur `live` |
+| `401` | n/a | Clé de test visant un vendeur `live` |
 | `403` | `E_VERIFICATION_REQUIRED` | Le KYC du vendeur n'est pas approuvé |
-| `403` | — | Vendeur inconnu, malformé, ou d'une autre marketplace |
+| `403` | n/a | Vendeur inconnu, malformé, ou d'une autre marketplace |
 | `409` | `E_DUPLICATE_OPERATION` | Clé d'idempotence déjà consommée (hors fenêtre de cache) |
 | `409` | `E_IDEMPOTENCY_CONFLICT` | Une requête avec la même clé est en cours |
 | `422` | `rule: "unsupported"` | `amount` envoyé |
-| `422` | `E_CONNECT_VENDOR_EMPTY_BALANCE` | Solde disponible vide — état nominal |
+| `422` | `E_CONNECT_VENDOR_EMPTY_BALANCE` | Solde disponible vide, état nominal |
 | `422` | `E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` | Pas de destination de versement |
 | `422` | `E_PENDING_WITHDRAW` | Un retrait est déjà en vol |
 | `503` | `E_SERVICE_UNAVAILABLE` | Service amont indisponible |
