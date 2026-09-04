@@ -1,0 +1,150 @@
+---
+title: "Encaisser pour un vendeur"
+description: "Nommez le vendeur au moment de la vente : le partage est fait à la capture, en une transaction."
+icon: "money-bill-transfer"
+---
+
+C'est le mode **direct**. Vous nommez le vendeur sur l'intention de paiement, et Yabetoo
+répartit le brut entre lui, vous et Yabetoo **au moment où le client paie** — atomiquement.
+
+<Tip>
+Préférez ce mode dès que vous connaissez le vendeur au moment de la vente. Il donne la
+meilleure traçabilité : chaque encaissement porte l'identité de son vendeur et sa commission.
+</Tip>
+
+## Créer l'intention
+
+Ajoutez **deux champs** à votre appel habituel de création d'intention de paiement.
+
+```bash
+POST /v1/payment-intents
+```
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `on_behalf_of` | `string` | L'identifiant du vendeur, `acct_…` |
+| `application_fee_rate` | `number` | Votre commission, **en pourcentage** — entre `0` et `100` |
+
+<Warning>
+**Les deux vont ensemble, ou aucun.** N'en fournir qu'un rend `422 connect.incomplete_request`.
+Sans aucun des deux, l'encaissement est un encaissement ordinaire sur votre propre compte.
+</Warning>
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 10000,
+    "currency": "xaf",
+    "on_behalf_of": "acct_01HZVENDOR0000000000000000",
+    "application_fee_rate": 10
+  }'
+```
+
+```javascript fetch
+const res = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.YABETOO_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: 10000,
+      currency: "xaf",
+      on_behalf_of: sellerAccountId,
+      application_fee_rate: 10,
+    }),
+  }
+);
+```
+</CodeGroup>
+
+La confirmation de l'intention est ensuite **identique à un paiement ordinaire** : voir
+[Confirmer une intention](/fr/payments/api/confirm). Rien ne change côté client final — il paie
+avec son Mobile Money comme d'habitude.
+
+<Warning>
+**Collision de vocabulaire avec Stripe, à connaître.** Chez Stripe, `on_behalf_of` désigne le
+marchand de *règlement* et les fonds restent chez la plateforme. **Chez Yabetoo, ce champ dit
+où l'argent VA.** Si vous venez de Stripe, ne le lisez pas à l'envers.
+</Warning>
+
+<Note>
+**Pourquoi un taux et pas un montant.** Le brut est converti dans la devise du pays choisi au
+moment de la confirmation : une intention de 100 EUR confirmée au Congo capture environ
+65 000 XAF, tandis qu'un montant fixe de 20 resterait 20. Le taux, lui, reste juste quelle que
+soit l'échelle.
+</Note>
+
+<Warning>
+`destination` est l'ancien nom de `on_behalf_of`. Il est **refusé en 422**, jamais ignoré.
+</Warning>
+
+## Ce qui se passe à la capture
+
+Sur 10 000 XAF, avec `application_fee_rate: 10`, en mode `controller` et au barème standard
+(collection 3,5 % + 25, Connect 1 %) :
+
+| Poste | Montant | Destination |
+|---|---:|---|
+| Brut encaissé | 10 000 | — |
+| Votre commission (10 % + 25 de frais fixe répercuté) | −1 025 | prélevée sur le brut |
+| **Net vendeur** | **8 975** | portefeuille du vendeur, en **solde en attente** |
+| Collection Yabetoo | −375 | Yabetoo |
+| Surcharge Connect Yabetoo | −100 | Yabetoo |
+| **Votre net** | **550** | votre portefeuille, **disponible immédiatement** |
+
+Contrôle : `8 975 + 550 + 475 = 10 000`.
+
+Le détail des deux modes et des refus : [Commissions et tarification](/fr/connect/pricing).
+
+<Warning>
+**Le net du vendeur arrive en solde EN ATTENTE**, pas en solde disponible. Il devient retirable
+après le délai de disponibilité. Voir [Soldes et versements](/fr/connect/payouts).
+</Warning>
+
+## Vérifications faites à la création
+
+Yabetoo refuse **à la création de l'intention**, pas au moment où le client paie. C'est
+délibéré : un refus de contrat doit atteindre votre développeur, pas votre acheteur.
+
+<Steps>
+  <Step title="Le vendeur est bien le vôtre">
+    Sinon `403`. Un vendeur inconnu et un vendeur d'une autre marketplace rendent la même
+    réponse.
+  </Step>
+  <Step title="Le mode de commission est connu">
+    Sinon `422 connect.fee_payer_unset` — activez Connect sur votre compte.
+  </Step>
+  <Step title="Votre commission couvre les frais Yabetoo">
+    En mode `controller` uniquement. Sinon `400 connect.application_fee_too_low`, avec le
+    plancher de taux et le minimum requis dans le corps.
+  </Step>
+  <Step title="Le vendeur recevrait un montant positif">
+    Sinon `422 connect.vendor_net_not_positive`.
+  </Step>
+</Steps>
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `400` | `connect.application_fee_too_low` | Votre commission ne dépasse pas les frais Yabetoo |
+| `400` | `connect.application_fee_too_high` | Votre commission dépasse le montant encaissé |
+| `401` | — | Clé de test visant un vendeur `live` |
+| `403` | — | Vendeur inconnu, malformé, ou d'une autre marketplace |
+| `422` | `connect.incomplete_request` | `on_behalf_of` et `application_fee_rate` non fournis ensemble |
+| `422` | `connect.fee_payer_unset` | Connect n'est pas activé sur votre compte |
+| `422` | `connect.vendor_net_not_positive` | Le vendeur ne recevrait rien |
+| `422` | `rule: "unsupported"` | `destination` envoyé au lieu de `on_behalf_of` |
+| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | La grille de commission n'a pas pu être résolue. Connect **refuse** plutôt que de facturer zéro. |
+
+## L'alternative
+
+Si vous ne connaissez pas encore le vendeur au moment de la vente — panier multi-vendeurs,
+répartition calculée après coup — encaissez normalement sur votre compte et répartissez
+ensuite : [Mode différé](/fr/connect/payments/allocations).

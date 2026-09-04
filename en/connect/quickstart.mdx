@@ -1,0 +1,182 @@
+---
+title: "Quickstart"
+description: "From activation to the first payout, in six calls."
+icon: "rocket"
+---
+
+This walkthrough takes you from a blank account to a seller paid on their Mobile Money.
+
+<Info>
+Use an `sk_test_` key for this entire guide. A key's environment is **inherited** by the
+sellers it creates: a test key can only produce test sellers, and can never target a `live`
+seller.
+</Info>
+
+<Steps>
+  <Step title="Activate Connect and choose your mode">
+    This choice is **final**. Read [Commissions](/en/connect/pricing) first.
+
+    ```bash
+    curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{ "connect_mode": "marketplace" }'
+    ```
+
+    ```json 201
+    { "id": "acct_...", "object": "connect_activation", "connect_mode": "marketplace" }
+    ```
+
+    <Warning>
+    A `409` means "already activated", not an error. The mode is immutable.
+    </Warning>
+  </Step>
+
+  <Step title="Create a seller">
+    The `Idempotency-Key` header is **required**: creation is irreversible.
+
+    ```bash
+    curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Idempotency-Key: vendor-ada-001" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "country": "CG",
+        "currency": "XAF",
+        "name": "Boutique Ada",
+        "email": "ada@example.com"
+      }'
+    ```
+
+    ```json 201
+    {
+      "id": "acct_01HZVENDOR0000000000000000",
+      "object": "connect_account",
+      "status": "active",
+      "fee_payer": "controller"
+    }
+    ```
+
+    Keep this `id`: it is the seller in every call that follows.
+  </Step>
+
+  <Step title="Send them their verification link">
+    ```bash
+    curl -X POST \
+      https://pay.sandbox.yabetoopay.com/v1/connect/accounts/acct_01HZVENDOR0000000000000000/onboarding_links \
+      -H "Authorization: Bearer sk_test_..."
+    ```
+
+    ```json 201
+    {
+      "object": "connect_onboarding_link",
+      "url": "https://verify.yabetoo.com/flow?token=vsess_...",
+      "expires_at": "2026-09-06T10:00:00.000Z"
+    }
+    ```
+
+    The seller submits their documents **and their Mobile Money payout number** there. Without
+    this step, no withdrawal can go out.
+  </Step>
+
+  <Step title="Collect on their behalf">
+    Two fields are added to your usual intent creation.
+
+    ```bash
+    curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": 10000,
+        "currency": "xaf",
+        "on_behalf_of": "acct_01HZVENDOR0000000000000000",
+        "application_fee_rate": 10
+      }'
+    ```
+
+    Confirm the intent as usual. At capture, on 10,000 XAF: the seller receives **8,975** as a
+    pending balance, you keep **550**, Yabetoo collects **475**.
+
+    <Note>
+    You don't know the seller at the time of the sale yet? Collect normally, then distribute
+    with an [allocation](/en/connect/payments/allocations).
+    </Note>
+  </Step>
+
+  <Step title="Wait for maturation">
+    The seller's funds arrive as a **pending balance** and become available after the delay
+    (7 days by default).
+
+    ```bash
+    curl https://pay.sandbox.yabetoopay.com/v1/connect/accounts/acct_01HZVENDOR0000000000000000 \
+      -H "Authorization: Bearer sk_test_..."
+    ```
+
+    ```json
+    {
+      "balances": [
+        { "currency": "xaf", "balance": 0, "pending_balance": 8975,
+          "held_balance": 0, "next_maturity_at": "2026-09-11T00:00:00.000Z" }
+      ]
+    }
+    ```
+
+    Subscribe to `connect.funds.available` to be notified instead of polling.
+  </Step>
+
+  <Step title="Pay out their balance">
+    **Empty** body — a Connect withdrawal transfers the entire available balance.
+
+    ```bash
+    curl -X POST \
+      https://pay.sandbox.yabetoopay.com/v1/connect/accounts/acct_01HZVENDOR0000000000000000/withdrawals \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Idempotency-Key: payout-ada-2026-09-11"
+    ```
+
+    ```json 201
+    {
+      "id": "wd_...",
+      "object": "connect_withdrawal",
+      "amount": 8975,
+      "currency": "xaf",
+      "destination": "24****4567",
+      "status": "succeeded"
+    }
+    ```
+
+    <Warning>
+    The call **waits for the operator** and returns the final state. An operator refusal
+    returns `201` with `status: "failed"` — always read the `status`, not just the HTTP code.
+    </Warning>
+  </Step>
+</Steps>
+
+## Day-one errors
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `422 connect.controller_mode_unset` when creating a seller | Connect is not activated | Do step 1 |
+| `422` on `phone`, `type` or `fee_payer` | These fields are refused, not ignored | Remove them from the body |
+| `422` on `Idempotency-Key` | Missing header | Required at creation and at withdrawal |
+| `403` on a seller you have just created | Test key targeting a `live` seller, or the other way round | Use the key for the right environment |
+| `400 connect.application_fee_too_low` | Your rate does not cover the Yabetoo fees | See [Commissions](/en/connect/pricing) |
+| `422 E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` at withdrawal | The seller has not finished onboarding | Send them their link again |
+| `422 E_CONNECT_VENDOR_EMPTY_BALANCE` | Available balance is empty — the funds are still pending | Wait for maturation |
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Commissions" icon="percent" href="/en/connect/pricing">
+    The two modes, the floors, and why a commission can be refused.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/en/connect/webhooks">
+    The seven `connect.*` events.
+  </Card>
+  <Card title="Refunds" icon="rotate-left" href="/en/connect/refunds">
+    The clawback cascade and the `402` refusal.
+  </Card>
+  <Card title="Deferred mode" icon="arrows-split-up-and-left" href="/en/connect/payments/allocations">
+    Collect first, distribute later.
+  </Card>
+</CardGroup>

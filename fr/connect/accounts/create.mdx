@@ -1,0 +1,192 @@
+---
+title: "Créer un compte connecté"
+description: "Créez le compte d'un vendeur que vous connectez à votre marketplace."
+icon: "user-plus"
+---
+
+Un **compte connecté** représente un vendeur. Sa création lui donne son identité, son
+organisation et son portefeuille chez Yabetoo — mais **pas** encore le droit de recevoir de
+l'argent : il lui faut d'abord passer la vérification.
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/accounts       # Production
+```
+
+## En-têtes
+
+| En-tête | Obligatoire | Règle |
+|---|---|---|
+| `Authorization: Bearer sk_…` | Oui | Votre clé secrète de marketplace |
+| `Idempotency-Key` | **Oui** | Chaîne non vide, 255 caractères maximum |
+
+<Warning>
+**`Idempotency-Key` est obligatoire sur cette route**, contrairement à la plupart des endpoints
+Yabetoo. La création d'un vendeur est **irréversible** : sans clé, un simple retry réseau
+créerait deux vendeurs permanents, et aucun endpoint ne permet de délier ou de fusionner.
+</Warning>
+
+## Corps de la requête
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `country` | `string` | Oui | Code pays ISO 3166-1 alpha-2, ex. `CG` |
+| `currency` | `string` | Oui | Code devise ISO 4217, ex. `XAF` |
+| `name` | `string` | Oui | Raison sociale ou nom du vendeur, 255 caractères max |
+| `email` | `string` | Oui | Adresse e-mail du vendeur, 255 caractères max |
+
+<Warning>
+**`email` est obligatoire et doit être celui du vendeur, pas le vôtre.** C'est le seul canal par
+lequel Yabetoo joint le vendeur — notamment pour le code de confirmation de ses retraits.
+</Warning>
+
+<Note>
+**Le pays est un choix métier, pas une copie du vôtre.** Il détermine le barème de conformité
+du dossier KYC de votre vendeur. Une marketplace congolaise peut connecter un vendeur d'un
+autre pays supporté.
+</Note>
+
+### Champs refusés
+
+Trois champs sont **explicitement rejetés en 422** — ils ne sont jamais ignorés en silence :
+
+| Champ | Pourquoi |
+|---|---|
+| `phone` | Le vendeur enregistre lui-même son numéro de versement pendant son onboarding KYC. L'accepter ici vous laisserait croire que vous avez enregistré une destination qui n'existe pas. |
+| `type` | Un vendeur connecté est toujours `business`. Le type ne décide de rien : son dossier est ouvert avec le barème `connected_account`. |
+| `fee_payer` | Qui paie les frais Yabetoo est **dérivé** de votre `connect_mode`, posé une fois à [l'activation](/fr/connect/activate). |
+
+Si vous en envoyez plusieurs, ils sont **tous nommés dans la même réponse** — vous n'avez pas à
+corriger champ par champ.
+
+## Exemple
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Idempotency-Key: vendor-ada-2026-09-04" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "CG",
+    "currency": "XAF",
+    "name": "Boutique Ada",
+    "email": "ada@example.com"
+  }'
+```
+
+```javascript fetch
+const res = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/connect/accounts",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.YABETOO_API_KEY}`,
+      "Idempotency-Key": `vendor-${localVendorId}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      country: "CG",
+      currency: "XAF",
+      name: "Boutique Ada",
+      email: "ada@example.com",
+    }),
+  }
+);
+
+const account = await res.json();
+```
+
+```python Python
+import os, requests
+
+res = requests.post(
+    "https://pay.sandbox.yabetoopay.com/v1/connect/accounts",
+    headers={
+        "Authorization": f"Bearer {os.environ['YABETOO_API_KEY']}",
+        "Idempotency-Key": f"vendor-{local_vendor_id}",
+    },
+    json={
+        "country": "CG",
+        "currency": "XAF",
+        "name": "Boutique Ada",
+        "email": "ada@example.com",
+    },
+)
+account = res.json()
+```
+</CodeGroup>
+
+## Réponse
+
+```json 201
+{
+  "id": "acct_01HZVENDOR0000000000000000",
+  "object": "connect_account",
+  "controller_account_id": "acct_01HZMARKETPLACE00000000000",
+  "organization_id": "org_01HZ000000000000000000000",
+  "type": "business",
+  "name": "Boutique Ada",
+  "email": "ada@example.com",
+  "status": "active",
+  "environment": "test",
+  "fee_payer": "controller",
+  "created_at": "2026-09-04T10:00:00.000Z"
+}
+```
+
+<Warning>
+**`status: "active"` ne veut pas dire « prêt à encaisser ».** À cet instant le vendeur n'a
+**ni dossier KYC, ni destination de versement, ni portefeuille**. Rien ne pourra sortir de son
+compte tant qu'il n'a pas terminé son
+[onboarding](/fr/connect/accounts/onboarding). Ce champ dit seulement que le compte existe.
+</Warning>
+
+<Note>
+L'`environment` du vendeur est **hérité de la clé utilisée** : une `sk_test_` ne peut produire
+qu'un vendeur de test. Il est ensuite impossible de viser un vendeur `live` avec une clé de
+test — la réponse est un `401`.
+</Note>
+
+## Rejeu
+
+Réutiliser la même `Idempotency-Key` rend **le même `201` avec le même `id`**, dans les 24 h
+(cache de réponse) comme au-delà (unicité en base). Vous ne créerez jamais deux vendeurs par
+accident.
+
+Une clé **déjà en cours de traitement** rend `409 E_IDEMPOTENCY_CONFLICT` : réessayez après la
+fin du premier appel.
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `422` | `errors[].rule = "unsupported"` | `phone`, `type` ou `fee_payer` envoyé |
+| `422` | `errors[].field = "Idempotency-Key"` | En-tête absent ou trop long |
+| `422` | `connect.controller_mode_unset` | **Connect n'est pas activé sur votre compte** — voir [Activer Connect](/fr/connect/activate) |
+| `422` | validation | `country`, `currency`, `name` ou `email` invalide, ou code pays/devise inconnu |
+| `409` | `E_IDEMPOTENCY_CONFLICT` | Une requête avec la même clé est en cours |
+| `429` | `E_TOO_MANY_REQUESTS` | Plus de **20 créations par minute** |
+| `503` | `E_SSO_UNAVAILABLE` | Le service d'identité est indisponible |
+
+## Contraintes du modèle
+
+<AccordionGroup>
+  <Accordion title="Un vendeur appartient à une seule marketplace, pour toujours">
+    Le lien de contrôle est posé ici et il est immuable. Il n'existe ni déliaison, ni
+    transfert vers une autre marketplace.
+  </Accordion>
+  <Accordion title="Un vendeur ne peut pas connecter d'autres vendeurs">
+    La profondeur est limitée à 1.
+  </Accordion>
+  <Accordion title="La devise doit être celle de votre compte">
+    Le multi-devise n'est pas supporté : une allocation ou un split entre deux devises
+    différentes est refusé en `422 E_CURRENCY_MISMATCH`.
+  </Accordion>
+</AccordionGroup>
+
+## Ensuite
+
+<Card title="Onboarding et vérification" icon="id-card" href="/fr/connect/accounts/onboarding">
+  Envoyez au vendeur son lien de vérification.
+</Card>

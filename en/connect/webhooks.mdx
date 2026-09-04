@@ -1,0 +1,131 @@
+---
+title: "Connect webhooks"
+description: "The seven connect.* events, their envelope, and which account they refer to."
+icon: "bell"
+---
+
+Connect emits seven events. They are delivered to **your marketplace's** webhook endpoints,
+and to the seller's if they have declared any.
+
+## Subscribing
+
+Declare your endpoints as you would for any Yabetoo event (see
+[Webhooks](/en/developer-tools/webhook/overview)), subscribing to the names below.
+
+<Warning>
+**Subscribe to the bare name, with no prefix.** The `type` carried by the event body is
+`connect.transfer.created` — not `evt.connect.transfer.created`. A subscription to the
+prefixed form matches **nothing**.
+</Warning>
+
+## The envelope
+
+```json
+{
+  "event": {
+    "id": "evt_01HZ00000000000000000000",
+    "type": "connect.transfer.created",
+    "accountId": "acct_01HZVENDOR0000000000000000",
+    "sandboxId": null,
+    "data": { },
+    "createdAt": "2026-09-04T09:20:00.000Z"
+  }
+}
+```
+
+<Warning>
+**`accountId` designates the CONNECTED ACCOUNT, never your marketplace.** It is the seller the
+event is about. Delivery to you is resolved from their control link.
+
+If you route your webhooks by `accountId`, plan for it: on a `connect.*` event, it is not your
+own identifier you will be reading.
+</Warning>
+
+## The catalogue
+
+<AccordionGroup>
+  <Accordion title="connect.transfer.created — an allocation was created">
+    Emitted on every successful [allocation](/en/connect/payments/allocations).
+
+    `data` (camelCase): `id` (`ctr_…`), `controllerAccountId`, `connectedAccountId`,
+    `sourceWalletId`, `destinationWalletId`, `amount`, `fee`, `reversedAmount`, `currency`,
+    `availableAt`, `idempotencyReference`, `sandboxId`, `createdAt`, `updatedAt`, `account`.
+  </Accordion>
+
+  <Accordion title="connect.transfer.reversed — an allocation was reversed">
+    `data` (camelCase): `id` (`ctrr_…`), `connectTransferId`, `controllerAccountId`, `amount`,
+    `currency`, `idempotencyReference`, `sandboxId`, `createdAt`, `updatedAt`, `account`.
+  </Accordion>
+
+  <Accordion title="connect.application_fee.created — your commission was taken">
+    Emitted at the capture of a [direct charge](/en/connect/payments/charges).
+
+    `data` (camelCase): `id` (`afee_…`), `controllerAccountId`, `connectedAccountId`,
+    `chargeId`, `intentId`, `transferId`, `amount`, `refundedAmount`, `currency`, `feePayer`,
+    `idempotencyReference`, `sandboxId`, `createdAt`, `updatedAt`, `account`.
+
+    <Warning>
+    **It is not emitted when your commission is zero** — in pure platform mode, no commission
+    row is written. Its absence does not mean the capture failed.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="connect.application_fee.refunded — your commission was clawed back">
+    `data` (snake_case): `account`, `application_fee` (`afee_…`), `refund`, `amount` (what
+    **this** refund recovered), `refunded_amount` (cumulative), `currency`.
+
+    Not emitted if the recovered amount is zero.
+  </Accordion>
+
+  <Accordion title="connect.funds.available — funds became available">
+    Emitted when a credit moves from the pending balance to the available balance. This is the
+    signal to trigger a payout.
+
+    `data` (snake_case): `account`, `wallet`, `amount`, `currency`, `source_transaction`.
+  </Accordion>
+
+  <Accordion title="connect.refund.blocked_insufficient_funds — a refund was refused">
+    The **only** signal that the "no credit" policy has fired. Without it, you discover the
+    `402` through an unhappy buyer.
+
+    `data` (snake_case): `account`, `charge`, `refund_amount`, `required`, `seller_available`,
+    `marketplace_balance`, `shortfall`, `currency`.
+  </Accordion>
+
+  <Accordion title="connect.reversal.blocked_insufficient_funds — a reversal was refused">
+    `data` (snake_case): `account`, `allocation` (`ctr_…`), `required`, `seller_available`,
+    `shortfall`, `currency`.
+
+    <Note>
+    No `marketplace_balance` here, unlike the refund refusal: on a reversal, your balance is
+    never called on.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+**The casing of the `data` fields is not uniform.** Payloads derived from an object
+(`transfer`, `reversal`, `application_fee.created`) are in **camelCase**; the other three are
+in **snake_case**. Do not assume a single convention — this is a known contract defect, not
+one to discover in production.
+</Warning>
+
+## The two events that do not exist
+
+<Warning>
+`connect.account.created` and `connect.account.updated` **are not emitted** today. Do not
+expect a webhook when a seller is created, nor when their verification state changes: read
+their state with
+[`GET /v1/connect/accounts/{acct}`](/en/connect/accounts/manage).
+</Warning>
+
+## Delivery idempotency
+
+The two `*_blocked_insufficient_funds` events **have no idempotency anchor**: three successive
+refusals produce three events. That is correct — three refusals really did happen — but it is
+different from the other five. Deduplicate on `event.id` if your processing is not idempotent.
+
+## Verification and security
+
+Signature verification and replay rules are common to all Yabetoo webhooks: see
+[Webhooks — overview](/en/developer-tools/webhook/overview).

@@ -104,6 +104,54 @@
             ]
           },
           {
+            "tab": "Connect",
+            "groups": [
+              {
+                "group": "Pour commencer",
+                "pages": [
+                  "fr/connect/overview",
+                  "fr/connect/quickstart",
+                  "fr/connect/activate"
+                ],
+                "icon": "share-nodes"
+              },
+              {
+                "group": "Comptes connectés",
+                "pages": [
+                  "fr/connect/accounts/create",
+                  "fr/connect/accounts/onboarding",
+                  "fr/connect/accounts/manage"
+                ],
+                "icon": "users"
+              },
+              {
+                "group": "Encaisser",
+                "pages": [
+                  "fr/connect/payments/charges",
+                  "fr/connect/payments/allocations",
+                  "fr/connect/pricing"
+                ],
+                "icon": "money-bill-transfer"
+              },
+              {
+                "group": "Reverser",
+                "pages": [
+                  "fr/connect/payouts",
+                  "fr/connect/refunds"
+                ],
+                "icon": "wallet"
+              },
+              {
+                "group": "Ressources",
+                "pages": [
+                  "fr/connect/webhooks",
+                  "fr/connect/errors"
+                ],
+                "icon": "life-ring"
+              }
+            ]
+          },
+          {
             "tab": "Outils développeur",
             "groups": [
               {
@@ -322,6 +370,54 @@
             ]
           },
 
+          {
+            "tab": "Connect",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "en/connect/overview",
+                  "en/connect/quickstart",
+                  "en/connect/activate"
+                ],
+                "icon": "share-nodes"
+              },
+              {
+                "group": "Connected accounts",
+                "pages": [
+                  "en/connect/accounts/create",
+                  "en/connect/accounts/onboarding",
+                  "en/connect/accounts/manage"
+                ],
+                "icon": "users"
+              },
+              {
+                "group": "Accept payments",
+                "pages": [
+                  "en/connect/payments/charges",
+                  "en/connect/payments/allocations",
+                  "en/connect/pricing"
+                ],
+                "icon": "money-bill-transfer"
+              },
+              {
+                "group": "Pay out",
+                "pages": [
+                  "en/connect/payouts",
+                  "en/connect/refunds"
+                ],
+                "icon": "wallet"
+              },
+              {
+                "group": "Resources",
+                "pages": [
+                  "en/connect/webhooks",
+                  "en/connect/errors"
+                ],
+                "icon": "life-ring"
+              }
+            ]
+          },
           {
             "tab": "Developer tools",
             "groups": [

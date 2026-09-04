@@ -1,0 +1,118 @@
+---
+title: "Onboarding et vérification"
+description: "Faites vérifier l'identité de votre vendeur et collecter sa destination de versement."
+icon: "id-card"
+---
+
+Un vendeur qui vient d'être créé **ne peut rien recevoir**. Il lui faut d'abord ouvrir son
+dossier de vérification, y déposer ses pièces et son numéro Mobile Money de versement.
+
+Yabetoo héberge ce parcours. Vous générez un lien, vous le transmettez au vendeur, il le
+complète.
+
+## Générer un lien d'onboarding
+
+```bash
+POST /v1/connect/accounts/{acct}/onboarding_links
+```
+
+<CodeGroup>
+```bash cURL
+curl -X POST \
+  https://pay.sandbox.yabetoopay.com/v1/connect/accounts/acct_01HZVENDOR0000000000000000/onboarding_links \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+</CodeGroup>
+
+Le corps de la requête est **vide**.
+
+```json 201
+{
+  "object": "connect_onboarding_link",
+  "url": "https://verify.yabetoo.com/flow?token=vsess_...",
+  "expires_at": "2026-09-06T10:00:00.000Z"
+}
+```
+
+<Note>
+**Pas d'`Idempotency-Key` sur cette route**, contrairement à la création de vendeur. L'appel
+**reprend** une session en cours au lieu d'en ouvrir une seconde : vous pouvez le rejouer
+autant de fois que nécessaire pour régénérer le lien d'un vendeur qui a perdu le sien.
+</Note>
+
+### Champs refusés
+
+| Champ | Statut | Pourquoi |
+|---|---|---|
+| `country` | `422`, `rule: "derived"` | Le barème de conformité est dérivé du pays du **compte connecté**, fixé à sa création. |
+| `kycLevel` | `422`, `rule: "derived"` | Le niveau est dérivé de `pays × type de sujet`. Vous ne choisissez pas le régime de conformité de votre vendeur. |
+
+## Ce que le vendeur y fait
+
+<Steps>
+  <Step title="Il ouvre le lien">
+    La page est hébergée par Yabetoo (`verify.yabetoo.com`). Vous pouvez l'ouvrir dans un
+    onglet, l'envoyer par e-mail, ou l'intégrer en iframe.
+  </Step>
+  <Step title="Il dépose ses pièces">
+    Pièce d'identité et selfie pour le niveau 1. Justificatif d'adresse ou registre de
+    commerce pour le niveau 2, qui relève les plafonds.
+  </Step>
+  <Step title="Il enregistre son numéro Mobile Money">
+    C'est **sa destination de versement**. C'est le vendeur qui la dépose, pas vous — et c'est
+    pour cela que `phone` est refusé à la création du compte.
+  </Step>
+  <Step title="Yabetoo instruit le dossier">
+    Vérification automatique quand elle est possible, revue humaine sinon.
+  </Step>
+</Steps>
+
+<Warning>
+**Il n'y a pas de `return_url`.** Connect v1 n'expose aucun paramètre de redirection : le
+vendeur termine sur une page Yabetoo. Si vous chargez le lien en iframe, la fin de parcours
+vous est notifiée par `postMessage`. Sinon, suivez l'avancement par les
+[webhooks](/fr/connect/webhooks) ou en interrogeant le compte.
+</Warning>
+
+## Pendant la vérification
+
+| | Autorisé |
+|---|---|
+| Le vendeur **encaisse** | ✅ Oui — ses fonds s'accumulent en solde en attente |
+| Le vendeur **retire** | ❌ Non — rien ne peut sortir avant approbation |
+
+C'est délibéré : votre vendeur peut vendre dès le premier jour, mais l'argent ne quitte pas le
+système tant que son identité n'est pas établie.
+
+<Warning>
+**Conséquence à connaître.** Un vendeur peut accumuler des fonds puis voir son dossier
+**refusé**. Ses fonds sont alors remboursés aux acheteurs, charge par charge. Ne promettez pas
+à un vendeur non vérifié que son solde lui est acquis.
+</Warning>
+
+## Suivre l'avancement
+
+Interrogez le compte pour lire son `status` et ses soldes :
+
+```bash
+GET /v1/connect/accounts/{acct}
+```
+
+Voir [Gérer vos vendeurs](/fr/connect/accounts/manage).
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `401` | — | Vous visez un vendeur `live` avec une clé de test (ou l'inverse) |
+| `403` | — | Vendeur inconnu, identifiant malformé, ou vendeur d'une autre marketplace — **la réponse est identique dans les trois cas** |
+| `422` | `rule: "derived"` | `country` ou `kycLevel` envoyé |
+| `502` | `E_CONNECT_ONBOARDING_UNSUPPORTED` | Aucun barème de conformité n'est configuré pour le pays de ce vendeur. Contactez le support — un réessai ne changera rien. |
+| `502` | `E_REFERENTIAL_COUNTRY_MISSING` | Le pays du compte est introuvable dans le référentiel |
+| `503` | `E_SERVICE_UNAVAILABLE` | Le service de vérification est indisponible — réessayez |
+
+<Note>
+Les codes `403` ne distinguent jamais « ce vendeur n'existe pas » de « ce vendeur n'est pas le
+vôtre ». C'est voulu : sinon l'API deviendrait un moyen de tester l'existence des comptes
+d'autrui.
+</Note>

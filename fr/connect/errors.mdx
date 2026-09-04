@@ -1,0 +1,120 @@
+---
+title: "Référence des erreurs"
+description: "Tous les codes d'erreur Connect, leur cause et leur remédiation."
+icon: "triangle-exclamation"
+---
+
+## Lire un code d'erreur Connect
+
+Deux conventions coexistent dans les corps d'erreur, et il faut le savoir avant d'écrire un
+`switch` :
+
+| Forme | Exemple | Où |
+|---|---|---|
+| Pointée en minuscules | `connect.application_fee_too_low` | Les refus **métier** de la cascade Connect |
+| Préfixée `E_` | `E_CONNECT_PRICING_UNAVAILABLE` | Les refus d'**infrastructure** et les gardes partagées |
+
+<Warning>
+Branchez toujours sur la valeur littérale du champ `code` **du corps de la réponse**.
+</Warning>
+
+Certains refus n'ont **aucun** `code` — les refus de cible portent seulement
+`{"message": "Forbidden"}` ou `{"message": "Unauthorized"}`. C'est délibéré : ils ne doivent
+rien révéler sur les comptes d'autrui.
+
+## Refus de cible — 401 / 403
+
+Quatre causes, **deux réponses** seulement.
+
+| Cause interne | Statut | Corps |
+|---|---|---|
+| Identifiant malformé | `403` | `{"message": "Forbidden"}` |
+| Vendeur inconnu ou supprimé | `403` | `{"message": "Forbidden"}` |
+| Vendeur d'une autre marketplace | `403` | `{"message": "Forbidden"}` |
+| Clé de test visant un vendeur `live` (ou l'inverse) | `401` | `{"message": "Unauthorized"}` |
+
+<Note>
+Les trois premiers sont **byte-identiques** : l'API ne dira jamais si un `acct_` existe. Sinon
+elle deviendrait un moyen d'énumérer les comptes des autres marketplaces.
+</Note>
+
+## Refus de validation — 400 / 422
+
+| Code | Statut | Cause | Remédiation |
+|---|---|---|---|
+| `connect.incomplete_request` | 422 | `on_behalf_of` sans `application_fee_rate`, ou l'inverse | Fournir les deux |
+| `connect.fee_payer_unset` | 422 | Connect n'est pas activé sur votre compte | [Activer Connect](/fr/connect/activate) |
+| `connect.application_fee_too_low` | 400 | Votre commission ne dépasse pas les frais Yabetoo | Voir [Commissions](/fr/connect/pricing) |
+| `connect.application_fee_too_high` | 400 | Votre commission dépasse le brut | Corriger le taux |
+| `connect.vendor_net_not_positive` | 422 | Le vendeur recevrait zéro ou moins | Augmenter le montant, ou baisser la commission |
+| `connect.country_unsupported` | 422 | Aucun opérateur configuré pour votre pays | Contacter le support |
+| `connect.reversal_exceeds_remaining` | 422 | La reprise dépasse le reliquat de l'allocation | Lire `remaining` dans le corps |
+| `E_CONNECT_VENDOR_EMPTY_BALANCE` | 422 | Solde disponible vide | **État nominal** — ne pas réessayer |
+| `E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` | 422 | Pas de destination de versement | Renvoyer le lien d'onboarding |
+| `E_PENDING_WITHDRAW` | 422 | Un retrait est déjà en vol sur ce portefeuille | Attendre son issue |
+| `E_CURRENCY_MISMATCH` | 422 | Portefeuilles de devises différentes | Non supporté en v1 |
+| — (`rule: "unsupported"`) | 422 | Champ refusé : `phone`, `type`, `fee_payer`, `amount`, `destination`, `account_id` | Retirer le champ |
+| — (`rule: "derived"`) | 422 | Champ refusé : `country`, `kycLevel` sur un lien d'onboarding | Retirer le champ |
+| — (`field: "Idempotency-Key"`) | 422 | En-tête absent ou trop long (255 max) | Ajouter l'en-tête |
+| — (relayé) | 422 | `connect.controller_mode_unset` — Connect pas activé | [Activer Connect](/fr/connect/activate) |
+
+## Fonds insuffisants — 402
+
+| Code | Route | Qui paie en dernier ressort |
+|---|---|---|
+| `connect.insufficient_funds_for_refund` | Remboursement | **Vous** — le refus n'arrive que si votre solde ne suffit pas non plus |
+| `connect.insufficient_funds_for_reversal` | Reprise d'allocation | **Personne** — le vendeur seul est saisi |
+
+Les deux corps portent `required`, `seller_available`, `shortfall`, `currency`. Le refus de
+remboursement porte en plus `available` et `marketplace_balance`.
+
+<Note>
+`402` et non `422` : la requête est bien formée, ce sont les fonds qui manquent.
+</Note>
+
+## Conflits d'idempotence — 409
+
+| Code | Cause | Que faire |
+|---|---|---|
+| `E_IDEMPOTENCY_CONFLICT` | Une requête avec la même clé est **en cours** | Attendre puis réessayer avec la même clé |
+| `E_DUPLICATE_OPERATION` | La clé a **déjà produit** une opération | Ne pas réessayer — l'opération a eu lieu |
+| — (relayé) | `409` sur l'activation : Connect est déjà activé | Traiter comme un succès |
+
+<Warning>
+Sur `POST /v1/connect/accounts/{acct}/withdrawals`, un rejeu rend le `201` d'origine pendant
+24 h, puis `409 E_DUPLICATE_OPERATION`. Le retrait a bien eu lieu dans les deux cas.
+</Warning>
+
+## Limitation de débit — 429
+
+`E_TOO_MANY_REQUESTS` sur `POST /v1/connect/accounts` et `POST /v1/connect/activations` :
+**20 requêtes par minute**. Aucune autre route Connect n'est limitée.
+
+## Indisponibilité — 502 / 503
+
+| Code | Statut | Cause | Réessayer ? |
+|---|---|---|---|
+| `E_CONNECT_PRICING_UNAVAILABLE` | 503 | La grille de commission n'a pas pu être résolue | Oui. Si le refus persiste, une ligne de barème manque — contactez le support. |
+| `E_CONNECT_AVAILABILITY_DELAY_UNSET` | 503 | Le délai de disponibilité n'est pas configuré | Contactez le support |
+| `E_SSO_UNAVAILABLE` | 503 | Le service d'identité est indisponible | Oui |
+| `E_SERVICE_UNAVAILABLE` | 503 | Un service amont est indisponible | Oui |
+| `E_CONNECT_ONBOARDING_UNSUPPORTED` | 502 | Aucun barème de conformité pour ce pays | **Non** — contactez le support |
+| `E_REFERENTIAL_COUNTRY_MISSING` | 502 | Pays introuvable au référentiel | **Non** — contactez le support |
+
+<Warning>
+**Connect échoue fermé sur la tarification.** Un `503 E_CONNECT_PRICING_UNAVAILABLE` signifie
+que l'opération a été **refusée** plutôt que facturée à zéro. C'est délibéré : une commission
+silencieusement nulle serait une perte invisible.
+</Warning>
+
+## Surface — 400
+
+| Corps | Cause |
+|---|---|
+| `The Yabetoo-Account header is not supported on this endpoint` | Vous avez envoyé l'en-tête `Yabetoo-Account`. Les routes Connect nomment le vendeur dans le **chemin** ou le **corps**. |
+| `The Yabetoo-Account header is only supported with a partner secret key` | En-tête envoyé avec un identifiant qui n'est pas une clé `sk_` |
+
+<Note>
+L'en-tête `Yabetoo-Account` est **réservé** et n'est consommé par aucune route Connect
+aujourd'hui. Ne l'envoyez pas.
+</Note>

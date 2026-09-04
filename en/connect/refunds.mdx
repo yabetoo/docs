@@ -1,0 +1,115 @@
+---
+title: "Refunds"
+description: "How a Connect refund recovers the funds, and why it can be refused."
+icon: "rotate-left"
+---
+
+A refund on a Connect charge is requested through the **ordinary refund route** — there is no
+dedicated Connect endpoint. What changes is the way the funds are recovered.
+
+## The policy: Yabetoo never advances funds
+
+Mobile Money does not allow a wallet to be debited after the fact. A negative balance would be
+a permanently unrecoverable debt.
+
+<Warning>
+**If the money is not there, the refund fails.** Yabetoo does not create debt and does not let
+any wallet go negative. This is a "no credit" policy, and it is visible in the API:
+`402 connect.insufficient_funds_for_refund`.
+</Warning>
+
+## How the funds are recovered
+
+Three tiers, in this order, each capped at its own share:
+
+<Steps>
+  <Step title="The seller's pending balance">
+    Funds that have not matured yet are seized first — that is precisely what the availability
+    delay is for.
+  </Step>
+  <Step title="The seller's available balance">
+    For the remainder of their share.
+  </Step>
+  <Step title="Your balance">
+    Your share of the refund, **plus everything the seller could not cover**.
+  </Step>
+</Steps>
+
+<Warning>
+**You are the payer of last resort.** If the seller has already withdrawn their funds, it is
+your balance that absorbs the difference. This is the opposite of an
+[allocation reversal](/en/connect/payments/allocations), where the shortfall is simply
+refused.
+</Warning>
+
+Recovery is **capped per charge**: we never seize more, on a given charge, than that charge
+brought in. Without this cap, a refund would dip into the funds from the seller's other sales.
+
+## What Yabetoo does not return
+
+<Warning>
+**Yabetoo's fees — collection and the Connect surcharge — are not refundable.** They stay
+earned in either mode.
+</Warning>
+
+In `controller` mode, on a full refund of 10,000: the seller returns exactly what they
+received, and you return your entire commission even though you had only kept the residue. So
+you end up negative by your Yabetoo fees over the round trip. This is not an added penalty: it
+is the direct consequence of the fact that you had already absorbed them at capture.
+
+## The refusal — `402`
+
+```json 402
+{
+  "status": 402,
+  "code": "connect.insufficient_funds_for_refund",
+  "message": "refunding this charge needs 10000 from the marketplace wallet, which only holds 3000 (the seller could only cover 0 of it)",
+  "required": 10000,
+  "available": 3000,
+  "shortfall": 7000,
+  "seller_available": 0,
+  "marketplace_balance": 3000,
+  "currency": "xaf"
+}
+```
+
+<ResponseField name="required" type="number">What has to be taken from your balance.</ResponseField>
+<ResponseField name="seller_available" type="number">What the seller was able to cover.</ResponseField>
+<ResponseField name="shortfall" type="number">What is missing.</ResponseField>
+
+The check and the debit happen in **a single transaction**, with locks held: a concurrent
+withdrawal cannot slip in between the two.
+
+<Note>
+**All or nothing.** There is no automatic partial refund: a buyer who asks for 10,000 and
+receives 4,000 without having chosen it is a worse dispute than the refusal.
+</Note>
+
+## Reacting to a refusal
+
+The refusal is not silent: it emits
+[`connect.refund.blocked_insufficient_funds`](/en/connect/webhooks), with the same amounts.
+
+<Warning>
+Without this webhook, you would discover the `402` through an unhappy buyer. Subscribe to it
+from day one.
+</Warning>
+
+To top your balance back up, use a deposit — it goes through a Yabetoo validation, so plan for
+the delay.
+
+## Reducing your exposure
+
+<AccordionGroup>
+  <Accordion title="Lengthen the availability delay">
+    This is the main lever. Pending funds are seizable; withdrawn funds are not. A shorter
+    delay shifts the risk onto your own balance.
+  </Accordion>
+  <Accordion title="Do not pay out immediately after maturation">
+    In manual mode, you decide when to pay. Holding a few extra days on sellers with a high
+    dispute rate mechanically reduces your exposure.
+  </Accordion>
+  <Accordion title="Track your 402 rate">
+    That is the number that tells you whether your delay is badly calibrated.
+  </Accordion>
+</AccordionGroup>

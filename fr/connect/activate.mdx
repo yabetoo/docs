@@ -1,0 +1,107 @@
+---
+title: "Activer Connect"
+description: "Choisissez votre mode de commission et activez Yabetoo Connect sur votre compte."
+icon: "toggle-on"
+---
+
+Avant de pouvoir créer un vendeur, vous devez **activer Connect** sur votre compte. Cette étape
+pose votre `connect_mode` — le réglage qui décide qui supporte les frais Yabetoo sur chaque
+encaissement.
+
+<Warning>
+**Ce choix est définitif.** `connect_mode` est **immuable** : il n'existe aucun endpoint pour
+le modifier après coup. Lisez [Commissions et tarification](/fr/connect/pricing) avant
+d'activer.
+</Warning>
+
+## Choisir votre mode
+
+| `connect_mode` | `fee_payer` dérivé | Pour qui |
+|---|---|---|
+| `marketplace` | `controller` | Vous prélevez une commission sur la vente et payez Yabetoo **sur cette commission**. Le vendeur ne subit qu'un seul prélèvement. |
+| `platform` | `account` | Le vendeur est facturé par Yabetoo **comme un marchand ordinaire**. Votre commission s'y ajoute et vous revient en entier. |
+
+## Lire l'état de votre compte
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/connect/activations   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/connect/activations       # Production
+```
+
+<CodeGroup>
+```bash cURL
+curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+</CodeGroup>
+
+```json 200
+{
+  "id": "acct_01HZMARKETPLACE00000000000",
+  "object": "connect_activation",
+  "connect_mode": null
+}
+```
+
+`connect_mode` vaut `"marketplace"`, `"platform"`, ou `null` si Connect n'est pas activé.
+
+<Note>
+Cette route rend **toujours 200**, jamais 404 : « pas encore activé » est un état de première
+classe, pas une erreur. C'est ce qui vous permet d'afficher l'écran d'activation sans brancher
+sur un code d'erreur.
+</Note>
+
+## Activer
+
+```bash
+POST /v1/connect/activations
+```
+
+### Corps de la requête
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `connect_mode` | `string` | Oui | `marketplace` ou `platform` |
+
+<Warning>
+`account_id` est **refusé** dans le corps (422) : le compte visé est celui de votre clé API.
+</Warning>
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "connect_mode": "marketplace" }'
+```
+</CodeGroup>
+
+```json 201
+{
+  "id": "acct_01HZMARKETPLACE00000000000",
+  "object": "connect_activation",
+  "connect_mode": "marketplace"
+}
+```
+
+### Erreurs
+
+| Statut | Cause | Que faire |
+|---|---|---|
+| `409` | Connect est **déjà activé**. Le mode est immuable, même en renvoyant la même valeur. | Traitez ce 409 comme « déjà activé », pas comme une erreur. |
+| `422` | `connect_mode` absent ou hors énumération. Le corps porte `meta.choices` avec les valeurs acceptées. | Corrigez la valeur. |
+| `422` | `account_id` présent dans le corps. | Retirez-le. |
+| `429` | Plus de 20 requêtes par minute. | Réessayez plus tard. |
+| `503` | Le service d'identité est indisponible. | Réessayez. |
+
+<Warning>
+**Tant que Connect n'est pas activé, toute création de vendeur est refusée** en `422` avec un
+corps portant `connect.controller_mode_unset`. C'est le symptôme le plus fréquent au premier
+jour d'intégration.
+</Warning>
+
+## Ensuite
+
+<Card title="Créer votre premier vendeur" icon="user-plus" href="/fr/connect/accounts/create">
+  Une fois Connect activé, créez un compte connecté.
+</Card>

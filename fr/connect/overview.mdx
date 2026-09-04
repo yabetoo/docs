@@ -1,0 +1,132 @@
+---
+title: "Yabetoo Connect"
+description: "Encaissez au nom de vos vendeurs, prélevez votre commission et reversez-leur — avec une seule intégration."
+icon: "share-nodes"
+---
+
+Yabetoo Connect permet à une **marketplace** d'encaisser des paiements Mobile Money au nom de
+**vendeurs** qu'elle a connectés, de prélever sa commission au passage, et de reverser aux
+vendeurs sur leur numéro Mobile Money.
+
+Vous gardez une seule intégration, une seule clé API et un seul flux de trésorerie. Yabetoo
+tient le grand livre de chaque vendeur.
+
+<Info>
+**Disponibilité.** Yabetoo Connect est en **accès anticipé**. Les endpoints décrits ici sont
+disponibles sur l'environnement de pré-production ; l'ouverture sandbox et production se fait
+compte par compte. Écrivez à [support@yabetoopay.com](mailto:support@yabetoopay.com) pour
+demander l'accès.
+</Info>
+
+## Les trois acteurs
+
+Connect met en relation trois parties. Le vocabulaire est fixe dans toute la documentation et
+dans l'API — le confondre est la première source d'erreur d'intégration.
+
+| Acteur | Qui | Dans l'API |
+|---|---|---|
+| **Yabetoo** | le prestataire de paiement | — |
+| **La marketplace** | vous, client de Yabetoo | le *contrôleur* — c'est votre clé `sk_` qui signe les requêtes |
+| **Le vendeur** | le tiers que vous connectez | le *compte connecté*, identifié par un `acct_…` |
+
+<Warning>
+On n'écrit jamais « plateforme » pour désigner la marketplace : dans le vocabulaire Yabetoo,
+« plateforme » désigne Yabetoo elle-même.
+</Warning>
+
+## Comment l'argent circule
+
+L'argent atterrit **toujours** sur l'identité Mobile Money de Yabetoo, puis Connect le découpe
+au grand livre. Il n'y a aucun routage vers un compte opérateur tiers : le partage est
+scriptural, donc atomique.
+
+<Steps>
+  <Step title="Vous créez un vendeur">
+    Un appel API crée son compte, son organisation et son portefeuille.
+    Voir [Créer un compte connecté](/fr/connect/accounts/create).
+  </Step>
+  <Step title="Le vendeur passe la vérification">
+    Vous lui envoyez un lien d'onboarding hébergé par Yabetoo. Il y dépose ses pièces
+    d'identité et son numéro Mobile Money de versement.
+    Voir [Onboarding et vérification](/fr/connect/accounts/onboarding).
+  </Step>
+  <Step title="Vous encaissez">
+    Soit vous nommez le vendeur au moment de la capture et le partage est fait
+    immédiatement ([mode direct](/fr/connect/payments/charges)), soit vous encaissez sur votre
+    propre compte et vous répartissez plus tard
+    ([mode différé](/fr/connect/payments/allocations)).
+  </Step>
+  <Step title="Les fonds mûrissent">
+    Tout crédit vendeur arrive en **solde en attente** et devient disponible après un délai
+    configurable. Voir [Soldes et disponibilité](/fr/connect/payouts).
+  </Step>
+  <Step title="Vous payez le vendeur">
+    Vous commandez le retrait de son solde disponible vers son numéro Mobile Money, à la
+    demande ou selon une cadence automatique.
+  </Step>
+</Steps>
+
+## Les deux modes de commission
+
+Connect porte deux configurations économiques, choisies **une fois pour toutes** à
+l'activation de votre compte. C'est le réglage `fee_payer`, et il décide **qui supporte les
+commissions Yabetoo**.
+
+<CardGroup cols={2}>
+  <Card title="Mode marketplace" icon="store" href="/fr/connect/pricing">
+    `fee_payer = controller`
+
+    Vous prélevez une commission sur la vente, et les frais Yabetoo sortent **de votre
+    commission**. Le vendeur ne voit qu'un seul prélèvement : le vôtre.
+  </Card>
+  <Card title="Mode plateforme" icon="layer-group" href="/fr/connect/pricing">
+    `fee_payer = account`
+
+    Le vendeur est facturé par Yabetoo **comme un marchand ordinaire**, et votre commission
+    s'y ajoute. Vous encaissez votre commission en entier.
+  </Card>
+</CardGroup>
+
+<Warning>
+Le même taux ne rapporte pas la même chose dans les deux modes. Un contrôleur qui déclare 5 %
+garde **50** sur une vente de 10 000 XAF en mode marketplace, et **500** en mode plateforme.
+Lisez [Commissions et tarification](/fr/connect/pricing) avant de choisir.
+</Warning>
+
+## Ce que Connect fait — et ne fait pas
+
+<AccordionGroup>
+  <Accordion title="Un vendeur appartient à une seule marketplace">
+    Le lien de contrôle est posé à la création et il est **immuable**. Il n'existe aucun
+    endpoint pour délier un vendeur, ni pour le transférer à une autre marketplace. Le
+    multi-rattachement n'est pas supporté.
+  </Accordion>
+  <Accordion title="Un vendeur ne peut pas lui-même contrôler d'autres vendeurs">
+    La profondeur de contrôle est limitée à 1. Un compte connecté ne peut pas devenir
+    marketplace.
+  </Accordion>
+  <Accordion title="Aucun portefeuille ne peut être négatif">
+    Le Mobile Money ne permet pas de débiter un portefeuille a posteriori. Yabetoo n'avance
+    donc jamais de fonds : un remboursement qui n'est pas couvert par les soldes disponibles
+    est **refusé**, il ne crée pas de dette. Voir [Remboursements](/fr/connect/refunds).
+  </Accordion>
+  <Accordion title="Une seule devise par relation">
+    Un vendeur est créé dans la devise de sa marketplace. Le multi-devise n'est pas supporté
+    en v1 : une devise différente est refusée à la création.
+  </Accordion>
+  <Accordion title="Le vendeur n'a pas de tableau de bord">
+    Par défaut un compte connecté n'a ni login, ni clé API, ni dashboard. Il dépose ses
+    pièces via le lien d'onboarding, et c'est vous qui commandez ses retraits.
+  </Accordion>
+</AccordionGroup>
+
+## Prochaine étape
+
+<CardGroup cols={2}>
+  <Card title="Démarrage rapide" icon="rocket" href="/fr/connect/quickstart">
+    Un parcours complet, de l'activation au premier reversement.
+  </Card>
+  <Card title="Activer Connect" icon="toggle-on" href="/fr/connect/activate">
+    Choisir votre mode et activer Connect sur votre compte.
+  </Card>
+</CardGroup>

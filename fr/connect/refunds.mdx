@@ -1,0 +1,117 @@
+---
+title: "Remboursements"
+description: "Comment un remboursement Connect reprend les fonds, et pourquoi il peut être refusé."
+icon: "rotate-left"
+---
+
+Un remboursement sur un encaissement Connect se demande par la **route de remboursement
+habituelle** — il n'y a pas d'endpoint Connect dédié. Ce qui change est la façon dont les fonds
+sont repris.
+
+## La politique : Yabetoo n'avance jamais de fonds
+
+Le Mobile Money ne permet pas de débiter un portefeuille a posteriori. Un solde négatif serait
+une créance définitivement irrécouvrable.
+
+<Warning>
+**Si l'argent n'est pas là, le remboursement échoue.** Yabetoo ne crée pas de dette et ne
+laisse aucun portefeuille devenir négatif. C'est une politique « pas de crédit », et elle est
+visible dans l'API : `402 connect.insufficient_funds_for_refund`.
+</Warning>
+
+## Comment les fonds sont repris
+
+Trois étages, dans cet ordre, chacun plafonné à sa part :
+
+<Steps>
+  <Step title="Le solde en attente du vendeur">
+    Les fonds pas encore mûrs sont saisis en premier — c'est précisément à cela que sert le
+    délai de disponibilité.
+  </Step>
+  <Step title="Le solde disponible du vendeur">
+    Pour le reliquat de sa part.
+  </Step>
+  <Step title="Votre solde">
+    Votre part du remboursement, **plus tout ce que le vendeur n'a pas pu couvrir**.
+  </Step>
+</Steps>
+
+<Warning>
+**Vous êtes le payeur de dernier ressort.** Si le vendeur a déjà retiré ses fonds, c'est votre
+solde qui absorbe la différence. C'est l'inverse d'une
+[reprise d'allocation](/fr/connect/payments/allocations), où le manque est simplement refusé.
+</Warning>
+
+La reprise est **bornée par charge** : on ne saisit jamais plus, sur une charge, que ce qu'elle
+a rapporté. Sans cette borne, un remboursement irait puiser dans les fonds d'autres ventes du
+vendeur.
+
+## Ce que Yabetoo ne rend pas
+
+<Warning>
+**Les frais Yabetoo — collection et surcharge Connect — ne sont pas remboursables.** Ils
+restent acquis quel que soit le mode.
+</Warning>
+
+En mode `controller`, sur un remboursement total de 10 000 : le vendeur rend exactement ce
+qu'il a reçu, vous rendez votre commission entière alors que vous n'en aviez gardé que le
+résidu. Vous êtes donc en négatif de vos frais Yabetoo sur l'aller-retour. Ce n'est pas une
+pénalité ajoutée : c'est la conséquence directe du fait que vous les aviez déjà absorbés à
+l'encaissement.
+
+## Le refus — `402`
+
+```json 402
+{
+  "status": 402,
+  "code": "connect.insufficient_funds_for_refund",
+  "message": "refunding this charge needs 10000 from the marketplace wallet, which only holds 3000 (the seller could only cover 0 of it)",
+  "required": 10000,
+  "available": 3000,
+  "shortfall": 7000,
+  "seller_available": 0,
+  "marketplace_balance": 3000,
+  "currency": "xaf"
+}
+```
+
+<ResponseField name="required" type="number">Ce qu'il faut prendre sur votre solde.</ResponseField>
+<ResponseField name="seller_available" type="number">Ce que le vendeur a pu couvrir.</ResponseField>
+<ResponseField name="shortfall" type="number">Ce qui manque.</ResponseField>
+
+Le contrôle et le débit ont lieu dans **une seule transaction**, verrous posés : un retrait
+concurrent ne peut pas se glisser entre les deux.
+
+<Note>
+**Tout ou rien.** Il n'y a pas de remboursement partiel automatique : un acheteur qui demande
+10 000 et en reçoit 4 000 sans l'avoir choisi, c'est un litige pire que le refus.
+</Note>
+
+## Réagir à un refus
+
+Le refus n'est pas silencieux : il émet
+[`connect.refund.blocked_insufficient_funds`](/fr/connect/webhooks), avec les mêmes montants.
+
+<Warning>
+Sans ce webhook, vous découvririez le `402` par un acheteur mécontent. Abonnez-vous-y dès le
+premier jour.
+</Warning>
+
+Pour réapprovisionner votre solde, utilisez un dépôt — il passe par une validation Yabetoo,
+donc prévoyez le délai.
+
+## Réduire votre exposition
+
+<AccordionGroup>
+  <Accordion title="Allongez le délai de disponibilité">
+    C'est le levier principal. Les fonds en attente sont saisissables ; les fonds retirés ne le
+    sont plus. Un délai plus court transfère le risque sur votre propre solde.
+  </Accordion>
+  <Accordion title="Ne versez pas immédiatement après maturation">
+    En mode manuel, vous décidez quand payer. Retenir quelques jours de plus sur les vendeurs
+    à fort taux de litige réduit mécaniquement votre exposition.
+  </Accordion>
+  <Accordion title="Suivez votre taux de 402">
+    C'est le chiffre qui dit si votre délai est mal calibré.
+  </Accordion>
+</AccordionGroup>

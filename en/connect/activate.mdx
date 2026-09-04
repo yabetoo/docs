@@ -1,0 +1,106 @@
+---
+title: "Activate Connect"
+description: "Choose your commission mode and activate Yabetoo Connect on your account."
+icon: "toggle-on"
+---
+
+Before you can create a seller, you must **activate Connect** on your account. This step sets
+your `connect_mode` — the setting that decides who bears the Yabetoo fees on every collection.
+
+<Warning>
+**This choice is final.** `connect_mode` is **immutable**: there is no endpoint to change it
+afterwards. Read [Commissions and pricing](/en/connect/pricing) before activating.
+</Warning>
+
+## Choosing your mode
+
+| `connect_mode` | Derived `fee_payer` | Who it's for |
+|---|---|---|
+| `marketplace` | `controller` | You take a commission on the sale and pay Yabetoo **out of that commission**. The seller sees a single deduction. |
+| `platform` | `account` | The seller is billed by Yabetoo **like an ordinary merchant**. Your commission is added on top and comes back to you in full. |
+
+## Reading your account state
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/connect/activations   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/connect/activations       # Production
+```
+
+<CodeGroup>
+```bash cURL
+curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+</CodeGroup>
+
+```json 200
+{
+  "id": "acct_01HZMARKETPLACE00000000000",
+  "object": "connect_activation",
+  "connect_mode": null
+}
+```
+
+`connect_mode` is `"marketplace"`, `"platform"`, or `null` if Connect is not activated.
+
+<Note>
+This route **always returns 200**, never 404: "not activated yet" is a first-class state, not
+an error. That is what lets you render the activation screen without branching on an error
+code.
+</Note>
+
+## Activating
+
+```bash
+POST /v1/connect/activations
+```
+
+### Request body
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `connect_mode` | `string` | Yes | `marketplace` or `platform` |
+
+<Warning>
+`account_id` is **refused** in the body (422): the account targeted is the one your API key
+belongs to.
+</Warning>
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "connect_mode": "marketplace" }'
+```
+</CodeGroup>
+
+```json 201
+{
+  "id": "acct_01HZMARKETPLACE00000000000",
+  "object": "connect_activation",
+  "connect_mode": "marketplace"
+}
+```
+
+### Errors
+
+| Status | Cause | What to do |
+|---|---|---|
+| `409` | Connect is **already activated**. The mode is immutable, even if you send back the same value. | Treat this 409 as "already activated", not as an error. |
+| `422` | `connect_mode` missing or outside the enum. The body carries `meta.choices` with the accepted values. | Fix the value. |
+| `422` | `account_id` present in the body. | Remove it. |
+| `429` | More than 20 requests per minute. | Retry later. |
+| `503` | The identity service is unavailable. | Retry. |
+
+<Warning>
+**Until Connect is activated, every seller creation is refused** with a `422` whose body
+carries `connect.controller_mode_unset`. This is the most common symptom on day one of an
+integration.
+</Warning>
+
+## Next
+
+<Card title="Create your first seller" icon="user-plus" href="/en/connect/accounts/create">
+  Once Connect is activated, create a connected account.
+</Card>
