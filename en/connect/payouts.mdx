@@ -1,13 +1,13 @@
 ---
 title: "Balances and payouts"
-description: "How a seller's funds mature, and how to pay them out."
+description: "How a vendor's funds mature, and how to pay them out."
 icon: "wallet"
 ---
 
-A seller's money goes through three states before it reaches their payout destination.
+A vendor's money goes through three states before reaching their payout destination.
 
 ```
-charge → pending balance → (maturation) → available balance → withdrawal → seller payout destination
+charge → pending balance → (maturation) → available balance → payout → vendor destination
 ```
 
 ## The three balances
@@ -15,40 +15,40 @@ charge → pending balance → (maturation) → available balance → withdrawal
 Every wallet carries three amounts, and their sum is what the account actually holds.
 
 <ResponseField name="pending_balance" type="number">
-  **Credited, not matured yet.** Every seller credit lands here. Not withdrawable — but
-  **seizable by a refund**.
+  **Credited, not yet matured.** Every vendor credit lands here. Not payable, but **seizable by
+  a refund**.
 </ResponseField>
 
 <ResponseField name="balance" type="number">
-  **Available.** This is the only withdrawable amount.
+  **Available.** This is the only amount that can be paid out.
 </ResponseField>
 
 <ResponseField name="held_balance" type="number">
-  **Committed to an in-flight withdrawal.** The money still belongs to the account, but it is
-  reserved while the operator answers.
+  **Committed to a payout in flight.** The money still belongs to the account, but it is reserved
+  while the operator responds.
 </ResponseField>
 
 <Warning>
-Do not confuse `pending_balance` and `held_balance`: "not matured yet" and "being withdrawn"
-are two different states. Mixing them produces no error — it simply makes your reconciliation
-wrong.
+Do not confuse `pending_balance` and `held_balance`: "not yet matured" and "payout in progress"
+are two different states. Mixing them up produces no error. It simply falsifies your
+reconciliation.
 </Warning>
 
 ## The availability delay
 
-A seller credit carries an `available_at` date. At maturity, a sweep moves it from
+A vendor credit carries an `available_at` date. At maturity, a sweep moves it from
 `pending_balance` to `balance`, and emits
 [`connect.funds.available`](/en/connect/webhooks).
 
 The default delay is **7 days**.
 
 <Warning>
-**The delay is not just an anti-fraud guardrail: it is how refunds get funded.** Pending funds
-are seizable; withdrawn funds are not. Shortening the delay moves the refund risk onto your
-own balance.
+**The delay is not only an anti-fraud guard: it is the funding source for refunds.** Pending
+funds are seizable; funds already paid out are not. Shortening the delay moves the refund risk
+onto your own balance.
 </Warning>
 
-You read the maturity date on the seller's account:
+You read the maturity date on the vendor's account:
 
 ```bash
 GET /v1/connect/accounts/{acct}
@@ -68,14 +68,14 @@ GET /v1/connect/accounts/{acct}
 }
 ```
 
-## Pay a seller out
+## Pay out to a vendor
 
 ```bash
 POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts/{acct}/withdrawals   # Sandbox
 POST https://pay.api.yabetoopay.com/v1/connect/accounts/{acct}/withdrawals       # Production
 ```
 
-**You** are the one who orders the withdrawal: a connected seller has no dashboard.
+**You** are the one who orders the payout: a connected vendor has no dashboard.
 
 ### Headers
 
@@ -86,10 +86,10 @@ POST https://pay.api.yabetoopay.com/v1/connect/accounts/{acct}/withdrawals      
 
 ### Body
 
-**Empty.** A Connect withdrawal transfers **the entire available balance**.
+**Empty.** A Connect payout transfers **the entire available balance**.
 
 <Warning>
-`amount` is **refused with a 422**: there is no partial withdrawal. The amount is the seller's
+`amount` is **refused with a 422**: there is no partial payout. The amount is the vendor's
 `balance` at the moment of the lock.
 </Warning>
 
@@ -116,36 +116,36 @@ curl -X POST \
 ```
 
 <Warning>
-**The call is synchronous and waits for the operator.** Expect several seconds.
-The `status` returned is the **final** state: `succeeded` or `failed`, never `processing`.
+**The call is synchronous and waits for the operator.** Expect several seconds. The `status`
+returned is the **final** state: `succeeded` or `failed`, never `processing`.
 
 An operator refusal returns **`201` with `status: "failed"`**, not an HTTP error. Always read
 the `status`.
 </Warning>
 
 <Note>
-A connected seller's withdrawal is **free**: no commission is taken on it. The `destination`
-is masked — you do not need to read your seller's number.
+A connected vendor's payout is **free**: no commission is taken on it. The `destination` is
+masked: you do not need to read your vendor's number.
 </Note>
 
 ### Preconditions
 
-A withdrawal is refused until every one of these conditions is met:
+A payout is refused as long as any of these conditions is not met:
 
 <AccordionGroup>
-  <Accordion title="The seller's KYC is approved">
-    Otherwise `403 E_VERIFICATION_REQUIRED`. It is the **seller's** policy that is evaluated,
+  <Accordion title="The vendor's KYC is approved">
+    Otherwise `403 E_VERIFICATION_REQUIRED`. It is the **vendor's** policy that is evaluated,
     not yours.
   </Accordion>
-  <Accordion title="The seller has a registered payout destination">
+  <Accordion title="The vendor has a registered payout destination">
     Otherwise `422 E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE`. It is collected during
     [onboarding](/en/connect/accounts/onboarding).
   </Accordion>
   <Accordion title="Their available balance is not empty">
-    Otherwise `422 E_CONNECT_VENDOR_EMPTY_BALANCE`. This is a **nominal state** — before the
-    first allocation, or right after a withdrawal — not an error to retry.
+    Otherwise `422 E_CONNECT_VENDOR_EMPTY_BALANCE`. This is a **nominal state** (before the
+    first allocation, or right after a payout), not an error to retry.
   </Accordion>
-  <Accordion title="No withdrawal is already in flight on this wallet">
+  <Accordion title="No payout is already in flight on this wallet">
     Otherwise `422 E_PENDING_WITHDRAW`.
   </Accordion>
 </AccordionGroup>
@@ -155,15 +155,15 @@ A withdrawal is refused until every one of these conditions is met:
 <Warning>
 **The replay contract differs from the other money routes.** Within 24 h, replaying the same
 `Idempotency-Key` returns the **same `201`**. Beyond that, you get
-**`409 E_DUPLICATE_OPERATION`** — the service does not rebuild the original response.
+**`409 E_DUPLICATE_OPERATION`**: the service does not rebuild the original response.
 
-The same key on **two different sellers** does pay both: the key is scoped per endpoint and
-per seller.
+The same key on **two different vendors** does pay both: the key is scoped by endpoint and by
+vendor.
 </Warning>
 
-## Automatic schedule
+## Automatic cadence
 
-Rather than calling the route by hand, you can have your sellers paid automatically as soon as
+Rather than calling the route by hand, you can have your vendors paid automatically as soon as
 their balance is positive.
 
 ```bash
@@ -195,27 +195,27 @@ curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/payout_schedule \
 ```
 
 <Note>
-Reading **always returns 200**, with `cadence: null` and `enabled: false` when nothing is
-configured. Writing returns **200**, not 201: the resource is your account, it already exists.
+The read always returns **200**, with `cadence: null` and `enabled: false` when nothing is
+configured. The write returns **200**, not 201: the resource is your account, it already exists.
 Posting again simply replaces the configuration.
 </Note>
 
 <Tip>
-The schedule is the only way to **guarantee** your sellers a payment rhythm. In manual mode,
-they depend entirely on you to get paid.
+The cadence is the only way to **guarantee** your vendors a payment rhythm. In manual mode, they
+depend entirely on you to get paid.
 </Tip>
 
-## Withdrawal errors
+## Payout errors
 
 | Status | Code | Cause |
 |---|---|---|
-| `401` | — | Test key targeting a `live` seller |
-| `403` | `E_VERIFICATION_REQUIRED` | The seller's KYC is not approved |
-| `403` | — | Unknown, malformed seller, or one from another marketplace |
+| `401` | n/a | Test key targeting a `live` vendor |
+| `403` | `E_VERIFICATION_REQUIRED` | The vendor's KYC is not approved |
+| `403` | n/a | Unknown or malformed vendor, or a vendor from another marketplace |
 | `409` | `E_DUPLICATE_OPERATION` | Idempotency key already consumed (outside the cache window) |
-| `409` | `E_IDEMPOTENCY_CONFLICT` | A request with the same key is in flight |
-| `422` | `rule: "unsupported"` | `amount` was sent |
-| `422` | `E_CONNECT_VENDOR_EMPTY_BALANCE` | Available balance empty — nominal state |
+| `409` | `E_IDEMPOTENCY_CONFLICT` | A request with the same key is in progress |
+| `422` | `rule: "unsupported"` | `amount` sent |
+| `422` | `E_CONNECT_VENDOR_EMPTY_BALANCE` | Available balance empty, nominal state |
 | `422` | `E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` | No payout destination |
-| `422` | `E_PENDING_WITHDRAW` | A withdrawal is already in flight |
+| `422` | `E_PENDING_WITHDRAW` | A payout is already in flight |
 | `503` | `E_SERVICE_UNAVAILABLE` | Upstream service unavailable |

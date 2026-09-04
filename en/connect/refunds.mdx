@@ -1,16 +1,16 @@
 ---
 title: "Refunds"
-description: "How a Connect refund recovers the funds, and why it can be refused."
+description: "How a Connect refund takes the funds back, and why it can be refused."
 icon: "rotate-left"
 ---
 
-A refund on a Connect charge is requested through the **ordinary refund route** — there is no
-dedicated Connect endpoint. What changes is the way the funds are recovered.
+A refund on a Connect charge is requested through the **usual refund route**: there is no
+dedicated Connect endpoint. What changes is the way the funds are taken back.
 
 ## The policy: Yabetoo never advances funds
 
-A seller's wallet cannot be debited after the fact. A negative balance would be
-a permanently unrecoverable debt.
+A vendor's wallet cannot be debited after the fact. A negative balance would be a permanently
+unrecoverable receivable.
 
 <Warning>
 **If the money is not there, the refund fails.** Yabetoo does not create debt and does not let
@@ -18,46 +18,45 @@ any wallet go negative. This is a "no credit" policy, and it is visible in the A
 `402 connect.insufficient_funds_for_refund`.
 </Warning>
 
-## How the funds are recovered
+## How the funds are taken back
 
 Three tiers, in this order, each capped at its own share:
 
 <Steps>
-  <Step title="The seller's pending balance">
-    Funds that have not matured yet are seized first — that is precisely what the availability
+  <Step title="The vendor's pending balance">
+    Funds that have not matured yet are seized first: that is exactly what the availability
     delay is for.
   </Step>
-  <Step title="The seller's available balance">
+  <Step title="The vendor's available balance">
     For the remainder of their share.
   </Step>
   <Step title="Your balance">
-    Your share of the refund, **plus everything the seller could not cover**.
+    Your share of the refund, **plus everything the vendor could not cover**.
   </Step>
 </Steps>
 
 <Warning>
-**You are the payer of last resort.** If the seller has already withdrawn their funds, it is
-your balance that absorbs the difference. This is the opposite of an
-[allocation reversal](/en/connect/payments/allocations), where the shortfall is simply
-refused.
+**You are the payer of last resort.** If the vendor has already been paid out, it is your
+balance that absorbs the difference. This is the opposite of an
+[allocation reversal](/en/connect/payments/allocations), where the shortfall is simply refused.
 </Warning>
 
-Recovery is **capped per charge**: we never seize more, on a given charge, than that charge
-brought in. Without this cap, a refund would dip into the funds from the seller's other sales.
+The claw-back is **capped per charge**: a charge is never seized for more than it brought in.
+Without that cap, a refund would dip into the funds of the vendor's other sales.
 
 ## What Yabetoo does not return
 
 <Warning>
-**Yabetoo's fees — collection and the Connect surcharge — are not refundable.** They stay
-earned in either mode.
+**The Yabetoo fees (collection and Connect surcharge) are not refundable.** They stay earned
+in either mode.
 </Warning>
 
-In `controller` mode, on a full refund of 10,000: the seller returns exactly what they
-received, and you return your entire commission even though you had only kept the residue. So
-you end up negative by your Yabetoo fees over the round trip. This is not an added penalty: it
-is the direct consequence of the fact that you had already absorbed them at capture.
+In `controller` mode, on a full refund of 10,000: the vendor returns exactly what they received,
+you return your entire commission even though you had only kept the residue of it. You are
+therefore negative by your Yabetoo fees on the round trip. This is not an added penalty: it is
+the direct consequence of having already absorbed them at charge time.
 
-## The refusal — `402`
+## The refusal: `402`
 
 ```json 402
 {
@@ -74,11 +73,11 @@ is the direct consequence of the fact that you had already absorbed them at capt
 ```
 
 <ResponseField name="required" type="number">What has to be taken from your balance.</ResponseField>
-<ResponseField name="seller_available" type="number">What the seller was able to cover.</ResponseField>
+<ResponseField name="seller_available" type="number">What the vendor was able to cover.</ResponseField>
 <ResponseField name="shortfall" type="number">What is missing.</ResponseField>
 
-The check and the debit happen in **a single transaction**, with locks held: a concurrent
-withdrawal cannot slip in between the two.
+The check and the debit happen in **a single transaction**, with locks held: a concurrent payout
+cannot slip in between the two.
 
 <Note>
 **All or nothing.** There is no automatic partial refund: a buyer who asks for 10,000 and
@@ -95,18 +94,18 @@ Without this webhook, you would discover the `402` through an unhappy buyer. Sub
 from day one.
 </Warning>
 
-To top your balance back up, use a deposit — it goes through a Yabetoo validation, so plan for
+To top your balance back up, use a deposit: it goes through a Yabetoo validation, so allow for
 the delay.
 
 ## Reducing your exposure
 
 <AccordionGroup>
   <Accordion title="Lengthen the availability delay">
-    This is the main lever. Pending funds are seizable; withdrawn funds are not. A shorter
-    delay shifts the risk onto your own balance.
+    This is the main lever. Pending funds are seizable; funds already paid out are not. A shorter
+    delay transfers the risk onto your own balance.
   </Accordion>
   <Accordion title="Do not pay out immediately after maturation">
-    In manual mode, you decide when to pay. Holding a few extra days on sellers with a high
+    In manual mode, you decide when to pay. Holding a few extra days on vendors with a high
     dispute rate mechanically reduces your exposure.
   </Accordion>
   <Accordion title="Track your 402 rate">

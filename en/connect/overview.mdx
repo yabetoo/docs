@@ -1,14 +1,15 @@
 ---
 title: "Yabetoo Connect"
-description: "Collect payments on behalf of your sellers, take your commission and pay them out — with a single integration."
+description: "Collect payments on behalf of your vendors, take your commission and pay them out, with a single integration."
 icon: "share-nodes"
 ---
 
-Yabetoo Connect lets a **marketplace** collect payments on behalf of **sellers**
-it has connected, take its commission along the way, and pay the sellers out to their payout destination.
+Yabetoo Connect lets a **marketplace** collect payments on behalf of the **vendors** it has
+connected, take its commission along the way, and pay those vendors out to their payout
+destination.
 
-You keep a single integration, a single API key and a single cash flow. Yabetoo maintains the
-ledger for each seller.
+You keep a single integration, a single API key and a single cash flow. Yabetoo keeps the
+ledger for each vendor.
 
 <Info>
 **Environments.** Connect runs on the same hosts as the rest of the Yabetoo API:
@@ -16,43 +17,43 @@ ledger for each seller.
 `https://pay.api.yabetoopay.com` with an `sk_live_` key. Both serve the same endpoints.
 </Info>
 
-## The three parties
+## The three actors
 
-Connect brings three parties together. The vocabulary is fixed throughout the documentation
-and the API — confusing it is the number one source of integration errors.
+Connect brings three parties together. The vocabulary is fixed throughout this documentation
+and in the API. Confusing it is the number one source of integration errors.
 
-| Party | Who | In the API |
+| Actor | Who | In the API |
 |---|---|---|
-| **Yabetoo** | the payment provider | — |
-| **The marketplace** | you, Yabetoo's customer | the *controller* — your `sk_` key signs the requests |
-| **The seller** | the third party you connect | the *connected account*, identified by an `acct_…` |
+| **Yabetoo** | the payment provider | n/a |
+| **The marketplace** | you, Yabetoo's customer | the *controller*: your `sk_` key signs the requests |
+| **The vendor** | the third party you connect | the *connected account*, identified by an `acct_…` |
 
-## How the money flows
+## How the money moves
 
-The money **always** lands on Yabetoo's operator identity, then Connect splits it in the
-ledger. There is no routing to a third-party operator account: the split is a book entry, so
-it is atomic.
+Money **always** lands on Yabetoo's operator identity, then Connect splits it in the ledger.
+There is no routing to a third-party operator account: the split is a book entry, so it is
+atomic.
 
 <Steps>
-  <Step title="You create a seller">
+  <Step title="You create a vendor">
     One API call creates their account, their organization and their wallet.
     See [Create a connected account](/en/connect/accounts/create).
   </Step>
-  <Step title="The seller completes verification">
+  <Step title="The vendor passes verification">
     You send them an onboarding link hosted by Yabetoo. There they submit their identity
     documents and their payout destination.
     See [Onboarding and verification](/en/connect/accounts/onboarding).
   </Step>
   <Step title="You collect">
-    Either you name the seller at capture time and the split happens immediately
-    ([direct mode](/en/connect/payments/charges)), or you collect into your own account and
+    Either you name the vendor at capture time and the split happens immediately
+    ([direct mode](/en/connect/payments/charges)), or you collect on your own account and
     distribute later ([deferred mode](/en/connect/payments/allocations)).
   </Step>
   <Step title="The funds mature">
-    Every seller credit arrives as a **pending balance** and becomes available after a
+    Every vendor credit lands as a **pending balance** and becomes available after a
     configurable delay. See [Balances and availability](/en/connect/payouts).
   </Step>
-  <Step title="You pay the seller">
+  <Step title="You pay the vendor">
     You order the withdrawal of their available balance to their payout destination, on
     demand or on an automatic schedule.
   </Step>
@@ -60,51 +61,51 @@ it is atomic.
 
 ## The two commission modes
 
-Connect supports two economic configurations, chosen **once and for all** when you activate
-your account. This is the `fee_payer` setting, and it decides **who bears the Yabetoo fees**.
+Connect supports two economic setups, chosen **once and for all** when you activate your
+account. This is the `fee_payer` setting, and it decides **who bears the Yabetoo fees**.
 
 <CardGroup cols={2}>
   <Card title="Marketplace mode" icon="store" href="/en/connect/pricing">
     `fee_payer = controller`
 
-    You take a commission on the sale, and the Yabetoo fees come out of **your commission**.
-    The seller sees a single deduction: yours.
+    You take a commission on the sale, and the Yabetoo fees come **out of your commission**.
+    The vendor sees a single deduction: yours.
   </Card>
   <Card title="Platform mode" icon="layer-group" href="/en/connect/pricing">
     `fee_payer = account`
 
-    The seller is billed by Yabetoo **like an ordinary merchant**, and your commission is
+    The vendor is billed by Yabetoo **like an ordinary merchant**, and your commission is
     added on top. You keep your commission in full.
   </Card>
 </CardGroup>
 
 <Warning>
-The same rate does not earn the same thing in both modes. A controller declaring 5% keeps
-**50** on a 10,000 XAF sale in marketplace mode, and **500** in platform mode. Read
-[Commissions and pricing](/en/connect/pricing) before you choose.
+The same rate does not earn the same amount in both modes. A controller declaring 5% keeps
+**50** on a 10,000 XAF sale in marketplace mode, and **500** in platform mode.
+Read [Commissions and pricing](/en/connect/pricing) before choosing.
 </Warning>
 
-## What Connect does — and does not do
+## What Connect does, and does not do
 
 <AccordionGroup>
-  <Accordion title="A seller belongs to exactly one marketplace">
+  <Accordion title="A vendor belongs to exactly one marketplace">
     The control link is set at creation and it is **immutable**. There is no endpoint to
-    unlink a seller, nor to transfer them to another marketplace. Multi-attachment is not
+    unlink a vendor, nor to transfer them to another marketplace. Multi-attachment is not
     supported.
   </Accordion>
-  <Accordion title="A seller cannot itself control other sellers">
+  <Accordion title="A vendor cannot itself control other vendors">
     Control depth is limited to 1. A connected account cannot become a marketplace.
   </Accordion>
   <Accordion title="No wallet can go negative">
-    A seller's wallet cannot be debited after the fact. Yabetoo therefore never
-    advances funds: a refund that is not covered by the available balances is **refused**, it
-    does not create a debt. See [Refunds](/en/connect/refunds).
+    A vendor's wallet cannot be debited after the fact. Yabetoo therefore never advances
+    funds: a refund not covered by the available balances is **refused**, it does not create
+    a debt. See [Refunds](/en/connect/refunds).
   </Accordion>
   <Accordion title="One currency per relationship">
-    A seller is created in their marketplace's currency. Multi-currency is not supported in
-    v1: a different currency is refused at creation.
+    A vendor is created in the currency of its marketplace. Multi-currency is not supported
+    in v1: a different currency is refused at creation.
   </Accordion>
-  <Accordion title="The seller has no dashboard">
+  <Accordion title="The vendor has no dashboard">
     By default a connected account has no login, no API key and no dashboard. They submit
     their documents through the onboarding link, and you are the one who orders their
     withdrawals.
@@ -115,9 +116,9 @@ The same rate does not earn the same thing in both modes. A controller declaring
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/en/connect/quickstart">
-    A complete walkthrough, from activation to the first payout.
+    A full walkthrough, from activation to the first payout.
   </Card>
   <Card title="Activate Connect" icon="toggle-on" href="/en/connect/activate">
-    Choose your mode and activate Connect on your account.
+    Choose your mode and turn Connect on for your account.
   </Card>
 </CardGroup>

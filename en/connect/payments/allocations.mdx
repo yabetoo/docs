@@ -1,19 +1,19 @@
 ---
-title: "Deferred mode — allocations"
-description: "Collect into your own account, then distribute to your sellers when you decide."
+title: "Deferred mode: allocations"
+description: "Charge on your own account, then split to your vendors when you decide."
 icon: "arrows-split-up-and-left"
 ---
 
-When you do not know the seller at the time of the sale — a multi-seller basket, a split
-computed after the fact, a variable commission — collect normally into your own account, then
-**allocate** to the seller.
+When you do not know the vendor at the time of the sale (multi-vendor cart, split computed after
+the fact, variable commission), charge normally on your own account, then **allocate** to the
+vendor.
 
-An allocation moves funds from your wallet into a seller's wallet.
+An allocation transfers funds from your wallet to a vendor's wallet.
 
 <Note>
-**The endpoint is not called `transfers`.** Yabetoo already exposes `/v1/transfers`, which
-means the opposite: a payout to an external destination. `allocations` says what the operation
-does — assign a seller a share of funds you have already collected.
+**The endpoint is not called `transfers`.** Yabetoo already exposes `/v1/transfers`, which means
+the opposite: an outbound movement to an external destination. `allocations` says what the
+operation does: assign a vendor a share of funds already collected.
 </Note>
 
 ## Create an allocation
@@ -31,19 +31,19 @@ POST https://pay.api.yabetoopay.com/v1/connect/allocations       # Production
 | `Idempotency-Key` | Recommended | Without it, **no deduplication is performed**: a network retry allocates twice. |
 
 <Warning>
-Unlike seller creation, `Idempotency-Key` is **optional** here — but its absence is not
-harmless. An allocation moves money: always send a key.
+Unlike vendor creation, `Idempotency-Key` is **optional** here, but its absence is not neutral.
+An allocation moves money: always send a key.
 </Warning>
 
 ### Request body
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `destination` | `string` | Yes | The seller's identifier, `acct_…` |
+| `destination` | `string` | Yes | The vendor identifier, `acct_…` |
 | `amount` | `number` | Yes | Strictly positive amount |
 
 <Note>
-There is **no `currency` field**: the currency is your wallet's, read server-side.
+There is **no `currency` field**: the currency is the one of your wallet, read server side.
 </Note>
 
 <CodeGroup>
@@ -88,11 +88,11 @@ const res = await fetch(
 ```
 
 <Warning>
-**`amount` in the response is what the SELLER received, not what you asked for.**
+**`amount` in the response is what the SELLER received, not what you requested.**
 
 An allocation carries the 1% Connect surcharge, computed on the allocated amount:
 
-| `fee_payer` | You are debited | The seller receives (`amount`) |
+| `fee_payer` | You are debited | The vendor receives (`amount`) |
 |---|---:|---:|
 | `account` | 9,000 | **8,910** (= 9,000 − 90) |
 | `controller` | **9,090** (= 9,000 + 90) | 9,000 |
@@ -101,20 +101,20 @@ It is this `amount` that caps any later reversal.
 </Warning>
 
 <Note>
-**Why an allocation is billed.** Without it, "collect with no seller, then allocate" would
-reach the same economic outcome as [direct mode](/en/connect/payments/charges) while paying 1%
-less. The 1% pays for the Connect relationship — seller verification, onboarding, payout rails
-— not for the split mechanism.
+**Why an allocation is charged.** Without it, "charge with no vendor, then allocate" would reach
+the same economic result as [direct mode](/en/connect/payments/charges) while paying 1% less.
+The 1% pays for the Connect relationship (vendor verification, onboarding, payout rails), not
+for the split mechanism.
 
-The basis is the **allocated amount**, not the original gross: your own commission is
-therefore not taxed by Connect.
+The basis is the **allocated amount**, not the original gross: your own commission is therefore
+not taxed by Connect.
 </Note>
 
-Allocated funds land in the seller's **pending balance**, with an `available_at`.
+Allocated funds arrive in the vendor's **pending balance**, with an `available_at`.
 
 ## Reverse an allocation
 
-You picked the wrong seller, or the wrong amount. A **reversal** returns all or part of an
+You picked the wrong vendor, or the wrong amount. A **reversal** returns all or part of an
 allocation.
 
 ```bash
@@ -123,7 +123,7 @@ POST /v1/connect/allocations/{allocationId}/reversals
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `amount` | `number` | No | Amount to reverse. **Omitted, the entire remaining amount is reversed.** |
+| `amount` | `number` | No | Amount to reverse. **Omitted, the entire remainder is reversed.** |
 
 <CodeGroup>
 ```bash cURL
@@ -149,31 +149,31 @@ curl -X POST \
 }
 ```
 
-Successive reversals add up: `reversed_total` can never exceed the allocation's `amount`.
+Successive reversals accumulate: `reversed_total` can never exceed the allocation's `amount`.
 
-### How the funds are recovered
+### How the funds are taken back
 
 Two tiers, in this order, and never a third:
 
 <Steps>
-  <Step title="The seller's pending balance">
+  <Step title="The vendor's pending balance">
     Funds that have not matured yet are seized first.
   </Step>
-  <Step title="The seller's available balance">
+  <Step title="The vendor's available balance">
     For the remainder, capped at the reversal amount.
   </Step>
 </Steps>
 
 <Warning>
-**You are never the payer of last resort on a reversal.** If the seller cannot return the
-funds — because they have already withdrawn them — the reversal is **refused with a `402`**.
-An allocation whose seller has been paid out is structurally irreversible.
+**You are never the payer of last resort on a reversal.** If the vendor cannot return the funds
+(because they have already been paid out), the reversal is **refused with a `402`**. An
+allocation whose vendor has been paid is structurally irreversible.
 
 This is the opposite of a [refund](/en/connect/refunds), where you are the last resort.
 </Warning>
 
 <Note>
-The 1% Connect surcharge is **not returned** by a reversal: fully reversing 9,000 brings you
+The 1% Connect surcharge is **not returned** by a reversal: reversing 9,000 in full brings you
 back to 9,910, not 10,000.
 </Note>
 
@@ -181,17 +181,17 @@ back to 9,910, not 10,000.
 
 | Status | Code | Cause |
 |---|---|---|
-| `400` | — | The `Yabetoo-Account` header was sent — the seller is named in the body |
-| `401` | — | Test key targeting a `live` seller |
-| `403` | — | Unknown, malformed seller or allocation, or one belonging to another marketplace — **or an allocation to yourself** |
-| `402` | `connect.insufficient_funds_for_reversal` | The seller cannot return the funds. The body carries `required`, `seller_available`, `shortfall`, `currency`. |
+| `400` | n/a | The `Yabetoo-Account` header was sent: the vendor is named in the body |
+| `401` | n/a | Test key targeting a `live` vendor |
+| `403` | n/a | Unknown or malformed vendor or allocation, belonging to another marketplace, **or an allocation to yourself** |
+| `402` | `connect.insufficient_funds_for_reversal` | The vendor cannot return the funds. The body carries `required`, `seller_available`, `shortfall`, `currency`. |
 | `409` | `E_DUPLICATE_OPERATION` | The same `Idempotency-Key` has already produced an operation |
-| `409` | `E_IDEMPOTENCY_CONFLICT` | A request with the same key is in flight |
+| `409` | `E_IDEMPOTENCY_CONFLICT` | A request with the same key is in progress |
 | `422` | validation | `destination` empty, `amount` zero or negative |
 | `422` | `connect.fee_payer_unset` | Connect is not activated on your account |
 | `422` | `connect.vendor_net_not_positive` | The surcharge absorbs the whole allocation |
 | `422` | `connect.country_unsupported` | No operator is configured for your country |
-| `422` | `connect.reversal_exceeds_remaining` | The reversal exceeds the remaining amount. The body carries `requested` and `remaining`. |
+| `422` | `connect.reversal_exceeds_remaining` | The reversal exceeds the remainder. The body carries `requested` and `remaining`. |
 | `422` | `E_CURRENCY_MISMATCH` | Your two wallets are not in the same currency |
-| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | The Connect surcharge could not be resolved — the operation is refused rather than billed at zero |
+| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | The Connect surcharge could not be resolved: the operation is refused rather than charged zero |
 | `503` | `E_CONNECT_AVAILABILITY_DELAY_UNSET` | The availability delay is not configured |

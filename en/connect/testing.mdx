@@ -1,43 +1,46 @@
 ---
 title: "Testing Connect"
-description: "What you can verify in the test environment, and what requires assistance."
+description: "What you can verify in the test environment, and what needs a manual intervention."
 icon: "flask"
 ---
 
-Connect is tested with your `sk_test_` keys, on the same endpoints as in production.
+Connect is tested with your `sk_test_` keys, on the same endpoints as production.
 
 ## The environment is inherited, never chosen
 
 <Warning>
-**An `sk_test_` key only creates test sellers, and can only target them.** A connected
-account's environment is inherited from the key that created it — there is no field to choose
-it.
+**An `sk_test_` key only creates test vendors, and can only target them.** The environment of
+a connected account is inherited from the key that created it: there is no field to choose it.
 
-Targeting a `live` seller with a test key — or the reverse — returns `401`, on **every**
-Connect route. This is not a key bug: it is the isolation barrier.
+Targeting a `live` vendor with a test key (or the reverse) returns `401`, on **every** Connect
+route. This is not a key bug: it is the isolation barrier.
 </Warning>
 
-This is the first symptom to recognise: a `401` on a seller you have just created almost always
-means you switched keys between the two calls.
+This is the first symptom to recognise: a `401` on a vendor you have just created almost
+always means you changed keys between the two calls.
 
 ## 1. Activate Connect on your test account
 
-```bash
-curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/activations \
-  -H "Authorization: Bearer sk_test_..." \
-  -H "Content-Type: application/json" \
-  -d '{ "connect_mode": "marketplace" }'
-```
+Activation happens in your [dashboard](https://app.yabetoo.com/dashboard/connect), under
+**Connect**, with your test account.
 
 <Warning>
-**The mode is immutable, in test too.** You will not be able to flip your test account from
-`marketplace` to `platform` to compare the two cascades. To test both modes, you need **two
-separate merchant accounts**.
+**The mode is immutable, including in test.** You will not be able to switch your test account
+from `marketplace` to `platform` to compare the two cascades. To test both modes you need
+**two separate merchant accounts**.
 </Warning>
 
-## 2. Create test sellers
+Then check that your integration really reads the mode:
 
-Nothing sets test seller creation apart: same fields, same mandatory `Idempotency-Key`.
+```bash
+curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+  -H "Authorization: Bearer sk_test_..."
+```
+
+## 2. Create test vendors
+
+Nothing distinguishes the creation of a test vendor: same fields, same required
+`Idempotency-Key`.
 
 <Tip>
 Create **at least two**, and keep one you never verify: it is the only way to exercise the
@@ -46,19 +49,19 @@ verification-related refusals (`403 E_VERIFICATION_REQUIRED`,
 </Tip>
 
 <Tip>
-Also create a seller under a **second merchant account**. It is the only way to check that your
-code handles correctly the `403` of a seller that does not belong to you — a case you will hit
-in production as soon as an identifier slips from one tenant to another.
+Also create a vendor under a **second merchant account**. It is the only way to check that
+your code handles the `403` of a vendor that is not yours, a case you will meet in production
+as soon as an identifier slips from one tenant to another.
 </Tip>
 
 ## 3. Verification is not instant in test
 
 <Warning>
-**Do not rely on automatic approval in test.** You will get the link, and the seller can
-submit their documents and payout destination, but the file goes through a **review**: moving
-to `approved` is neither immediate nor guaranteed.
+**Do not count on automatic approval in test.** You will get the link, the vendor will be able
+to submit their documents and their payout destination, but the file goes through a **review**:
+its move to `approved` is neither immediate nor guaranteed.
 
-To obtain an **approved** test seller — required to exercise withdrawals — contact
+To obtain an **approved** test vendor (needed to exercise withdrawals), contact
 [support@yabetoopay.com](mailto:support@yabetoopay.com).
 </Warning>
 
@@ -69,11 +72,10 @@ What you can verify without approval:
 - the `422` refusals on `country` and `kycLevel`;
 - that funds do accumulate while no withdrawal is possible.
 
-## 4. Test the collection and the cascade
+## 4. Test collection and the cascade
 
-The split is computed at **capture** time. Use the usual test numbers to drive the
-payment outcome — see
-[Test your integration](/en/developer-tools/test/overview).
+The split is computed at **capture**. Use the usual test numbers to drive the payment outcome.
+See [Test your integration](/en/developer-tools/test/overview).
 
 <Steps>
   <Step title="Create the intent with the Connect fields">
@@ -85,94 +87,94 @@ payment outcome — see
   <Step title="Confirm with a test number that succeeds">
     The split only happens on a successful capture.
   </Step>
-  <Step title="Read back the seller's balances">
+  <Step title="Read the vendor's balances back">
     ```bash
     GET /v1/connect/accounts/{acct}
     ```
-    You must see the seller's net in `pending_balance`, and **`balance` at zero**.
+    You should see the vendor net in `pending_balance`, and **`balance` at zero**.
   </Step>
 </Steps>
 
 <Tip>
 **Check conservation, not just the HTTP code.** On every capture,
-`seller net + your net + Yabetoo fees` must equal the gross exactly. That is the assertion that
-catches a mode or a unit error; a `201` proves nothing.
+`vendor net + your net + Yabetoo fees` must equal the gross exactly. That is the assertion
+that catches a mode or unit error; a `201` proves nothing.
 </Tip>
 
 ### Exercising the commission refusals
 
 | To obtain | Send |
 |---|---|
-| `400 connect.application_fee_too_low` | an `application_fee_rate` **at or below** your grid's floor (4.5% on the standard rate card) |
-| `400 connect.application_fee_too_high` | a rate that produces a commission greater than the gross |
+| `400 connect.application_fee_too_low` | an `application_fee_rate` **at or below** the floor of your grid (4.5% on the standard schedule) |
+| `400 connect.application_fee_too_high` | a rate that produces a commission larger than the gross |
 | `422 connect.incomplete_request` | `on_behalf_of` without `application_fee_rate` |
 | `422 connect.fee_payer_unset` | a Connect call **before** activating Connect |
-| `403` | a made-up, malformed `acct_`, or one belonging to another merchant |
+| `403` | a made-up, malformed, or another merchant's `acct_` |
 
 <Note>
-The `too_low` refusal does **not** depend on the amount: a rate below the floor fails at 100 XAF
-just as at 1,000,000. There is no point looking for an amount that triggers it.
+The `too_low` refusal does **not** depend on the amount: a rate under the floor fails at
+100 XAF just as it does at 1,000,000. There is no point looking for an amount that triggers it.
 </Note>
 
 ## 5. The availability delay
 
 <Warning>
-**This is the main difficulty of end-to-end testing.** A seller's funds land in
-`pending_balance` and only become withdrawable after the availability delay — **7 days by
+**This is the main difficulty of end-to-end testing.** A vendor's funds land in
+`pending_balance` and only become withdrawable after the availability delay, **7 days by
 default**. There is no test clock and no endpoint to force maturation.
 
-To test the full chain in a single session, ask support for a shortened delay on your test
+To test the full chain in one session, ask support for a shortened delay on your test
 environment.
 </Warning>
 
 In the meantime, you can verify:
 
 - that `next_maturity_at` carries the expected date;
-- that `available_at` is set and `matured_at` null on the transaction;
-- that a withdrawal against a still-pending balance does return
-  `422 E_CONNECT_VENDOR_EMPTY_BALANCE` — and not a generic error.
+- that `available_at` is set and `matured_at` is null on the transaction;
+- that a withdrawal against a still-pending balance really returns
+  `422 E_CONNECT_VENDOR_EMPTY_BALANCE`, and not a generic error.
 
 ## 6. Test deferred mode without waiting
 
-[Deferred mode](/en/connect/payments/allocations) is exercised **without a real collection**:
-all you need is a balance on your own merchant wallet.
+[Deferred mode](/en/connect/payments/allocations) can be exercised **without a real
+collection**: all you need is a balance on your own merchant wallet.
 
 It is the fastest way to verify:
 
 - the 1% surcharge and the meaning of `amount` in the response;
-- a partial then a full reversal, and the `reversed_total` running total;
+- a partial then a full reversal, and the `reversed_total` running sum;
 - the `422 connect.reversal_exceeds_remaining` when you exceed the remainder;
-- the `402` on a reversal when the seller cannot return the funds.
+- the `402` on reversal when the vendor cannot return the funds.
 
 ## 7. Test idempotency for real
 
 <Tip>
 Replay every money call **with the same `Idempotency-Key`** and check that no second operation
-was created — by reading back the balances, not by reading the HTTP code.
+was created (by reading the balances back, not by reading the HTTP code).
 
-Check the reverse case too: the **same key on two different sellers** must produce **two**
-operations. An implementation that deduplicates there would only pay one seller out of two.
+Also check the opposite case: the **same key on two different vendors** must produce **two**
+operations. An implementation that deduplicates there would only pay one vendor out of two.
 </Tip>
 
 ## What cannot be tested
 
 | | Why |
 |---|---|
-| `platform` mode on an account activated in `marketplace` | `connect_mode` is immutable |
-| Unlinking or transferring a seller | These operations do not exist |
+| `platform` mode on an account activated as `marketplace` | `connect_mode` is immutable |
+| Unlinking or transferring a vendor | These operations do not exist |
 | Multi-currency | A different currency is refused |
 | Automatic KYC approval | Review is not automatic in test |
 | Automatic return at the end of onboarding | Connect v1 exposes no `return_url` |
 
-## Going live
+## Going to production
 
 <Steps>
   <Step title="Activate Connect with your live key">
     Activation is **per account and per environment**: activating in test does not activate in
     production.
   </Step>
-  <Step title="Recreate your sellers">
-    A test seller does not exist in production. No migration is possible — and their
+  <Step title="Recreate your vendors">
+    A test vendor does not exist in production. No migration is possible, and their
     verification has to be done again.
   </Step>
   <Step title="Rewire your webhooks">

@@ -4,35 +4,37 @@ description: "From activation to the first payout, in six calls."
 icon: "rocket"
 ---
 
-This walkthrough takes you from a blank account to a seller paid.
+This walkthrough takes you from a blank account to a paid vendor.
 
 <Info>
-Use an `sk_test_` key for this entire guide. A key's environment is **inherited** by the
-sellers it creates: a test key can only produce test sellers, and can never target a `live`
-seller.
+Use an `sk_test_` key throughout this guide. A key's environment is **inherited** by the
+vendors it creates: a test key can only produce test vendors, and can never target a `live`
+vendor.
 </Info>
 
 <Steps>
   <Step title="Activate Connect and choose your mode">
-    This choice is **final**. Read [Commissions](/en/connect/pricing) first.
-
-    ```bash
-    curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/activations \
-      -H "Authorization: Bearer sk_test_..." \
-      -H "Content-Type: application/json" \
-      -d '{ "connect_mode": "marketplace" }'
-    ```
-
-    ```json 201
-    { "id": "acct_...", "object": "connect_activation", "connect_mode": "marketplace" }
-    ```
+    Activation happens in your [dashboard](https://app.yabetoo.com/dashboard/connect),
+    under **Connect**. Choose **marketplace** or **platform**.
 
     <Warning>
-    A `409` means "already activated", not an error. The mode is immutable.
+    This choice is **final**: the mode cannot be changed afterwards. Read
+    [Commissions](/en/connect/pricing) before you confirm.
     </Warning>
+
+    Your integration can check the state at any time:
+
+    ```bash
+    curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+      -H "Authorization: Bearer sk_test_..."
+    ```
+
+    ```json 200
+    { "id": "acct_...", "object": "connect_activation", "connect_mode": "marketplace" }
+    ```
   </Step>
 
-  <Step title="Create a seller">
+  <Step title="Create a vendor">
     The `Idempotency-Key` header is **required**: creation is irreversible.
 
     ```bash
@@ -41,8 +43,8 @@ seller.
       -H "Idempotency-Key: vendor-ada-001" \
       -H "Content-Type: application/json" \
       -d '{
-        "country": "CG",
-        "currency": "XAF",
+        "country": "cg",
+        "currency": "xaf",
         "name": "Boutique Ada",
         "email": "ada@example.com"
       }'
@@ -57,7 +59,7 @@ seller.
     }
     ```
 
-    Keep this `id`: it is the seller in every call that follows.
+    Keep this `id`: it identifies the vendor in every subsequent call.
   </Step>
 
   <Step title="Send them their verification link">
@@ -75,8 +77,8 @@ seller.
     }
     ```
 
-    The seller submits their documents **and their payout destination** there. Without
-    this step, no withdrawal can go out.
+    The vendor submits their documents **and their payout destination** there. Without this
+    step, no withdrawal can go out.
   </Step>
 
   <Step title="Collect on their behalf">
@@ -94,17 +96,17 @@ seller.
       }'
     ```
 
-    Confirm the intent as usual. At capture, on 10,000 XAF: the seller receives **8,975** as a
-    pending balance, you keep **550**, Yabetoo collects **475**.
+    Confirm the intent as usual. At capture, on 10,000 XAF: the vendor receives **8,975** as
+    pending balance, you keep **550**, Yabetoo takes **475**.
 
     <Note>
-    You don't know the seller at the time of the sale yet? Collect normally, then distribute
+    You do not know the vendor yet at the time of the sale? Collect normally, then distribute
     with an [allocation](/en/connect/payments/allocations).
     </Note>
   </Step>
 
   <Step title="Wait for maturation">
-    The seller's funds arrive as a **pending balance** and become available after the delay
+    The vendor's funds land as a **pending balance** and become available after the delay
     (7 days by default).
 
     ```bash
@@ -125,7 +127,7 @@ seller.
   </Step>
 
   <Step title="Pay out their balance">
-    **Empty** body — a Connect withdrawal transfers the entire available balance.
+    **Empty** body: a Connect withdrawal transfers the entire available balance.
 
     ```bash
     curl -X POST \
@@ -147,7 +149,7 @@ seller.
 
     <Warning>
     The call **waits for the operator** and returns the final state. An operator refusal
-    returns `201` with `status: "failed"` — always read the `status`, not just the HTTP code.
+    returns `201` with `status: "failed"`. Always read the `status`, not just the HTTP code.
     </Warning>
   </Step>
 </Steps>
@@ -156,13 +158,13 @@ seller.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `422 connect.controller_mode_unset` when creating a seller | Connect is not activated | Do step 1 |
+| `422 connect.controller_mode_unset` when creating a vendor | Connect is not activated | Do step 1 |
 | `422` on `phone`, `type` or `fee_payer` | These fields are refused, not ignored | Remove them from the body |
-| `422` on `Idempotency-Key` | Missing header | Required at creation and at withdrawal |
-| `403` on a seller you have just created | Test key targeting a `live` seller, or the other way round | Use the key for the right environment |
+| `422` on `Idempotency-Key` | Header missing | Required at creation and at withdrawal |
+| `403` on a vendor you just created | Test key targeting a `live` vendor, or the reverse | Use the key for the right environment |
 | `400 connect.application_fee_too_low` | Your rate does not cover the Yabetoo fees | See [Commissions](/en/connect/pricing) |
-| `422 E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` at withdrawal | The seller has not finished onboarding | Send them their link again |
-| `422 E_CONNECT_VENDOR_EMPTY_BALANCE` | Available balance is empty — the funds are still pending | Wait for maturation |
+| `422 E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` at withdrawal | The vendor has not completed onboarding | Send them their link again |
+| `422 E_CONNECT_VENDOR_EMPTY_BALANCE` | Available balance is empty: the funds are still pending | Wait for maturation |
 
 ## Next
 
