@@ -145,7 +145,8 @@
                 "group": "Ressources",
                 "pages": [
                   "fr/connect/webhooks",
-                  "fr/connect/errors"
+                  "fr/connect/errors",
+                  "fr/connect/testing"
                 ],
                 "icon": "life-ring"
               }
@@ -262,6 +263,14 @@
                   "fr/api-reference/payment-link/create",
                   "fr/api-reference/payment-link/get",
                   "fr/api-reference/payment-link/all"
+                ]
+              },
+              {
+                "group": "Connect",
+                "pages": [
+                  "fr/api-reference/connect/accounts",
+                  "fr/api-reference/connect/allocations",
+                  "fr/api-reference/connect/settings"
                 ]
               },
               {
@@ -412,7 +421,8 @@
                 "group": "Resources",
                 "pages": [
                   "en/connect/webhooks",
-                  "en/connect/errors"
+                  "en/connect/errors",
+                  "en/connect/testing"
                 ],
                 "icon": "life-ring"
               }
@@ -529,6 +539,14 @@
                   "en/api-reference/payment-link/create",
                   "en/api-reference/payment-link/get",
                   "en/api-reference/payment-link/all"
+                ]
+              },
+              {
+                "group": "Connect",
+                "pages": [
+                  "en/api-reference/connect/accounts",
+                  "en/api-reference/connect/allocations",
+                  "en/api-reference/connect/settings"
                 ]
               },
               {

@@ -1,0 +1,262 @@
+---
+title: "Comptes connectés"
+description: "L'objet compte connecté et les endpoints qui le manipulent."
+---
+
+Un **compte connecté** représente un vendeur rattaché à votre marketplace. Il est créé par
+vous, il vous appartient exclusivement, et le lien est immuable.
+
+Guide d'intégration : [Créer un compte connecté](/fr/connect/accounts/create).
+
+## L'objet `connect_account`
+
+<ResponseField name="id" type="string">
+  Identifiant unique, préfixé `acct_`.
+</ResponseField>
+
+<ResponseField name="object" type="string">
+  Vaut toujours `connect_account`.
+</ResponseField>
+
+<ResponseField name="controller_account_id" type="string">
+  Le compte de la marketplace qui contrôle ce vendeur. **Immuable.**
+</ResponseField>
+
+<ResponseField name="organization_id" type="string | null">
+  L'organisation propre du vendeur. Un vendeur est une entité distincte de sa marketplace.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Toujours `business` pour un compte connecté.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Raison sociale ou nom du vendeur.
+</ResponseField>
+
+<ResponseField name="email" type="string | null">
+  L'e-mail du vendeur. C'est le canal par lequel Yabetoo le joint.
+</ResponseField>
+
+<ResponseField name="status" type="string | null">
+  État du compte. `active` signifie que le **compte existe** — pas qu'il est vérifié ni qu'il
+  peut recevoir des fonds.
+</ResponseField>
+
+<ResponseField name="environment" type="string">
+  `test` ou `live`. **Hérité de la clé API** qui a créé le compte.
+</ResponseField>
+
+<ResponseField name="fee_payer" type="string | null">
+  `controller` ou `account` — qui supporte les frais Yabetoo. Dérivé du `connect_mode` de la
+  marketplace, jamais fourni à la création.
+</ResponseField>
+
+<ResponseField name="country" type="string | null">
+  Code pays ISO 3166-1 alpha-2. Détermine le barème de conformité du dossier KYC.
+</ResponseField>
+
+<ResponseField name="currency" type="string | null">
+  Code devise du compte.
+</ResponseField>
+
+<ResponseField name="created_at" type="string | null">
+  Horodatage ISO 8601.
+</ResponseField>
+
+---
+
+## Créer un compte connecté
+
+```bash
+POST /v1/connect/accounts
+```
+
+En-tête `Idempotency-Key` **obligatoire** (255 caractères maximum).
+
+### Paramètres
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `country` | `string` | Oui | Code ISO 3166-1 alpha-2, 2 caractères |
+| `currency` | `string` | Oui | Code ISO 4217, 3 caractères |
+| `name` | `string` | Oui | 1 à 255 caractères |
+| `email` | `string` | Oui | Adresse valide, 255 caractères maximum |
+
+**Refusés (422)** : `phone`, `type`, `fee_payer`.
+
+### Renvoie
+
+L'objet `connect_account`, en `201`. ⚠️ Ce corps ne porte **ni `country` ni `currency`** —
+ils apparaissent sur la lecture et la liste.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Idempotency-Key: vendor-ada-001" \
+  -H "Content-Type: application/json" \
+  -d '{"country":"CG","currency":"XAF","name":"Boutique Ada","email":"ada@example.com"}'
+```
+</CodeGroup>
+
+```json 201
+{
+  "id": "acct_01HZVENDOR0000000000000000",
+  "object": "connect_account",
+  "controller_account_id": "acct_01HZMARKETPLACE00000000000",
+  "organization_id": "org_01HZ000000000000000000000",
+  "type": "business",
+  "name": "Boutique Ada",
+  "email": "ada@example.com",
+  "status": "active",
+  "environment": "test",
+  "fee_payer": "controller",
+  "created_at": "2026-09-04T10:00:00.000Z"
+}
+```
+
+**Débit limité à 20 requêtes par minute.**
+
+---
+
+## Lister vos comptes connectés
+
+```bash
+GET /v1/connect/accounts
+```
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `limit` | `number` | 1 à 100 |
+| `cursor` | `string` | Curseur opaque de la page précédente |
+
+### Renvoie
+
+Une liste paginée par curseur : `{ object: "list", data, has_more, next_cursor }`. Chaque
+entrée est un `connect_account` complet, **`country` et `currency` compris**.
+
+---
+
+## Lire un compte connecté
+
+```bash
+GET /v1/connect/accounts/{acct}
+```
+
+### Renvoie
+
+Un `connect_account` **sans** `type`, `currency` ni `created_at`, augmenté de `balances` :
+
+<ResponseField name="balances" type="array">
+  Une entrée par devise. `[]` pour un vendeur sans portefeuille — état nominal, réponse `200`.
+
+  <Expandable title="propriétés">
+    <ResponseField name="currency" type="string">Devise du portefeuille.</ResponseField>
+    <ResponseField name="balance" type="number">Solde **disponible** — le seul retirable.</ResponseField>
+    <ResponseField name="pending_balance" type="number">Crédité, pas encore mûr. Saisissable par un remboursement.</ResponseField>
+    <ResponseField name="held_balance" type="number">Engagé dans un retrait en vol.</ResponseField>
+    <ResponseField name="next_maturity_at" type="string | null">Échéance du prochain crédit en attente.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Lister les transactions d'un compte connecté
+
+```bash
+GET /v1/connect/accounts/{acct}/transactions
+```
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `page` | `number` | À partir de 1 |
+| `limit` | `number` | 25 par défaut, 100 maximum |
+
+### Renvoie
+
+`{ object: "list", data, has_more }` — pagination **par page**, donc **sans `next_cursor`**.
+Chaque entrée porte `id`, `object`, `amount`, `currency`, `amount_fee`, `created_at`,
+`available_at`, `matured_at`.
+
+---
+
+## Créer un lien d'onboarding
+
+```bash
+POST /v1/connect/accounts/{acct}/onboarding_links
+```
+
+Corps vide. Pas d'`Idempotency-Key` : l'appel **reprend** une session en cours.
+
+**Refusés (422, `rule: "derived"`)** : `country`, `kycLevel`.
+
+### Renvoie
+
+```json 201
+{
+  "object": "connect_onboarding_link",
+  "url": "https://verify.yabetoo.com/flow?token=vsess_...",
+  "expires_at": "2026-09-06T10:00:00.000Z"
+}
+```
+
+---
+
+## Verser le solde d'un compte connecté
+
+```bash
+POST /v1/connect/accounts/{acct}/withdrawals
+```
+
+En-tête `Idempotency-Key` **obligatoire**. Corps **vide** — le retrait porte sur la **totalité**
+du solde disponible.
+
+**Refusé (422)** : `amount`. Il n'existe pas de retrait partiel.
+
+### Renvoie
+
+```json 201
+{
+  "id": "wd_01HZ00000000000000000000",
+  "object": "connect_withdrawal",
+  "connected_account_id": "acct_01HZVENDOR0000000000000000",
+  "amount": 4000,
+  "currency": "xaf",
+  "destination": "24****4567",
+  "status": "succeeded",
+  "created_at": "2026-09-04T12:00:00.000Z"
+}
+```
+
+<Warning>
+L'appel est **synchrone** et attend l'opérateur Mobile Money. `status` est l'état **final** :
+`succeeded` ou `failed`. Un refus opérateur rend `201` avec `status: "failed"`, pas une erreur
+HTTP.
+</Warning>
+
+---
+
+## Erreurs
+
+Voir la [référence des erreurs Connect](/fr/connect/errors).
+
+| Statut | Principaux codes |
+|---|---|
+| `401` / `403` | Refus de cible — corps `{"message": "Unauthorized"}` ou `{"message": "Forbidden"}`, sans `code` |
+| `409` | `E_IDEMPOTENCY_CONFLICT`, `E_DUPLICATE_OPERATION` |
+| `422` | `connect.controller_mode_unset`, `E_CONNECT_VENDOR_EMPTY_BALANCE`, `E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE`, `E_PENDING_WITHDRAW` |
+| `429` | `E_TOO_MANY_REQUESTS` — création et activation uniquement |
+| `502` | `E_CONNECT_ONBOARDING_UNSUPPORTED`, `E_REFERENTIAL_COUNTRY_MISSING` |
+| `503` | `E_SSO_UNAVAILABLE`, `E_SERVICE_UNAVAILABLE` |
+
+## Événements associés
+
+| Événement | Quand |
+|---|---|
+| `connect.funds.available` | Un crédit du vendeur est devenu disponible |
+
+<Note>
+`connect.account.created` et `connect.account.updated` **ne sont pas émis**. Lisez l'état d'un
+vendeur avec `GET /v1/connect/accounts/{acct}`.
+</Note>
