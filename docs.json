@@ -185,6 +185,28 @@
             ]
           },
           {
+            "tab": "Apps",
+            "groups": [
+              {
+                "group": "Pour commencer",
+                "pages": [
+                  "fr/apps/introduction",
+                  "fr/apps/installer-une-app",
+                  "fr/apps/gerer-vos-apps"
+                ],
+                "icon": "grid-2-plus"
+              },
+              {
+                "group": "Restaurant (Takumi)",
+                "pages": [
+                  "fr/apps/restaurant/introduction",
+                  "fr/apps/restaurant/premiers-pas"
+                ],
+                "icon": "utensils"
+              }
+            ]
+          },
+          {
             "tab": "Plateformes & Marchés",
             "groups": [
               {
@@ -457,6 +479,28 @@
               {
                 "group": "Plugins",
                 "pages": ["en/developer-tools/plugins/wordpress"]
+              }
+            ]
+          },
+          {
+            "tab": "Apps",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "en/apps/introduction",
+                  "en/apps/install-an-app",
+                  "en/apps/manage-your-apps"
+                ],
+                "icon": "grid-2-plus"
+              },
+              {
+                "group": "Restaurant (Takumi)",
+                "pages": [
+                  "en/apps/restaurant/introduction",
+                  "en/apps/restaurant/getting-started"
+                ],
+                "icon": "utensils"
               }
             ]
           },

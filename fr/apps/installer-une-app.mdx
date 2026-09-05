@@ -1,0 +1,93 @@
+---
+title: "Installer une App"
+description: "Guide pas à pas pour installer une App Yabetoo sur votre compte marchand en moins de 2 minutes."
+icon: "download"
+---
+
+L'installation d'une App Yabetoo prend environ deux minutes. Vous restez maître du processus : aucune permission ne sera accordée sans votre validation explicite, et vous pourrez désinstaller à tout moment.
+
+## Prérequis
+
+<CardGroup cols={2}>
+  <Card title="Un compte Yabetoo actif" icon="user-check">
+    Votre compte doit être vérifié et activé pour installer des Apps métier.
+  </Card>
+  <Card title="Droits d'administration" icon="shield">
+    Seul un membre avec le rôle administrateur peut installer ou désinstaller une App.
+  </Card>
+</CardGroup>
+
+## Étape 1 : Accéder au catalogue d'Apps
+
+Connectez-vous à votre tableau de bord [app.yabetoo.com](https://app.yabetoo.com), puis cliquez sur **Apps** dans la barre latérale.
+
+![Catalogue d'Apps disponibles dans le tableau de bord](/images/apps/install-step-1.png)
+
+Vous y verrez toutes les Apps disponibles, avec leur statut :
+
+- **Disponible** — vous pouvez l'installer
+- **Installée** — déjà active sur votre compte
+- **Bientôt disponible** — en préparation
+
+## Étape 2 : Cliquer sur « Installer »
+
+Cliquez sur la carte de l'App souhaitée pour ouvrir sa fiche détaillée, puis sur le bouton **Installer**.
+
+![Bouton Installer sur la fiche d'une App](/images/apps/install-step-2.png)
+
+<Note>
+  La fiche d'une App vous indique son éditeur, ses fonctionnalités principales, son tarif (s'il diffère de votre abonnement) et la liste des permissions demandées.
+</Note>
+
+## Étape 3 : Examiner les permissions demandées
+
+Avant de finaliser l'installation, Yabetoo vous présente l'écran de **consentement** : la liste précise des données et actions auxquelles l'App aura accès.
+
+![Écran de consentement listant les scopes demandés](/images/apps/install-step-3.png)
+
+Chaque permission (appelée *scope*) est expliquée en langage clair. Par exemple :
+
+- **Lire les paiements** — consulter l'historique des transactions de votre compte
+- **Créer des paiements** — émettre des intentions de paiement en votre nom
+- **Lire le catalogue produits** — accéder à votre liste de produits Yabetoo
+
+<Warning>
+  Lisez attentivement la liste des permissions. Si une permission vous semble disproportionnée par rapport à la fonction de l'App, n'installez pas et contactez notre support à [support@yabetoopay.com](mailto:support@yabetoopay.com).
+</Warning>
+
+## Étape 4 : Valider et être redirigé vers l'App
+
+Cliquez sur **Autoriser l'installation**. Yabetoo génère alors une clé d'accès dédiée pour cette App (de la forme `sk_app_…`) et vous redirige automatiquement vers l'App.
+
+![Redirection automatique vers l'App après validation](/images/apps/install-step-4.png)
+
+Pour Takumi (App Restaurant), vous arrivez directement sur l'écran de configuration de votre premier établissement.
+
+<Tip>
+  La clé `sk_app_…` est gérée automatiquement par Yabetoo. Vous n'avez **rien à copier-coller** : l'App s'authentifie toute seule grâce au protocole OAuth 2.0.
+</Tip>
+
+## Étape 5 : L'App est active
+
+C'est terminé. L'App apparaît désormais dans la section **Apps installées** de votre tableau de bord, avec sa date d'installation, ses scopes, et un raccourci pour la lancer.
+
+<Check>
+  Félicitations ! Votre App est installée et prête à l'emploi. Vous pouvez la lancer à tout moment depuis votre tableau de bord.
+</Check>
+
+## Bon à savoir
+
+<Note>
+  **Vous restez propriétaire de vos données.** L'App agit en votre nom, mais toutes les données générées (paiements, clients, produits) restent attachées à votre compte Yabetoo. Vous pouvez désinstaller l'App à tout moment — voir [Gérer vos Apps](/fr/apps/gerer-vos-apps).
+</Note>
+
+## Prochaines étapes
+
+<CardGroup cols={2}>
+  <Card title="Gérer vos Apps" icon="gear" href="/fr/apps/gerer-vos-apps">
+    Consulter, configurer et désinstaller vos Apps installées.
+  </Card>
+  <Card title="Premiers pas avec Takumi" icon="utensils" href="/fr/apps/restaurant/premiers-pas">
+    Configurer votre établissement restaurant après installation.
+  </Card>
+</CardGroup>
