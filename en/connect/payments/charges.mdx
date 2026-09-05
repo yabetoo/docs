@@ -1,0 +1,150 @@
+---
+title: "Charge on behalf of a vendor"
+description: "Name the vendor at the time of the sale: the split happens at capture, in a single transaction."
+icon: "money-bill-transfer"
+---
+
+This is the **direct** mode. You name the vendor on the payment intent, and Yabetoo splits the
+gross between them, you and Yabetoo **at the moment the customer pays**, atomically.
+
+<Tip>
+Prefer this mode whenever you know the vendor at the time of the sale. It gives the best
+traceability: every charge carries the identity of its vendor and its commission.
+</Tip>
+
+## Create the intent
+
+Add **two fields** to your usual payment intent creation call.
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/payment-intents   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/payment-intents       # Production
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `on_behalf_of` | `string` | The vendor identifier, `acct_…` |
+| `application_fee_rate` | `number` | Your commission, **as a percentage** (between `0` and `100`) |
+
+<Warning>
+**Both go together, or neither.** Supplying only one returns `422 connect.incomplete_request`.
+With neither, the charge is an ordinary charge on your own account.
+</Warning>
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 10000,
+    "currency": "xaf",
+    "on_behalf_of": "acct_01HZVENDOR0000000000000000",
+    "application_fee_rate": 10
+  }'
+```
+
+```javascript fetch
+const res = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/payment-intents",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.YABETOO_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: 10000,
+      currency: "xaf",
+      on_behalf_of: sellerAccountId,
+      application_fee_rate: 10,
+    }),
+  }
+);
+```
+</CodeGroup>
+
+Confirming the intent is then **identical to an ordinary payment**: see
+[Confirm an intent](/en/payments/api/confirm). Nothing changes for the end customer: they pay
+as usual.
+
+<Warning>
+**Vocabulary collision with Stripe, worth knowing.** At Stripe, `on_behalf_of` designates the
+*settlement* merchant and the funds stay with the platform. **At Yabetoo, this field says where
+the money GOES.** If you are coming from Stripe, do not read it backwards.
+</Warning>
+
+<Note>
+**Why a rate and not an amount.** The gross is converted into the currency of the chosen country
+at confirmation time: an intent of 100 EUR confirmed in Congo captures roughly 65,000 XAF, while
+a fixed amount of 20 would stay 20. A rate stays correct at any scale.
+</Note>
+
+<Warning>
+`destination` is the old name of `on_behalf_of`. It is **refused with a 422**, never ignored.
+</Warning>
+
+## What happens at capture
+
+On 10,000 XAF, with `application_fee_rate: 10`, in `controller` mode and on the standard rate
+card (collection 3.5% + 25, Connect 1%):
+
+| Line | Amount | Destination |
+|---|---:|---|
+| Gross charged | 10,000 | n/a |
+| Your commission (10% + the 25 fixed fee passed through) | −1,025 | taken from the gross |
+| **Vendor net** | **8,975** | vendor wallet, as **pending balance** |
+| Yabetoo collection | −375 | Yabetoo |
+| Yabetoo Connect surcharge | −100 | Yabetoo |
+| **Your net** | **550** | your wallet, **available immediately** |
+
+Check: `8 975 + 550 + 475 = 10 000`.
+
+The detail of both modes and of the refusals: [Commissions and pricing](/en/connect/pricing).
+
+<Warning>
+**The vendor's net arrives as PENDING balance**, not available balance. It becomes payable after
+the availability delay. See [Balances and payouts](/en/connect/payouts).
+</Warning>
+
+## Checks performed at creation
+
+Yabetoo refuses **when the intent is created**, not when the customer pays. This is deliberate:
+a contract refusal must reach your developer, not your buyer.
+
+<Steps>
+  <Step title="The vendor is indeed yours">
+    Otherwise `403`. An unknown vendor and a vendor belonging to another marketplace return the
+    same response.
+  </Step>
+  <Step title="The commission mode is known">
+    Otherwise `422 connect.fee_payer_unset`. Activate Connect on your account.
+  </Step>
+  <Step title="Your commission covers the Yabetoo fees">
+    In `controller` mode only. Otherwise `400 connect.application_fee_too_low`, with the rate
+    floor and the required minimum in the body.
+  </Step>
+  <Step title="The vendor would receive a positive amount">
+    Otherwise `422 connect.vendor_net_not_positive`.
+  </Step>
+</Steps>
+
+## Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `400` | `connect.application_fee_too_low` | Your commission does not exceed the Yabetoo fees |
+| `400` | `connect.application_fee_too_high` | Your commission exceeds the amount charged |
+| `401` | n/a | Test key targeting a `live` vendor |
+| `403` | n/a | Unknown or malformed vendor, or a vendor from another marketplace |
+| `422` | `connect.incomplete_request` | `on_behalf_of` and `application_fee_rate` not supplied together |
+| `422` | `connect.fee_payer_unset` | Connect is not activated on your account |
+| `422` | `connect.vendor_net_not_positive` | The vendor would receive nothing |
+| `422` | `rule: "unsupported"` | `destination` sent instead of `on_behalf_of` |
+| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | The commission grid could not be resolved. Connect **refuses** rather than charging zero. |
+
+## The alternative
+
+If you do not yet know the vendor at the time of the sale (multi-vendor cart, split computed
+after the fact), charge normally on your account and split afterwards:
+[Deferred mode](/en/connect/payments/allocations).

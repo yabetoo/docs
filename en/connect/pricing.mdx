@@ -1,0 +1,281 @@
+---
+title: "Commissions and pricing"
+description: "How your commission, the Yabetoo fees and the vendor's net are computed on every Connect charge."
+icon: "percent"
+---
+
+On every Connect charge, the gross is split between **three** parties: the vendor, you, and
+Yabetoo. This page describes exactly what each one receives, and why some commissions are
+refused.
+
+## The Yabetoo rate card
+
+Two lines apply to a Connect charge. They are distinct and they add up.
+
+| Line | What it charges for | Standard rate card (Congo) |
+|---|---|---|
+| `collection` | the charge itself (it exists for every merchant) | **3.5% + 25 XAF** |
+| `connect` | the Connect relationship: vendor verification, onboarding, payout rails | **1%** |
+
+On 10,000 XAF of gross, Yabetoo therefore takes `375 + 100 = 475 XAF`.
+
+<Note>
+This rate card is **negotiable per organization**. Never hardcode 4.5% in your code: read your
+actual grid with
+[`GET /v1/commissions/types`](/en/api-reference/introduction) and
+`POST /v1/commissions/calculate`.
+</Note>
+
+<Warning>
+**The fixed fee makes the effective rate depend on the amount.** The 25 XAF do not dilute:
+
+| Gross | Yabetoo take | As % of gross |
+|---:|---:|---:|
+| 500 | 47.50 | **9.5%** |
+| 1,000 | 70.00 | **7.0%** |
+| 10,000 | 475.00 | 4.75% |
+| 100,000 | 4,525.00 | 4.53% |
+
+This is what **the vendor** bears. It changes nothing, however, to the refusal described below,
+which is a comparison of **rates**.
+</Warning>
+
+## Declare your commission
+
+You declare your commission **on every charge**, on the payment intent, in the form of a
+**rate**.
+
+```json
+{
+  "amount": 10000,
+  "currency": "xaf",
+  "on_behalf_of": "acct_01HZVENDOR000000000000000",
+  "application_fee_rate": 5
+}
+```
+
+| Field | Type | Rule |
+|---|---|---|
+| `on_behalf_of` | `string` | the vendor identifier, `acct_…` |
+| `application_fee_rate` | `number` | **percentage**, between `0` and `100` |
+
+<Warning>
+**Both fields go together or neither.** Supplying only one returns
+`422 connect.incomplete_request`.
+</Warning>
+
+<Warning>
+`application_fee_rate` is expressed as a **percentage**: `5` means 5%. `0.05` would mean 0.05%.
+</Warning>
+
+<Note>
+**Why a rate and not an amount.** The gross is converted into the currency of the chosen country
+at confirmation time: an intent of 100 EUR confirmed in Congo captures roughly 65,000 XAF, while
+a fixed amount of 20 would stay 20. A rate applies to the actual gross.
+
+If you need a flat amount, compute it on your side and express it as a rate for that particular
+sale.
+</Note>
+
+<Note>
+**`fee_payer` is not transmitted.** It is read from the controller relationship, as you set it
+at [activation](/en/connect/activate). Posting it is refused.
+</Note>
+
+### The rate form passes our fixed fee through (marketplace mode only)
+
+In `controller` mode, a rate of 5% does not charge the vendor 5%: it charges
+**5% + our fixed share**. You declare only one number: the fixed part is ours, passed through
+automatically, so that your margin does not depend on the basket.
+
+```
+commission charged = your_rate × gross + collection_fixed + connect_fixed
+```
+
+| | 100 XAF sale | 10,000 XAF sale |
+|---|---:|---:|
+| commission charged to the vendor (5% + 25) | **30.00** | **525.00** |
+| ├ Yabetoo collection (3.5% + 25) | 28.50 | 375.00 |
+| ├ Connect surcharge (1%) | 1.00 | 100.00 |
+| └ **your margin** | **0.50** | **50.00** |
+| the vendor receives | **70.00** | **9,475.00** |
+
+Your margin is exactly `0.5% × gross` in both cases: it no longer depends on the basket.
+
+<Warning>
+**Tell your vendors.** On a 100 XAF sale, the vendor receives **70**, not 95: the 25 XAF fixed
+fee sits inside what you charge them. Advertise "5% + 25 XAF", not "5%".
+</Warning>
+
+## The two modes: `fee_payer`
+
+The mode decides **who bears the Yabetoo fees**. It moves the burden, it never removes it: the
+Connect surcharge applies in both modes.
+
+<Tabs>
+  <Tab title="Marketplace mode (controller)">
+    The Yabetoo fees are taken **out of your commission**. The vendor only bears a single
+    deduction: yours.
+
+    ```
+    vendor  = gross − commission
+    you     = commission − (collection + connect)
+    Yabetoo = collection + connect
+    ```
+
+    Your margin is the **residue**. That is why there is a floor, and why our fixed share is
+    passed through into it: your commission **funds** our fees.
+  </Tab>
+  <Tab title="Platform mode (account)">
+    The vendor is billed by Yabetoo **like an ordinary merchant**, and your commission is added
+    on top. You collect your commission in full.
+
+    ```
+    vendor  = gross − commission − (collection + connect)
+    you     = commission
+    Yabetoo = collection + connect
+    ```
+
+    Nothing to fund, therefore **no floor**: your commission can be zero. And **no pass-through
+    of the fixed fee**: adding it would make the vendor pay it twice.
+  </Tab>
+</Tabs>
+
+<Warning>
+**The same rate does not earn the same thing.** A controller declaring 5% on a 10,000 XAF sale
+keeps **50** in marketplace mode (the residue above Yabetoo's 475) and **500** in platform mode
+(their entire margin). A factor of ten. And the vendor receives 9,475 in the first case against
+9,025 in the second.
+</Warning>
+
+### Comparison table
+
+On 10,000 XAF of gross, standard rate card, with `application_fee_rate`:
+
+| | marketplace | platform | platform + commission |
+|---|---:|---:|---:|
+| `fee_payer` of the relationship | `controller` | `account` | `account` |
+| `application_fee_rate` | `10` | `0` | `10` |
+| commission actually taken | 1,025 | 0 | 1,000 |
+| **the vendor receives** | **8,975** | **9,525** | **8,525** |
+| **you receive** | **550** | **0** | **1,000** |
+| **Yabetoo takes** | **475** | **475** | **475** |
+
+In all three cases the total is exactly 10,000: Connect neither creates nor destroys money.
+
+<Note>
+On the "commission actually taken" line: in `controller` mode, the 25 XAF fixed fee is **added**
+to your rate (1,000 + 25); in `account` mode, it is not: the vendor already pays it separately,
+and passing it through would make them pay it twice.
+</Note>
+
+## The refusals, and how to avoid them
+
+### `connect.application_fee_too_low` (400)
+
+<ResponseField name="Mode concerned" type="controller only">
+  Your commission must **exceed** (not merely cover) the Yabetoo fees. Equality is refused: it
+  would leave you at zero net, which is not a viable operation.
+</ResponseField>
+
+```json
+{
+  "status": 400,
+  "code": "connect.application_fee_too_low",
+  "message": "...",
+  "minimum_rate_excluded": 4.5,
+  "requested_rate": 4,
+  "minimum": 475,
+  "requested": 425,
+  "currency": "xaf"
+}
+```
+
+<ResponseField name="minimum_rate_excluded" type="number">
+  The **rate floor**, as a percentage. On the standard rate card it is **4.5%**: the collection
+  rate (3.5%) plus the Connect one (1%).
+
+  It is called *excluded* because the bound is **strict**: at exactly 4.5%, it is still refused.
+</ResponseField>
+
+<ResponseField name="requested_rate" type="number">
+  The rate you sent.
+</ResponseField>
+
+<Warning>
+**This refusal does not depend on the amount.** Since our fixed share is passed through into
+your commission, it appears on both sides of the comparison and cancels out. The guard reduces
+to:
+
+```
+your_rate > collection_rate + connect_rate
+```
+
+A rate above the floor passes at **every** amount. A rate equal to or below it is refused at
+**every** amount. You will not see "some" captures fail, you will see all of them fail.
+
+The remediation is therefore to revisit your pricing, never the sale in progress.
+</Warning>
+
+<Note>
+In `account` mode there is **no floor**: your commission has nothing to fund, it can be zero.
+This refusal never occurs there.
+</Note>
+
+<Tip>
+**The simple rule:** declare a rate strictly above your grid's floor, and you will never be
+refused for this reason, whatever the amount of the sale.
+</Tip>
+
+### `connect.application_fee_too_high` (400)
+
+Your commission exceeds the amount charged.
+
+```json
+{
+  "status": 400,
+  "code": "connect.application_fee_too_high",
+  "requested": 12000,
+  "gross_amount": 10000,
+  "currency": "xaf"
+}
+```
+
+### `connect.vendor_net_not_positive` (422)
+
+After all deductions, the vendor would receive zero or less. There is nothing to credit.
+
+### `connect.incomplete_request` (422)
+
+`on_behalf_of` and `application_fee_rate` must be supplied **together**.
+
+### `connect.fee_payer_unset` (422)
+
+The targeted connected account has no usable `fee_payer`. Activate Connect on your account
+before charging. See [Activate Connect](/en/connect/activate).
+
+### `E_CONNECT_PRICING_UNAVAILABLE` (503)
+
+The commission grid could not be resolved. Connect **fails closed**: it never charges a fallback
+rate. Retry; if the refusal persists, contact support: a rate card line is missing for your
+organization.
+
+## Rounding
+
+Amounts are computed in exact decimal then rounded to two decimal places (`HALF_UP` for fees,
+`ROUND_DOWN` for the captured amount). The rounding residue goes to **Yabetoo**: the vendor and
+you receive deterministic amounts.
+
+<Note>
+XAF has no sub-unit. The amounts that actually leave the system towards the operator are whole numbers; fractions stay internal to the ledger.
+</Note>
+
+## What about deferred mode?
+
+An [allocation](/en/connect/payments/allocations) also carries the 1% Connect surcharge,
+computed on the **allocated amount**, not on the original gross. Without it, "charge with no
+vendor, then allocate" would reach the same economic result while paying 1% less.
+
+The `fee_payer` of the relationship applies there in the same way: in `controller` mode you are
+debited `amount + 1%` and the vendor receives `amount`; in `account` mode the vendor receives
+`amount − 1%`.

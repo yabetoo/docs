@@ -1,0 +1,283 @@
+---
+title: "Commissions et tarification"
+description: "Comment votre commission, les frais Yabetoo et le net du vendeur se calculent sur chaque encaissement Connect."
+icon: "percent"
+---
+
+Sur chaque encaissement Connect, le brut se partage entre **trois** parties : le vendeur, vous,
+et Yabetoo. Cette page décrit exactement ce que chacun reçoit, et pourquoi certaines commissions
+sont refusées.
+
+## Le barème Yabetoo
+
+Deux lignes s'appliquent à un encaissement Connect. Elles sont distinctes et se cumulent.
+
+| Ligne | Ce qu'elle facture | Barème standard (Congo) |
+|---|---|---|
+| `collection` | l'encaissement lui-même (elle existe pour tout marchand) | **3,5 % + 25 XAF** |
+| `connect` | la relation Connect : vérification des vendeurs, onboarding, rails de reversement | **1 %** |
+
+Sur 10 000 XAF de brut, Yabetoo perçoit donc `375 + 100 = 475 XAF`.
+
+<Note>
+Ce barème est **négociable par organisation**. N'écrivez jamais 4,5 % en dur dans votre code :
+lisez votre grille réelle avec
+[`GET /v1/commissions/types`](/fr/api-reference/introduction) et
+`POST /v1/commissions/calculate`.
+</Note>
+
+<Warning>
+**Le frais fixe rend le taux effectif dépendant du montant.** Les 25 XAF ne se diluent pas :
+
+| Brut | Prélèvement Yabetoo | En % du brut |
+|---:|---:|---:|
+| 500 | 47,50 | **9,5 %** |
+| 1 000 | 70,00 | **7,0 %** |
+| 10 000 | 475,00 | 4,75 % |
+| 100 000 | 4 525,00 | 4,53 % |
+
+C'est ce que **le vendeur** subit. Cela ne change en revanche rien au refus décrit plus bas,
+qui est une comparaison de **taux**.
+</Warning>
+
+## Déclarer votre commission
+
+Vous déclarez votre commission **à chaque encaissement**, sur l'intention de paiement, sous la
+forme d'un **taux**.
+
+```json
+{
+  "amount": 10000,
+  "currency": "xaf",
+  "on_behalf_of": "acct_01HZVENDOR000000000000000",
+  "application_fee_rate": 5
+}
+```
+
+| Champ | Type | Règle |
+|---|---|---|
+| `on_behalf_of` | `string` | l'identifiant du vendeur, `acct_…` |
+| `application_fee_rate` | `number` | **pourcentage**, entre `0` et `100` |
+
+<Warning>
+**Les deux champs vont ensemble ou aucun.** N'en fournir qu'un rend
+`422 connect.incomplete_request`.
+</Warning>
+
+<Warning>
+`application_fee_rate` s'exprime en **pourcentage** : `5` signifie 5 %. `0.05` signifierait
+0,05 %.
+</Warning>
+
+<Note>
+**Pourquoi un taux et pas un montant.** Le brut est converti dans la devise du pays choisi au
+moment de la confirmation : une intention de 100 EUR confirmée au Congo capture environ
+65 000 XAF, alors qu'un montant fixe de 20 resterait 20. Le taux, lui, s'applique au brut réel.
+
+Si vous avez besoin d'un montant plat, calculez-le chez vous et exprimez-le en taux pour la
+vente concernée.
+</Note>
+
+<Note>
+**`fee_payer` ne se transmet pas.** Il est lu sur la relation de contrôle, telle que vous
+l'avez fixée à [l'activation](/fr/connect/activate). Le poster est refusé.
+</Note>
+
+### La forme taux répercute notre frais fixe (mode marketplace uniquement)
+
+En mode `controller`, un taux de 5 % ne facture pas 5 % au vendeur : il facture
+**5 % + notre part fixe**. Vous ne déclarez qu'un nombre : le fixe est le nôtre, répercuté
+automatiquement, pour que votre marge ne dépende pas du panier.
+
+```
+commission facturée = votre_taux × brut + fixe_collection + fixe_connect
+```
+
+| | vente de 100 XAF | vente de 10 000 XAF |
+|---|---:|---:|
+| commission facturée au vendeur (5 % + 25) | **30,00** | **525,00** |
+| ├ collection Yabetoo (3,5 % + 25) | 28,50 | 375,00 |
+| ├ surcharge Connect (1 %) | 1,00 | 100,00 |
+| └ **votre marge** | **0,50** | **50,00** |
+| le vendeur reçoit | **70,00** | **9 475,00** |
+
+Votre marge vaut exactement `0,5 % × brut` dans les deux cas : elle ne dépend plus du panier.
+
+<Warning>
+**Dites-le à vos vendeurs.** Sur une vente de 100 XAF, le vendeur reçoit **70**, pas 95 : les
+25 XAF de frais fixe sont à l'intérieur de ce que vous lui facturez. Annoncez « 5 % + 25 XAF »,
+pas « 5 % ».
+</Warning>
+
+## Les deux modes : `fee_payer`
+
+Le mode décide **qui supporte les frais Yabetoo**. Il déplace la charge, il ne la supprime
+jamais : la surcharge Connect s'applique dans les deux modes.
+
+<Tabs>
+  <Tab title="Mode marketplace (controller)">
+    Les frais Yabetoo sont prélevés **sur votre commission**. Le vendeur ne subit qu'un seul
+    prélèvement : le vôtre.
+
+    ```
+    vendeur    = brut − commission
+    vous       = commission − (collection + connect)
+    Yabetoo    = collection + connect
+    ```
+
+    Votre marge est le **résidu**. C'est pour cela qu'il existe un plancher, et que notre
+    part fixe s'y répercute : votre commission **finance** nos frais.
+  </Tab>
+  <Tab title="Mode plateforme (account)">
+    Le vendeur est facturé par Yabetoo **comme un marchand ordinaire**, et votre commission
+    s'y ajoute. Vous encaissez votre commission en entier.
+
+    ```
+    vendeur    = brut − commission − (collection + connect)
+    vous       = commission
+    Yabetoo    = collection + connect
+    ```
+
+    Rien à financer, donc **aucun plancher** : votre commission peut être nulle. Et **aucune
+    répercussion du frais fixe** : l'ajouter le ferait payer deux fois au vendeur.
+  </Tab>
+</Tabs>
+
+<Warning>
+**Le même taux ne rapporte pas la même chose.** Un contrôleur qui déclare 5 % sur une vente de
+10 000 XAF garde **50** en mode marketplace (le résidu au-dessus des 475 de Yabetoo) et **500** en
+mode plateforme (sa marge entière). Un facteur dix. Et le vendeur reçoit 9 475 dans le premier
+cas contre 9 025 dans le second.
+</Warning>
+
+### Tableau comparatif
+
+Sur 10 000 XAF de brut, barème standard, avec `application_fee_rate` :
+
+| | marketplace | plateforme | plateforme + commission |
+|---|---:|---:|---:|
+| `fee_payer` de la relation | `controller` | `account` | `account` |
+| `application_fee_rate` | `10` | `0` | `10` |
+| commission effectivement prélevée | 1 025 | 0 | 1 000 |
+| **le vendeur reçoit** | **8 975** | **9 525** | **8 525** |
+| **vous recevez** | **550** | **0** | **1 000** |
+| **Yabetoo perçoit** | **475** | **475** | **475** |
+
+Dans les trois cas la somme fait exactement 10 000 : Connect ne crée ni ne détruit d'argent.
+
+<Note>
+Ligne « commission effectivement prélevée » : en mode `controller`, les 25 XAF de frais fixe
+sont **ajoutés** à votre taux (1 000 + 25) ; en mode `account`, ils ne le sont pas : le vendeur
+les paie déjà séparément, les répercuter les lui ferait payer deux fois.
+</Note>
+
+## Les refus, et comment les éviter
+
+### `connect.application_fee_too_low` (400)
+
+<ResponseField name="Mode concerné" type="controller uniquement">
+  Votre commission doit **dépasser** (pas seulement couvrir) les frais Yabetoo. L'égalité est
+  refusée : elle vous laisserait à zéro net, ce qui n'est pas une opération viable.
+</ResponseField>
+
+```json
+{
+  "status": 400,
+  "code": "connect.application_fee_too_low",
+  "message": "...",
+  "minimum_rate_excluded": 4.5,
+  "requested_rate": 4,
+  "minimum": 475,
+  "requested": 425,
+  "currency": "xaf"
+}
+```
+
+<ResponseField name="minimum_rate_excluded" type="number">
+  Le **plancher de taux**, en pourcentage. Sur le barème standard il vaut **4,5 %** : le taux
+  de collection (3,5 %) plus celui de Connect (1 %).
+
+  Il est dit *excluded* parce que la borne est **stricte** : à 4,5 % pile, c'est encore refusé.
+</ResponseField>
+
+<ResponseField name="requested_rate" type="number">
+  Le taux que vous avez envoyé.
+</ResponseField>
+
+<Warning>
+**Ce refus ne dépend pas du montant.** Notre part fixe étant répercutée dans votre commission,
+elle apparaît des deux côtés de la comparaison et s'annule. La garde se réduit à :
+
+```
+votre_taux > taux_collection + taux_connect
+```
+
+Un taux au-dessus du plancher passe à **tous** les montants. Un taux égal ou inférieur est
+refusé à **tous** les montants. Vous ne verrez pas « quelques » captures échouer, vous les
+verrez toutes échouer.
+
+La remédiation est donc de revoir votre tarification, jamais la vente en cours.
+</Warning>
+
+<Note>
+En mode `account`, il n'y a **aucun plancher** : votre commission n'a rien à financer, elle
+peut être nulle. Ce refus ne s'y produit jamais.
+</Note>
+
+<Tip>
+**La règle simple :** déclarez un taux strictement supérieur au plancher de votre grille, et
+vous ne serez jamais refusé pour ce motif, quel que soit le montant de la vente.
+</Tip>
+
+### `connect.application_fee_too_high` (400)
+
+Votre commission dépasse le montant encaissé.
+
+```json
+{
+  "status": 400,
+  "code": "connect.application_fee_too_high",
+  "requested": 12000,
+  "gross_amount": 10000,
+  "currency": "xaf"
+}
+```
+
+### `connect.vendor_net_not_positive` (422)
+
+Après tous les prélèvements, le vendeur recevrait zéro ou moins. Il n'y a rien à créditer.
+
+### `connect.incomplete_request` (422)
+
+`on_behalf_of` et `application_fee_rate` doivent être fournis **ensemble**.
+
+### `connect.fee_payer_unset` (422)
+
+Le compte connecté visé n'a pas de `fee_payer` exploitable. Activez Connect sur votre compte
+avant d'encaisser. Voir [Activer Connect](/fr/connect/activate).
+
+### `E_CONNECT_PRICING_UNAVAILABLE` (503)
+
+La grille de commission n'a pas pu être résolue. Connect **échoue fermé** : il ne facture jamais
+un tarif de repli. Réessayez ; si le refus persiste, contactez le support : une ligne de barème
+manque pour votre organisation.
+
+## Arrondis
+
+Les montants sont calculés en décimal exact puis arrondis à deux décimales (`HALF_UP` pour les
+frais, `ROUND_DOWN` pour le montant capturé). Le résidu d'arrondi revient à **Yabetoo** : le
+vendeur et vous recevez des montants déterministes.
+
+<Note>
+Le XAF n'a pas de sous-unité. Les montants qui quittent réellement le système vers l'opérateur sont entiers ; les fractions restent internes au grand livre.
+</Note>
+
+## Et le mode différé ?
+
+Une [allocation](/fr/connect/payments/allocations) porte elle aussi la surcharge Connect de 1 %,
+calculée sur le **montant alloué**, pas sur le brut d'origine. Sans cela, « encaisser sans
+vendeur puis allouer » atteindrait le même résultat économique en payant 1 % de moins.
+
+Le `fee_payer` de la relation s'y applique de la même façon : en mode `controller` vous êtes
+débité de `montant + 1 %` et le vendeur reçoit `montant` ; en mode `account` le vendeur reçoit
+`montant − 1 %`.

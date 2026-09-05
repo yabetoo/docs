@@ -1,0 +1,278 @@
+---
+title: "Connected accounts"
+description: "The connected account object and the endpoints that manipulate it."
+---
+
+A **connected account** represents a vendor attached to your marketplace. You create it, it
+belongs to you exclusively, and the link is immutable.
+
+Integration guide: [Create a connected account](/en/connect/accounts/create).
+
+## Base URL
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox (sk_test_ key)
+https://pay.api.yabetoopay.com       # Production (sk_live_ key)
+```
+
+The paths below are relative to this base. Both hosts serve the same endpoints.
+
+<Note>
+**Code casing.** On input, `country` and `currency` are accepted in any casing: `cg` and `CG`
+designate the same country. On output, the `connect_account` object returns them **normalised
+to uppercase** by the reference data, while money objects (allocation, withdrawal, balances)
+carry a currency in **lowercase**. Compare case-insensitively.
+</Note>
+
+## The `connect_account` object
+
+<ResponseField name="id" type="string">
+  Unique identifier, prefixed `acct_`.
+</ResponseField>
+
+<ResponseField name="object" type="string">
+  Always `connect_account`.
+</ResponseField>
+
+<ResponseField name="controller_account_id" type="string">
+  The marketplace account that controls this vendor. **Immutable.**
+</ResponseField>
+
+<ResponseField name="organization_id" type="string | null">
+  The vendor's own organisation. A vendor is an entity distinct from its marketplace.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Always `business` for a connected account.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The vendor's legal or trading name.
+</ResponseField>
+
+<ResponseField name="email" type="string | null">
+  The vendor's email. This is the channel through which Yabetoo reaches them.
+</ResponseField>
+
+<ResponseField name="status" type="string | null">
+  Account state. `active` means the **account exists**, not that it is verified nor that it can
+  receive funds.
+</ResponseField>
+
+<ResponseField name="environment" type="string">
+  `test` or `live`. **Inherited from the API key** that created the account.
+</ResponseField>
+
+<ResponseField name="fee_payer" type="string | null">
+  `controller` or `account`: who bears Yabetoo's fees. Derived from the marketplace's
+  `connect_mode`, never supplied at creation.
+</ResponseField>
+
+<ResponseField name="country" type="string | null">
+  ISO 3166-1 alpha-2 country code. Determines the compliance schedule of the KYC file.
+</ResponseField>
+
+<ResponseField name="currency" type="string | null">
+  The account's currency code.
+</ResponseField>
+
+<ResponseField name="created_at" type="string | null">
+  ISO 8601 timestamp.
+</ResponseField>
+
+---
+
+## Create a connected account
+
+```bash
+POST /v1/connect/accounts
+```
+
+`Idempotency-Key` header **required** (255 characters maximum).
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `country` | `string` | Yes | ISO 3166-1 alpha-2 code, 2 characters |
+| `currency` | `string` | Yes | ISO 4217 code, 3 characters |
+| `name` | `string` | Yes | 1 to 255 characters |
+| `email` | `string` | Yes | Valid address, 255 characters maximum |
+
+**Rejected (422)**: `phone`, `type`, `fee_payer`.
+
+### Returns
+
+The `connect_account` object, as `201`. ⚠️ This body carries **neither `country` nor
+`currency`**: they appear on the read and the list.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Idempotency-Key: vendor-ada-001" \
+  -H "Content-Type: application/json" \
+  -d '{"country":"cg","currency":"xaf","name":"Boutique Ada","email":"ada@example.com"}'
+```
+</CodeGroup>
+
+```json 201
+{
+  "id": "acct_01HZVENDOR0000000000000000",
+  "object": "connect_account",
+  "controller_account_id": "acct_01HZMARKETPLACE00000000000",
+  "organization_id": "org_01HZ000000000000000000000",
+  "type": "business",
+  "name": "Boutique Ada",
+  "email": "ada@example.com",
+  "status": "active",
+  "environment": "test",
+  "fee_payer": "controller",
+  "created_at": "2026-09-04T10:00:00.000Z"
+}
+```
+
+**Rate limited to 20 requests per minute.**
+
+---
+
+## List your connected accounts
+
+```bash
+GET /v1/connect/accounts
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `limit` | `number` | 1 to 100 |
+| `cursor` | `string` | Opaque cursor from the previous page |
+
+### Returns
+
+A cursor-paginated list: `{ object: "list", data, has_more, next_cursor }`. Each entry is a
+complete `connect_account`, **including `country` and `currency`**.
+
+---
+
+## Read a connected account
+
+```bash
+GET /v1/connect/accounts/{acct}
+```
+
+### Returns
+
+A `connect_account` **without** `type`, `currency` or `created_at`, augmented with `balances`:
+
+<ResponseField name="balances" type="array">
+  One entry per currency. `[]` for a vendor with no wallet: a nominal state, response `200`.
+
+  <Expandable title="properties">
+    <ResponseField name="currency" type="string">Wallet currency.</ResponseField>
+    <ResponseField name="balance" type="number">**Available** balance, the only withdrawable one.</ResponseField>
+    <ResponseField name="pending_balance" type="number">Credited, not yet matured. Can be drawn on by a refund.</ResponseField>
+    <ResponseField name="held_balance" type="number">Committed to a withdrawal in flight.</ResponseField>
+    <ResponseField name="next_maturity_at" type="string | null">Maturity date of the next pending credit.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## List a connected account's transactions
+
+```bash
+GET /v1/connect/accounts/{acct}/transactions
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `page` | `number` | Starting from 1 |
+| `limit` | `number` | 25 by default, 100 maximum |
+
+### Returns
+
+`{ object: "list", data, has_more }`: pagination **by page**, therefore **no `next_cursor`**.
+Each entry carries `id`, `object`, `amount`, `currency`, `amount_fee`, `created_at`,
+`available_at`, `matured_at`.
+
+---
+
+## Create an onboarding link
+
+```bash
+POST /v1/connect/accounts/{acct}/onboarding_links
+```
+
+Empty body. No `Idempotency-Key`: the call **resumes** a session in progress.
+
+**Rejected (422, `rule: "derived"`)**: `country`, `kycLevel`.
+
+### Returns
+
+```json 201
+{
+  "object": "connect_onboarding_link",
+  "url": "https://verify.yabetoo.com/flow?token=vsess_...",
+  "expires_at": "2026-09-06T10:00:00.000Z"
+}
+```
+
+---
+
+## Pay out a connected account's balance
+
+```bash
+POST /v1/connect/accounts/{acct}/withdrawals
+```
+
+`Idempotency-Key` header **required**. **Empty** body: the withdrawal covers the **entire**
+available balance.
+
+**Rejected (422)**: `amount`. There is no partial withdrawal.
+
+### Returns
+
+```json 201
+{
+  "id": "wd_01HZ00000000000000000000",
+  "object": "connect_withdrawal",
+  "connected_account_id": "acct_01HZVENDOR0000000000000000",
+  "amount": 4000,
+  "currency": "xaf",
+  "destination": "24****4567",
+  "status": "succeeded",
+  "created_at": "2026-09-04T12:00:00.000Z"
+}
+```
+
+<Warning>
+The call is **synchronous** and waits for the operator. `status` is the **final** state:
+`succeeded` or `failed`. An operator refusal returns `201` with `status: "failed"`, not an HTTP
+error.
+</Warning>
+
+---
+
+## Errors
+
+See the [Connect error reference](/en/connect/errors).
+
+| Status | Main codes |
+|---|---|
+| `401` / `403` | Target refusal: body `{"message": "Unauthorized"}` or `{"message": "Forbidden"}`, with no `code` |
+| `409` | `E_IDEMPOTENCY_CONFLICT`, `E_DUPLICATE_OPERATION` |
+| `422` | `connect.controller_mode_unset`, `E_CONNECT_VENDOR_EMPTY_BALANCE`, `E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE`, `E_PENDING_WITHDRAW` |
+| `429` | `E_TOO_MANY_REQUESTS`: vendor creation only |
+| `502` | `E_CONNECT_ONBOARDING_UNSUPPORTED`, `E_REFERENTIAL_COUNTRY_MISSING` |
+| `503` | `E_SSO_UNAVAILABLE`, `E_SERVICE_UNAVAILABLE` |
+
+## Related events
+
+| Event | When |
+|---|---|
+| `connect.funds.available` | A vendor credit became available |
+
+<Note>
+`connect.account.created` and `connect.account.updated` **are not emitted**. Read a vendor's
+state with `GET /v1/connect/accounts/{acct}`.
+</Note>

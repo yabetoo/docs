@@ -1,0 +1,159 @@
+---
+title: "Allocations and reversals"
+description: "The allocation and reversal objects, and the deferred mode endpoints."
+---
+
+An **allocation** transfers funds from your wallet to a vendor's. A **reversal** returns all or
+part of them.
+
+Integration guide: [Deferred mode](/en/connect/payments/allocations).
+
+## Base URL
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox (sk_test_ key)
+https://pay.api.yabetoopay.com       # Production (sk_live_ key)
+```
+
+The paths below are relative to this base. Both hosts serve the same endpoints.
+
+## The `connect_allocation` object
+
+<ResponseField name="id" type="string">Unique identifier, prefixed `ctr_`.</ResponseField>
+<ResponseField name="object" type="string">Always `connect_allocation`.</ResponseField>
+<ResponseField name="destination" type="string">The credited vendor's `acct_`.</ResponseField>
+
+<ResponseField name="amount" type="number">
+  **What the vendor received**, net of the Connect surcharge, not necessarily what you
+  requested. This is the amount that caps reversals.
+</ResponseField>
+
+<ResponseField name="fee" type="number">
+  The Connect surcharge collected by Yabetoo on this allocation.
+</ResponseField>
+
+<ResponseField name="currency" type="string">Currency of the operation.</ResponseField>
+
+<ResponseField name="available_at" type="string | null">
+  Date on which the funds will become available to the vendor.
+</ResponseField>
+
+<ResponseField name="created_at" type="string | null">ISO 8601 timestamp.</ResponseField>
+
+## The `connect_reversal` object
+
+<ResponseField name="id" type="string">Unique identifier, prefixed `ctrr_`.</ResponseField>
+<ResponseField name="object" type="string">Always `connect_reversal`.</ResponseField>
+<ResponseField name="allocation" type="string">The reversed allocation, `ctr_…`.</ResponseField>
+<ResponseField name="destination" type="string">The debited vendor's `acct_`.</ResponseField>
+<ResponseField name="amount" type="number">Amount reversed by **this** operation.</ResponseField>
+<ResponseField name="currency" type="string">Currency of the operation.</ResponseField>
+<ResponseField name="reversed_total" type="number">Cumulative amount reversed on the allocation. Can never exceed its `amount`.</ResponseField>
+<ResponseField name="created_at" type="string | null">ISO 8601 timestamp.</ResponseField>
+
+---
+
+## Create an allocation
+
+```bash
+POST /v1/connect/allocations
+```
+
+`Idempotency-Key` is **optional but strongly recommended**: without it, no deduplication is
+done and a network retry allocates twice.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `destination` | `string` | Yes | The vendor's `acct_` |
+| `amount` | `number` | Yes | Strictly positive |
+
+There is **no** `currency` field: the currency is that of your wallet.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/allocations \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Idempotency-Key: order-4821-payout-ada" \
+  -H "Content-Type: application/json" \
+  -d '{"destination":"acct_01HZVENDOR0000000000000000","amount":9000}'
+```
+</CodeGroup>
+
+```json 201
+{
+  "id": "ctr_01HZ00000000000000000000",
+  "object": "connect_allocation",
+  "destination": "acct_01HZVENDOR0000000000000000",
+  "amount": 8910,
+  "fee": 90,
+  "currency": "xaf",
+  "available_at": "2026-09-11T09:20:00.000Z",
+  "created_at": "2026-09-04T09:20:00.000Z"
+}
+```
+
+<Warning>
+The **requested** amount was 9,000; the vendor receives 8,910. Under
+`fee_payer = controller`, it is the other way round: you are debited 9,090 and the vendor
+receives 9,000.
+</Warning>
+
+---
+
+## Reverse an allocation
+
+```bash
+POST /v1/connect/allocations/{allocationId}/reversals
+```
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `amount` | `number` | No | **Omit it, and the entire remainder is reversed.** |
+
+```json 201
+{
+  "id": "ctrr_01HZ00000000000000000000",
+  "object": "connect_reversal",
+  "allocation": "ctr_01HZ00000000000000000000",
+  "destination": "acct_01HZVENDOR0000000000000000",
+  "amount": 4000,
+  "currency": "xaf",
+  "reversed_total": 4000,
+  "created_at": "2026-09-04T11:00:00.000Z"
+}
+```
+
+Funds are taken from the vendor's **pending balance**, then from their **available balance**.
+Your balance is **never** drawn on: if the vendor cannot return the funds, the reversal is
+refused with a `402`.
+
+---
+
+## Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `400` | n/a | `Yabetoo-Account` header sent |
+| `401` | n/a | Test key targeting a `live` vendor |
+| `403` | n/a | Target unknown, malformed, belonging to another marketplace, or allocation to yourself |
+| `402` | `connect.insufficient_funds_for_reversal` | Body: `required`, `seller_available`, `shortfall`, `currency` |
+| `409` | `E_DUPLICATE_OPERATION` · `E_IDEMPOTENCY_CONFLICT` | Idempotence |
+| `422` | `connect.fee_payer_unset` | Connect is not activated |
+| `422` | `connect.vendor_net_not_positive` | The surcharge absorbs the whole allocation |
+| `422` | `connect.country_unsupported` | No operator for your country |
+| `422` | `connect.reversal_exceeds_remaining` | Body: `requested`, `remaining` |
+| `422` | `E_CURRENCY_MISMATCH` | Different currencies |
+| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | Surcharge not resolved: refusal, never zero |
+| `503` | `E_CONNECT_AVAILABILITY_DELAY_UNSET` | Availability delay not configured |
+
+## Related events
+
+| Event | When |
+|---|---|
+| `connect.transfer.created` | An allocation was created |
+| `connect.transfer.reversed` | An allocation was reversed |
+| `connect.reversal.blocked_insufficient_funds` | A reversal was refused for lack of funds |

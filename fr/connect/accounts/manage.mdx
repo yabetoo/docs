@@ -1,0 +1,162 @@
+---
+title: "Gérer vos vendeurs"
+description: "Lister vos comptes connectés, lire leurs soldes et leur historique."
+icon: "list"
+---
+
+Trois lectures, toutes bornées à **vos** vendeurs : l'identifiant de votre marketplace vient de
+votre clé API et ne peut pas être fourni dans la requête.
+
+## Lister vos vendeurs
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/connect/accounts   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/connect/accounts       # Production
+```
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `limit` | `number` | 1 à 100. Au-delà, la valeur est ramenée à 100. |
+| `cursor` | `string` | Curseur opaque rendu par la page précédente |
+
+<CodeGroup>
+```bash cURL
+curl "https://pay.sandbox.yabetoopay.com/v1/connect/accounts?limit=20" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+</CodeGroup>
+
+```json 200
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "acct_01HZVENDOR0000000000000000",
+      "object": "connect_account",
+      "controller_account_id": "acct_01HZMARKETPLACE00000000000",
+      "organization_id": "org_01HZ000000000000000000000",
+      "type": "business",
+      "name": "Boutique Ada",
+      "email": "ada@example.com",
+      "status": "active",
+      "environment": "test",
+      "fee_payer": "controller",
+      "country": "CG",
+      "currency": "XAF",
+      "created_at": "2026-09-01T09:12:00.000Z"
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null
+}
+```
+
+<Note>
+La liste ne porte **pas** les soldes : ce serait une requête par vendeur. Lisez le détail d'un
+vendeur pour ses soldes.
+</Note>
+
+## Lire un vendeur
+
+```bash
+GET /v1/connect/accounts/{acct}
+```
+
+```json 200
+{
+  "id": "acct_01HZVENDOR0000000000000000",
+  "object": "connect_account",
+  "controller_account_id": "acct_01HZMARKETPLACE00000000000",
+  "name": "Boutique Ada",
+  "email": "ada@example.com",
+  "organization_id": "org_01HZ000000000000000000000",
+  "country": "CG",
+  "status": "active",
+  "environment": "test",
+  "fee_payer": "controller",
+  "balances": [
+    {
+      "currency": "xaf",
+      "balance": 4000,
+      "pending_balance": 8975,
+      "held_balance": 0,
+      "next_maturity_at": "2026-09-11T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+<ResponseField name="balances" type="array">
+  Une entrée **par devise**. Un vendeur créé mais jamais payé rend `[]` : c'est un état
+  nominal, et la réponse reste `200`.
+</ResponseField>
+
+<ResponseField name="balance" type="number">
+  Le solde **disponible** : c'est le seul montant retirable.
+</ResponseField>
+
+<ResponseField name="pending_balance" type="number">
+  Les fonds crédités mais **pas encore mûrs**. Ils ne sont pas retirables, mais ils restent
+  saisissables par un remboursement.
+</ResponseField>
+
+<ResponseField name="held_balance" type="number">
+  Les fonds **engagés dans un retrait en vol**. Ne les confondez pas avec `pending_balance` :
+  ce sont deux états différents.
+</ResponseField>
+
+<ResponseField name="next_maturity_at" type="string | null">
+  La date à laquelle le prochain crédit en attente deviendra disponible. `null` s'il n'y a
+  rien en attente.
+</ResponseField>
+
+## Lire l'historique d'un vendeur
+
+```bash
+GET /v1/connect/accounts/{acct}/transactions
+```
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `page` | `number` | À partir de 1 |
+| `limit` | `number` | 25 par défaut, 100 au maximum |
+
+```json 200
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "wtx_01HZ00000000000000000000",
+      "object": "connect_allocation",
+      "amount": 8910,
+      "currency": "xaf",
+      "amount_fee": 90,
+      "created_at": "2026-09-01T09:20:00.000Z",
+      "available_at": "2026-09-08T09:20:00.000Z",
+      "matured_at": null
+    }
+  ],
+  "has_more": true
+}
+```
+
+<Note>
+Cette liste est paginée **par numéro de page**, pas par curseur : elle ne rend donc pas de
+`next_cursor`.
+</Note>
+
+Les deux dates se lisent ensemble :
+
+| `available_at` | `matured_at` | Signification |
+|---|---|---|
+| une date | `null` | Crédit **en attente** : il deviendra disponible à cette date |
+| une date | une date | Crédit **mûri** et disponible |
+| `null` | `null` | Crédit **directement disponible**, sans délai |
+
+## Erreurs communes aux trois lectures
+
+| Statut | Cause |
+|---|---|
+| `401` | Clé absente, ou clé de test visant un vendeur `live` |
+| `403` | Vendeur inconnu, identifiant malformé, ou vendeur d'une autre marketplace |
+| `503` | Le service d'identité est indisponible |

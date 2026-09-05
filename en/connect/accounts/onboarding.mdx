@@ -1,0 +1,118 @@
+---
+title: "Onboarding and verification"
+description: "Get your vendor's identity verified and their payout destination collected."
+icon: "id-card"
+---
+
+A vendor that has just been created **can receive nothing**. They must first open their
+verification file and submit their documents and their payout destination.
+
+Yabetoo hosts this flow. You generate a link, you pass it to the vendor, they complete it.
+
+## Generating an onboarding link
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts/{acct}/onboarding_links   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/accounts/{acct}/onboarding_links       # Production
+```
+
+<CodeGroup>
+```bash cURL
+curl -X POST \
+  https://pay.sandbox.yabetoopay.com/v1/connect/accounts/acct_01HZVENDOR0000000000000000/onboarding_links \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+</CodeGroup>
+
+The request body is **empty**.
+
+```json 201
+{
+  "object": "connect_onboarding_link",
+  "url": "https://verify.yabetoo.com/flow?token=vsess_...",
+  "expires_at": "2026-09-06T10:00:00.000Z"
+}
+```
+
+<Note>
+**No `Idempotency-Key` on this route**, unlike vendor creation. The call **resumes** an
+in-progress session instead of opening a second one: you can replay it as many times as
+needed to regenerate the link of a vendor who lost theirs.
+</Note>
+
+### Refused fields
+
+| Field | Status | Why |
+|---|---|---|
+| `country` | `422`, `rule: "derived"` | The compliance schedule is derived from the country of the **connected account**, set at its creation. |
+| `kycLevel` | `422`, `rule: "derived"` | The level is derived from `country × subject type`. You do not choose your vendor's compliance regime. |
+
+## What the vendor does there
+
+<Steps>
+  <Step title="They open the link">
+    The page is hosted by Yabetoo (`verify.yabetoo.com`). You can open it in a tab, send it by
+    email, or embed it in an iframe.
+  </Step>
+  <Step title="They submit their documents">
+    Identity document and selfie for level 1. Proof of address or trade register for level 2,
+    which raises the limits.
+  </Step>
+  <Step title="They register their payout destination">
+    This is **their payout destination**. The vendor submits it, not you, and that is why
+    `phone` is refused when the account is created.
+  </Step>
+  <Step title="Yabetoo reviews the file">
+    Automated verification where possible, human review otherwise.
+  </Step>
+</Steps>
+
+<Warning>
+**There is no `return_url`.** Connect v1 exposes no redirect parameter: the vendor finishes on
+a Yabetoo page. If you load the link in an iframe, the end of the flow is notified to you via
+`postMessage`. Otherwise, follow progress through [webhooks](/en/connect/webhooks) or by
+querying the account.
+</Warning>
+
+## During verification
+
+| | Allowed |
+|---|---|
+| The vendor **collects** | ✅ Yes: their funds accumulate as pending balance |
+| The vendor **withdraws** | ❌ No: nothing can go out before approval |
+
+This is deliberate: your vendor can sell from day one, but the money does not leave the system
+until their identity is established.
+
+<Warning>
+**A consequence to know about.** A vendor can accumulate funds and then have their file
+**refused**. Their funds are then refunded to the buyers, charge by charge. Do not promise an
+unverified vendor that their balance is theirs.
+</Warning>
+
+## Following progress
+
+Query the account to read its `status` and its balances:
+
+```bash
+GET /v1/connect/accounts/{acct}
+```
+
+See [Manage your vendors](/en/connect/accounts/manage).
+
+## Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `401` | n/a | You are targeting a `live` vendor with a test key (or the reverse) |
+| `403` | n/a | Unknown vendor, malformed identifier, or a vendor of another marketplace: **the response is identical in all three cases** |
+| `422` | `rule: "derived"` | `country` or `kycLevel` sent |
+| `502` | `E_CONNECT_ONBOARDING_UNSUPPORTED` | No compliance schedule is configured for this vendor's country. Contact support: retrying will change nothing. |
+| `502` | `E_REFERENTIAL_COUNTRY_MISSING` | The account's country is not found in the reference data |
+| `503` | `E_SERVICE_UNAVAILABLE` | The verification service is unavailable, retry |
+
+<Note>
+The `403` codes never distinguish "this vendor does not exist" from "this vendor is not
+yours". That is intentional: otherwise the API would become a way to probe the existence of
+other people's accounts.
+</Note>

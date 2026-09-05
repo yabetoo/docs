@@ -1,0 +1,189 @@
+---
+title: "Tester Connect"
+description: "Ce que vous pouvez vérifier en environnement de test, et ce qui demande une intervention."
+icon: "flask"
+---
+
+Connect se teste avec vos clés `sk_test_`, sur les mêmes endpoints qu'en production.
+
+## L'environnement est hérité, jamais choisi
+
+<Warning>
+**Une clé `sk_test_` ne crée que des vendeurs de test, et ne peut viser qu'eux.** L'environnement
+d'un compte connecté est hérité de la clé qui l'a créé : il n'y a pas de champ pour le choisir.
+
+Viser un vendeur `live` avec une clé de test (ou l'inverse) rend `401`, sur **toutes** les
+routes Connect. Ce n'est pas un bug de clé : c'est la barrière d'isolation.
+</Warning>
+
+C'est le premier symptôme à reconnaître : un `401` sur un vendeur que vous venez de créer
+signifie presque toujours que vous avez changé de clé entre les deux appels.
+
+## 1. Activez Connect sur votre compte de test
+
+L'activation se fait dans votre [tableau de bord](https://app.yabetoo.com/dashboard/connect),
+section **Connect**, avec votre compte de test.
+
+<Warning>
+**Le mode est immuable, y compris en test.** Vous ne pourrez pas basculer votre compte de test
+de `marketplace` à `platform` pour comparer les deux cascades. Pour tester les deux modes, il
+vous faut **deux comptes marchands** distincts.
+</Warning>
+
+Vérifiez ensuite que votre intégration lit bien le mode :
+
+```bash
+curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+  -H "Authorization: Bearer sk_test_..."
+```
+
+## 2. Créez des vendeurs de test
+
+Rien ne distingue la création d'un vendeur de test : mêmes champs, même `Idempotency-Key`
+obligatoire.
+
+<Tip>
+Créez-en **au moins deux**, et gardez-en un que vous ne vérifiez jamais : c'est le seul moyen
+d'exercer les refus liés à la vérification (`403 E_VERIFICATION_REQUIRED`,
+`422 E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE`).
+</Tip>
+
+<Tip>
+Créez aussi un vendeur sous un **second compte marchand**. C'est le seul moyen de vérifier que
+votre code traite correctement le `403` d'un vendeur qui ne vous appartient pas, un cas que
+vous rencontrerez en production dès qu'un identifiant se glisse d'un tenant à l'autre.
+</Tip>
+
+## 3. La vérification n'est pas instantanée en test
+
+<Warning>
+**Ne comptez pas sur une approbation automatique en test.** Vous obtiendrez le lien, le
+vendeur pourra déposer ses pièces et sa destination de versement, mais le dossier passe par une
+**revue** : son passage à `approved` n'est ni immédiat ni garanti.
+
+Pour obtenir un vendeur de test **approuvé** (nécessaire pour exercer les retraits),
+contactez [support@yabetoopay.com](mailto:support@yabetoopay.com).
+</Warning>
+
+Ce que vous pouvez vérifier sans approbation :
+
+- la génération et l'expiration du lien (`expires_at`) ;
+- le fait que régénérer le lien **reprend** la session au lieu d'en ouvrir une seconde ;
+- les refus `422` sur `country` et `kycLevel` ;
+- que les fonds s'accumulent bien alors qu'aucun retrait n'est possible.
+
+## 4. Testez l'encaissement et la cascade
+
+Le partage est calculé à la **capture**. Utilisez les numéros de test habituels
+pour piloter l'issue du paiement. Voir
+[Tester votre intégration](/fr/developer-tools/test/overview).
+
+<Steps>
+  <Step title="Créez l'intention avec les champs Connect">
+    ```json
+    { "amount": 10000, "currency": "xaf",
+      "on_behalf_of": "acct_...", "application_fee_rate": 10 }
+    ```
+  </Step>
+  <Step title="Confirmez avec un numéro de test qui réussit">
+    Le partage n'a lieu que sur une capture réussie.
+  </Step>
+  <Step title="Relisez les soldes du vendeur">
+    ```bash
+    GET /v1/connect/accounts/{acct}
+    ```
+    Vous devez voir le net vendeur en `pending_balance`, et **`balance` à zéro**.
+  </Step>
+</Steps>
+
+<Tip>
+**Vérifiez la conservation, pas seulement le code HTTP.** Sur chaque capture,
+`net vendeur + votre net + frais Yabetoo` doit valoir exactement le brut. C'est l'assertion qui
+attrape une erreur de mode ou d'unité ; un `201` ne prouve rien.
+</Tip>
+
+### Exercer les refus de commission
+
+| Pour obtenir | Envoyez |
+|---|---|
+| `400 connect.application_fee_too_low` | un `application_fee_rate` **au niveau ou en dessous** du plancher de votre grille (4,5 % sur le barème standard) |
+| `400 connect.application_fee_too_high` | un taux qui produit une commission supérieure au brut |
+| `422 connect.incomplete_request` | `on_behalf_of` sans `application_fee_rate` |
+| `422 connect.fee_payer_unset` | un appel Connect **avant** d'avoir activé Connect |
+| `403` | un `acct_` inventé, malformé, ou appartenant à un autre marchand |
+
+<Note>
+Le refus `too_low` ne dépend **pas** du montant : un taux sous le plancher échoue à 100 XAF
+comme à 1 000 000. Inutile de chercher un montant qui le déclenche.
+</Note>
+
+## 5. Le délai de disponibilité
+
+<Warning>
+**C'est la principale difficulté du test de bout en bout.** Les fonds d'un vendeur arrivent en
+`pending_balance` et ne deviennent retirables qu'après le délai de disponibilité, **7 jours
+par défaut**. Il n'existe aucune horloge de test ni endpoint pour forcer la maturation.
+
+Pour tester la chaîne complète en une session, demandez au support un délai raccourci sur votre
+environnement de test.
+</Warning>
+
+En attendant, vous pouvez vérifier :
+
+- que `next_maturity_at` porte bien la date attendue ;
+- que `available_at` est renseigné et `matured_at` nul sur la transaction ;
+- qu'un retrait sur un solde encore en attente rend bien
+  `422 E_CONNECT_VENDOR_EMPTY_BALANCE`, et non une erreur générique.
+
+## 6. Testez le mode différé sans attendre
+
+Le [mode différé](/fr/connect/payments/allocations) s'exerce **sans encaissement réel** : il
+suffit d'avoir un solde sur votre propre portefeuille marchand.
+
+C'est la façon la plus rapide de vérifier :
+
+- la surcharge de 1 % et le sens de `amount` dans la réponse ;
+- une reprise partielle puis totale, et le cumul `reversed_total` ;
+- le `422 connect.reversal_exceeds_remaining` quand vous dépassez le reliquat ;
+- le `402` de reprise quand le vendeur ne peut pas rendre les fonds.
+
+## 7. Testez l'idempotence pour de vrai
+
+<Tip>
+Rejouez chaque appel d'argent **avec la même `Idempotency-Key`** et vérifiez qu'aucune seconde
+opération n'a été créée (en relisant les soldes, pas en lisant le code HTTP).
+
+Vérifiez aussi le cas inverse : la **même clé sur deux vendeurs différents** doit produire
+**deux** opérations. Une implémentation qui déduplique là ne paierait qu'un vendeur sur deux.
+</Tip>
+
+## Ce qui ne se teste pas
+
+| | Pourquoi |
+|---|---|
+| Le mode `platform` sur un compte activé en `marketplace` | Le `connect_mode` est immuable |
+| La déliaison ou le transfert d'un vendeur | Ces opérations n'existent pas |
+| Le multi-devise | Une devise différente est refusée |
+| L'approbation KYC automatique | La revue n'est pas automatique en test |
+| Le retour automatique en fin d'onboarding | Connect v1 n'expose aucun `return_url` |
+
+## Passer en production
+
+<Steps>
+  <Step title="Activez Connect avec votre clé live">
+    L'activation est **par compte et par environnement** : activer en test n'active pas en
+    production.
+  </Step>
+  <Step title="Recréez vos vendeurs">
+    Un vendeur de test n'existe pas en production. Aucune migration n'est possible, et sa
+    vérification est à refaire.
+  </Step>
+  <Step title="Rebranchez vos webhooks">
+    Vérifiez que vous vous abonnez aux noms **nus** (`connect.transfer.created`), et que votre
+    routage ne suppose pas que `accountId` est votre propre compte.
+  </Step>
+  <Step title="Vérifiez votre gestion du 402">
+    C'est le refus que vous ne verrez probablement jamais en test, et celui qui coûte le plus
+    cher en production. Abonnez-vous à `connect.refund.blocked_insufficient_funds`.
+  </Step>
+</Steps>

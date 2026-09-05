@@ -1,0 +1,112 @@
+---
+title: "Activation et cadence"
+description: "Lire l'activation Connect de votre compte et configurer la cadence de versement."
+---
+
+Deux ressources **singleton**, clées par votre propre compte : il n'y a rien à identifier dans
+l'URL, la cible vient de votre clé API.
+
+## URL de base
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox (clé sk_test_)
+https://pay.api.yabetoopay.com       # Production (clé sk_live_)
+```
+
+Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les mêmes endpoints.
+
+## L'objet `connect_activation`
+
+<ResponseField name="id" type="string">Votre compte, `acct_…`.</ResponseField>
+<ResponseField name="object" type="string">Vaut toujours `connect_activation`.</ResponseField>
+<ResponseField name="connect_mode" type="string | null">
+  `marketplace`, `platform`, ou `null` si Connect n'est pas activé. **Immuable une fois posé.**
+</ResponseField>
+
+## L'objet `connect_payout_schedule`
+
+<ResponseField name="object" type="string">Vaut toujours `connect_payout_schedule`.</ResponseField>
+<ResponseField name="account" type="string">Votre compte, `acct_…`.</ResponseField>
+<ResponseField name="cadence" type="string | null">`daily`, `weekly`, ou `null`.</ResponseField>
+<ResponseField name="enabled" type="boolean">Si la cadence automatique est active.</ResponseField>
+
+---
+
+## Lire votre activation
+
+```bash
+GET /v1/connect/activations
+```
+
+Rend **toujours 200**, jamais 404 : « pas encore activé » est un état de première classe.
+
+```json 200
+{
+  "id": "acct_01HZMARKETPLACE00000000000",
+  "object": "connect_activation",
+  "connect_mode": null
+}
+```
+
+---
+
+## Activer Connect
+
+L'activation n'a pas de surface API : elle se fait depuis le
+[tableau de bord marchand](https://app.yabetoo.com/dashboard/connect), section **Connect**.
+
+<Warning>
+`connect_mode` est **immuable** une fois posé. Voir [Activer Connect](/fr/connect/activate).
+</Warning>
+
+---
+
+## Lire votre cadence de versement
+
+```bash
+GET /v1/connect/payout_schedule
+```
+
+Rend **toujours 200**, avec `cadence: null` et `enabled: false` quand rien n'est configuré.
+
+---
+
+## Configurer la cadence de versement
+
+```bash
+POST /v1/connect/payout_schedule
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `cadence` | `string` | Oui | `daily` ou `weekly` |
+| `enabled` | `boolean` | Non | `true` par défaut |
+
+### Renvoie
+
+L'objet `connect_payout_schedule`, en **`200`**, pas `201` : la ressource est votre compte,
+elle existe déjà. Reposter **remplace** la configuration.
+
+```json 200
+{
+  "object": "connect_payout_schedule",
+  "account": "acct_01HZMARKETPLACE00000000000",
+  "cadence": "weekly",
+  "enabled": true
+}
+```
+
+<Note>
+Cet endpoint est naturellement idempotent : il n'a ni `Idempotency-Key` ni limitation de débit.
+</Note>
+
+---
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `400` | n/a | En-tête `Yabetoo-Account` envoyé |
+| `401` | `E_UNAUTHORIZED` | Clé absente ou invalide |
+| `422` | n/a | `connect_mode` ou `cadence` absent ou hors énumération. Le corps porte `meta.choices`. |
+| `503` | `E_SSO_UNAVAILABLE` | Service d'identité indisponible |

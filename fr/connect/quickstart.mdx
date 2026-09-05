@@ -1,0 +1,185 @@
+---
+title: "Démarrage rapide"
+description: "De l'activation au premier versement, en six appels."
+icon: "rocket"
+---
+
+Ce parcours vous emmène d'un compte vierge à un vendeur payé.
+
+<Info>
+Utilisez une clé `sk_test_` pour tout ce guide. L'environnement d'une clé est **hérité** par
+les vendeurs qu'elle crée : une clé de test ne peut produire que des vendeurs de test, et ne
+peut jamais viser un vendeur `live`.
+</Info>
+
+<Steps>
+  <Step title="Activez Connect et choisissez votre mode">
+    L'activation se fait dans votre [tableau de bord](https://app.yabetoo.com/dashboard/connect),
+    section **Connect**. Choisissez **marketplace** ou **plateforme**.
+
+    <Warning>
+    Ce choix est **définitif** : le mode ne se modifie pas après coup. Lisez
+    [Commissions](/fr/connect/pricing) avant de confirmer.
+    </Warning>
+
+    Votre intégration peut vérifier l'état à tout moment :
+
+    ```bash
+    curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+      -H "Authorization: Bearer sk_test_..."
+    ```
+
+    ```json 200
+    { "id": "acct_...", "object": "connect_activation", "connect_mode": "marketplace" }
+    ```
+  </Step>
+
+  <Step title="Créez un vendeur">
+    L'en-tête `Idempotency-Key` est **obligatoire** : la création est irréversible.
+
+    ```bash
+    curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Idempotency-Key: vendor-ada-001" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "country": "cg",
+        "currency": "xaf",
+        "name": "Boutique Ada",
+        "email": "ada@example.com"
+      }'
+    ```
+
+    ```json 201
+    {
+      "id": "acct_01HZVENDOR0000000000000000",
+      "object": "connect_account",
+      "status": "active",
+      "fee_payer": "controller"
+    }
+    ```
+
+    Gardez cet `id` : c'est le vendeur dans tous les appels suivants.
+  </Step>
+
+  <Step title="Envoyez-lui son lien de vérification">
+    ```bash
+    curl -X POST \
+      https://pay.sandbox.yabetoopay.com/v1/connect/accounts/acct_01HZVENDOR0000000000000000/onboarding_links \
+      -H "Authorization: Bearer sk_test_..."
+    ```
+
+    ```json 201
+    {
+      "object": "connect_onboarding_link",
+      "url": "https://verify.yabetoo.com/flow?token=vsess_...",
+      "expires_at": "2026-09-06T10:00:00.000Z"
+    }
+    ```
+
+    Le vendeur y dépose ses pièces **et sa destination de versement**. Sans cette
+    étape, aucun retrait ne pourra sortir.
+  </Step>
+
+  <Step title="Encaissez pour lui">
+    Deux champs s'ajoutent à votre création d'intention habituelle.
+
+    ```bash
+    curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": 10000,
+        "currency": "xaf",
+        "on_behalf_of": "acct_01HZVENDOR0000000000000000",
+        "application_fee_rate": 10
+      }'
+    ```
+
+    Confirmez l'intention comme d'habitude. À la capture, sur 10 000 XAF :
+    le vendeur reçoit **8 975** en solde en attente, vous gardez **550**, Yabetoo perçoit
+    **475**.
+
+    <Note>
+    Vous ne connaissez pas encore le vendeur au moment de la vente ? Encaissez normalement,
+    puis répartissez avec une [allocation](/fr/connect/payments/allocations).
+    </Note>
+  </Step>
+
+  <Step title="Attendez la maturation">
+    Les fonds du vendeur arrivent en **solde en attente** et deviennent disponibles après le
+    délai (7 jours par défaut).
+
+    ```bash
+    curl https://pay.sandbox.yabetoopay.com/v1/connect/accounts/acct_01HZVENDOR0000000000000000 \
+      -H "Authorization: Bearer sk_test_..."
+    ```
+
+    ```json
+    {
+      "balances": [
+        { "currency": "xaf", "balance": 0, "pending_balance": 8975,
+          "held_balance": 0, "next_maturity_at": "2026-09-11T00:00:00.000Z" }
+      ]
+    }
+    ```
+
+    Abonnez-vous à `connect.funds.available` pour être prévenu au lieu d'interroger.
+  </Step>
+
+  <Step title="Versez-lui son solde">
+    Corps **vide** : un retrait Connect transfère la totalité du solde disponible.
+
+    ```bash
+    curl -X POST \
+      https://pay.sandbox.yabetoopay.com/v1/connect/accounts/acct_01HZVENDOR0000000000000000/withdrawals \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Idempotency-Key: payout-ada-2026-09-11"
+    ```
+
+    ```json 201
+    {
+      "id": "wd_...",
+      "object": "connect_withdrawal",
+      "amount": 8975,
+      "currency": "xaf",
+      "destination": "24****4567",
+      "status": "succeeded"
+    }
+    ```
+
+    <Warning>
+    L'appel **attend l'opérateur** et rend l'état final. Un refus opérateur rend `201` avec
+    `status: "failed"`. Lisez toujours le `status`, pas seulement le code HTTP.
+    </Warning>
+  </Step>
+</Steps>
+
+## Les erreurs du premier jour
+
+| Symptôme | Cause | Correctif |
+|---|---|---|
+| `422 connect.controller_mode_unset` à la création d'un vendeur | Connect n'est pas activé | Faites l'étape 1 |
+| `422` sur `phone`, `type` ou `fee_payer` | Ces champs sont refusés, pas ignorés | Retirez-les du corps |
+| `422` sur `Idempotency-Key` | En-tête manquant | Obligatoire à la création et au retrait |
+| `403` sur un vendeur que vous venez de créer | Clé de test visant un vendeur `live`, ou inversement | Utilisez la clé du bon environnement |
+| `400 connect.application_fee_too_low` | Votre taux ne couvre pas les frais Yabetoo | Voir [Commissions](/fr/connect/pricing) |
+| `422 E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` au retrait | Le vendeur n'a pas terminé son onboarding | Renvoyez-lui son lien |
+| `422 E_CONNECT_VENDOR_EMPTY_BALANCE` | Solde disponible vide : les fonds sont encore en attente | Attendez la maturation |
+
+## Ensuite
+
+<CardGroup cols={2}>
+  <Card title="Commissions" icon="percent" href="/fr/connect/pricing">
+    Les deux modes, les planchers, et pourquoi une commission peut être refusée.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/fr/connect/webhooks">
+    Les sept événements `connect.*`.
+  </Card>
+  <Card title="Remboursements" icon="rotate-left" href="/fr/connect/refunds">
+    La cascade de reprise et le refus `402`.
+  </Card>
+  <Card title="Mode différé" icon="arrows-split-up-and-left" href="/fr/connect/payments/allocations">
+    Encaisser d'abord, répartir ensuite.
+  </Card>
+</CardGroup>

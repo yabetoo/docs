@@ -1,0 +1,118 @@
+---
+title: "Error reference"
+description: "Every Connect error code, its cause and its remediation."
+icon: "triangle-exclamation"
+---
+
+## Reading a Connect error code
+
+Two conventions coexist in error bodies, and you need to know that before writing a `switch`:
+
+| Form | Example | Where |
+|---|---|---|
+| Dotted lowercase | `connect.application_fee_too_low` | **Business** refusals from the Connect cascade |
+| `E_` prefixed | `E_CONNECT_PRICING_UNAVAILABLE` | **Infrastructure** refusals and shared guards |
+
+<Warning>
+Always branch on the literal value of the `code` field **in the response body**.
+</Warning>
+
+Some refusals carry **no** `code` at all: target refusals only carry
+`{"message": "Forbidden"}` or `{"message": "Unauthorized"}`. That is deliberate: they must
+reveal nothing about other people's accounts.
+
+## Target refusals (401 / 403)
+
+Four causes, only **two responses**.
+
+| Internal cause | Status | Body |
+|---|---|---|
+| Malformed identifier | `403` | `{"message": "Forbidden"}` |
+| Unknown or deleted vendor | `403` | `{"message": "Forbidden"}` |
+| Vendor of another marketplace | `403` | `{"message": "Forbidden"}` |
+| Test key targeting a `live` vendor (or the reverse) | `401` | `{"message": "Unauthorized"}` |
+
+<Note>
+The first three are **byte-identical**: the API will never tell you whether an `acct_` exists.
+Otherwise it would become a way to enumerate other marketplaces' accounts.
+</Note>
+
+## Validation refusals (400 / 422)
+
+| Code | Status | Cause | Remediation |
+|---|---|---|---|
+| `connect.incomplete_request` | 422 | `on_behalf_of` without `application_fee_rate`, or the reverse | Supply both |
+| `connect.fee_payer_unset` | 422 | Connect is not activated on your account | [Activate Connect](/en/connect/activate) |
+| `connect.application_fee_too_low` | 400 | Your commission does not exceed Yabetoo's fees | See [Pricing](/en/connect/pricing) |
+| `connect.application_fee_too_high` | 400 | Your commission exceeds the gross amount | Correct the rate |
+| `connect.vendor_net_not_positive` | 422 | The vendor would receive zero or less | Increase the amount, or lower the commission |
+| `connect.country_unsupported` | 422 | No operator configured for your country | Contact support |
+| `connect.reversal_exceeds_remaining` | 422 | The reversal exceeds the allocation's remainder | Read `remaining` in the body |
+| `E_CONNECT_VENDOR_EMPTY_BALANCE` | 422 | Available balance is empty | **Nominal state**, do not retry |
+| `E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` | 422 | No payout destination | Send the onboarding link again |
+| `E_PENDING_WITHDRAW` | 422 | A withdrawal is already in flight on this wallet | Wait for its outcome |
+| `E_CURRENCY_MISMATCH` | 422 | Wallets in different currencies | Not supported in v1 |
+| n/a (`rule: "unsupported"`) | 422 | Rejected field: `phone`, `type`, `fee_payer`, `amount`, `destination`, `account_id` | Remove the field |
+| n/a (`rule: "derived"`) | 422 | Rejected field: `country`, `kycLevel` on an onboarding link | Remove the field |
+| n/a (`field: "Idempotency-Key"`) | 422 | Header missing or too long (255 max) | Add the header |
+| n/a (relayed) | 422 | `connect.controller_mode_unset`: Connect not activated | [Activate Connect](/en/connect/activate) |
+
+## Insufficient funds (402)
+
+| Code | Route | Who pays as a last resort |
+|---|---|---|
+| `connect.insufficient_funds_for_refund` | Refund | **You**: the refusal only happens if your balance is not enough either |
+| `connect.insufficient_funds_for_reversal` | Allocation reversal | **Nobody**: only the vendor is drawn on |
+
+Both bodies carry `required`, `seller_available`, `shortfall`, `currency`. The refund refusal
+also carries `available` and `marketplace_balance`.
+
+<Note>
+`402` and not `422`: the request is well formed, it is the funds that are missing.
+</Note>
+
+## Idempotence conflicts (409)
+
+| Code | Cause | What to do |
+|---|---|---|
+| `E_IDEMPOTENCY_CONFLICT` | A request with the same key is **in progress** | Wait, then retry with the same key |
+| `E_DUPLICATE_OPERATION` | The key has **already produced** an operation | Do not retry: the operation took place |
+
+<Warning>
+On `POST /v1/connect/accounts/{acct}/withdrawals`, a replay returns the original `201` for
+24 hours, then `409 E_DUPLICATE_OPERATION`. The withdrawal did take place in both cases.
+</Warning>
+
+## Rate limiting (429)
+
+`E_TOO_MANY_REQUESTS` on `POST /v1/connect/accounts`: **20 requests per minute**. No other
+Connect route is rate limited.
+
+## Unavailability (502 / 503)
+
+| Code | Status | Cause | Retry? |
+|---|---|---|---|
+| `E_CONNECT_PRICING_UNAVAILABLE` | 503 | The commission grid could not be resolved | Yes. If the refusal persists, a pricing row is missing: contact support. |
+| `E_CONNECT_AVAILABILITY_DELAY_UNSET` | 503 | The availability delay is not configured | Contact support |
+| `E_SSO_UNAVAILABLE` | 503 | The identity service is unavailable | Yes |
+| `E_SERVICE_UNAVAILABLE` | 503 | An upstream service is unavailable | Yes |
+| `E_CONNECT_ONBOARDING_UNSUPPORTED` | 502 | No compliance schedule for this country | **No**: contact support |
+| `E_REFERENTIAL_COUNTRY_MISSING` | 502 | Country not found in the reference data | **No**: contact support |
+
+<Warning>
+**Connect fails closed on pricing.** A `503 E_CONNECT_PRICING_UNAVAILABLE` means the operation
+was **refused** rather than charged at zero. That is deliberate: a silently zero commission
+would be an invisible loss.
+</Warning>
+
+## Surface (400)
+
+| Body | Cause |
+|---|---|
+| `The Yabetoo-Account header is not supported on this endpoint` | You sent the `Yabetoo-Account` header. Connect routes name the vendor in the **path** or the **body**. |
+| `The Yabetoo-Account header is only supported with a partner secret key` | Header sent with a credential that is not an `sk_` key |
+
+<Note>
+The `Yabetoo-Account` header is **reserved** and is consumed by no Connect route today. Do not
+send it.
+</Note>
