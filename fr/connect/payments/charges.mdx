@@ -108,6 +108,48 @@ Le détail des deux modes et des refus : [Commissions et tarification](/fr/conne
 après le délai de disponibilité. Voir [Soldes et versements](/fr/connect/payouts).
 </Warning>
 
+## Relire les parts après capture
+
+`GET /v1/payment-intents/{id}` porte un bloc `connect` sur toute intention créée avec
+`on_behalf_of`. Il est `null` sur une intention ordinaire.
+
+```bash
+GET https://pay.api.yabetoopay.com/v1/payment-intents/pi_...
+```
+
+```json 200
+{
+  "id": "pi_...",
+  "status": "succeeded",
+  "amount": 10000,
+  "onBehalfOfAccountId": "acct_01HZVENDOR0000000000000000",
+  "connect": {
+    "onBehalfOfAccountId": "acct_01HZVENDOR0000000000000000",
+    "feePayer": "controller",
+    "applicationFeeRate": 10,
+    "captureState": "captured",
+    "shares": {
+      "grossAmount": 10000,
+      "applicationFeeAmount": 1025,
+      "vendorNetAmount": 8975,
+      "controllerNetAmount": 550,
+      "yabetooFeeAmount": 475
+    }
+  }
+}
+```
+
+| Champ | Signification |
+|---|---|
+| `captureState` | `pending` tant que rien n'a été capturé, `captured` ensuite. `inconsistent` signale une anomalie de grand livre — contactez le support, ne réessayez pas. |
+| `shares` | `null` tant que `captureState` n'est pas `captured`. Les montants viennent de ce qui a **réellement** été écrit à la capture, jamais recalculés depuis la grille. |
+| `applicationFeeAmount` | Votre commission, telle que prélevée. |
+| `controllerNetAmount` | Ce que vous **gardez** : en mode `controller`, votre commission moins les frais Yabetoo ; en mode `account`, égal à `applicationFeeAmount`. |
+| `feePayer` | Le mode **figé à la capture** : un changement ultérieur de votre configuration ne le déplace pas. |
+
+Ces montants décrivent la capture : un remboursement ou une reprise ultérieurs ne les modifient
+pas. Le bloc est présent sur la **lecture unitaire** seulement, pas sur la liste des intentions.
+
 ## Vérifications faites à la création
 
 Yabetoo refuse **à la création de l'intention**, pas au moment où le client paie. C'est

@@ -93,13 +93,34 @@ système tant que son identité n'est pas établie.
 
 ## Suivre l'avancement
 
-Interrogez le compte pour lire son `status` et ses soldes :
+Lisez la **conformité** du vendeur : l'état de son dossier et ce qu'il est autorisé à faire.
 
 ```bash
-GET /v1/connect/accounts/{acct}
+GET /v1/connect/accounts/{acct}/compliance
 ```
 
-Voir [Gérer vos vendeurs](/fr/connect/accounts/manage).
+```json 200
+{
+  "object": "connect_compliance",
+  "account": "acct_01HZVENDOR0000000000000000",
+  "verification": { "status": "in_review" },
+  "capabilities": { "resolved": false, "allowed_operations": [] }
+}
+```
+
+- `verification.status` suit le dossier : `null` tant que le vendeur n'a pas ouvert le lien,
+  puis `created` → `documents_submitted` → `in_review` → `approved` (ou `rejected`,
+  `needs_info`).
+- `capabilities.allowed_operations` dit ce que le vendeur **peut faire** : `withdraw` n'y
+  apparaît qu'une fois le dossier approuvé.
+
+<Warning>
+Le `status` de `GET /v1/connect/accounts/{acct}` est celui du **compte** (`active` dès la
+création), pas celui du dossier. Pour savoir si un vendeur est vérifié, lisez `compliance`.
+</Warning>
+
+Aucun webhook n'est émis au changement d'état du dossier : interrogez cet endpoint quand vous
+en avez besoin. Détail des champs : [référence API](/fr/api-reference/connect/accounts).
 
 ## Erreurs
 

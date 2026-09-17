@@ -115,7 +115,8 @@ to discover in production.
 <Warning>
 `connect.account.created` and `connect.account.updated` **are not emitted** today. Do not expect
 a webhook when a vendor is created, nor when its verification state changes: read its state with
-[`GET /v1/connect/accounts/{acct}`](/en/connect/accounts/manage).
+[`GET /v1/connect/accounts/{acct}`](/en/connect/accounts/manage) and its compliance with
+[`GET /v1/connect/accounts/{acct}/compliance`](/en/connect/accounts/onboarding).
 </Warning>
 
 ## Delivery idempotence

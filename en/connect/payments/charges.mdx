@@ -107,6 +107,48 @@ The detail of both modes and of the refusals: [Commissions and pricing](/en/conn
 the availability delay. See [Balances and payouts](/en/connect/payouts).
 </Warning>
 
+## Reading the shares after capture
+
+`GET /v1/payment-intents/{id}` carries a `connect` block on any intent created with
+`on_behalf_of`. It is `null` on an ordinary intent.
+
+```bash
+GET https://pay.api.yabetoopay.com/v1/payment-intents/pi_...
+```
+
+```json 200
+{
+  "id": "pi_...",
+  "status": "succeeded",
+  "amount": 10000,
+  "onBehalfOfAccountId": "acct_01HZVENDOR0000000000000000",
+  "connect": {
+    "onBehalfOfAccountId": "acct_01HZVENDOR0000000000000000",
+    "feePayer": "controller",
+    "applicationFeeRate": 10,
+    "captureState": "captured",
+    "shares": {
+      "grossAmount": 10000,
+      "applicationFeeAmount": 1025,
+      "vendorNetAmount": 8975,
+      "controllerNetAmount": 550,
+      "yabetooFeeAmount": 475
+    }
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `captureState` | `pending` until something is captured, `captured` afterwards. `inconsistent` flags a ledger anomaly — contact support, do not retry. |
+| `shares` | `null` until `captureState` is `captured`. Amounts come from what was **actually** written at capture, never recomputed from the rate card. |
+| `applicationFeeAmount` | Your commission, as taken. |
+| `controllerNetAmount` | What you **keep**: in `controller` mode, your commission minus Yabetoo's fees; in `account` mode, equal to `applicationFeeAmount`. |
+| `feePayer` | The mode **frozen at capture**: a later change to your configuration does not move it. |
+
+These amounts describe the capture: a later refund or reversal does not change them. The block
+is present on the **single read** only, not on the intent list.
+
 ## Checks performed at creation
 
 Yabetoo refuses **when the intent is created**, not when the customer pays. This is deliberate:
