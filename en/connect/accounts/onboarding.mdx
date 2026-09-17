@@ -92,13 +92,33 @@ unverified vendor that their balance is theirs.
 
 ## Following progress
 
-Query the account to read its `status` and its balances:
+Read the vendor's **compliance**: the state of its file and what it is allowed to do.
 
 ```bash
-GET /v1/connect/accounts/{acct}
+GET /v1/connect/accounts/{acct}/compliance
 ```
 
-See [Manage your vendors](/en/connect/accounts/manage).
+```json 200
+{
+  "object": "connect_compliance",
+  "account": "acct_01HZVENDOR0000000000000000",
+  "verification": { "status": "in_review" },
+  "capabilities": { "resolved": false, "allowed_operations": [] }
+}
+```
+
+- `verification.status` follows the file: `null` until the vendor opens the link, then
+  `created` → `documents_submitted` → `in_review` → `approved` (or `rejected`, `needs_info`).
+- `capabilities.allowed_operations` says what the vendor **can do**: `withdraw` only appears
+  once the file is approved.
+
+<Warning>
+The `status` of `GET /v1/connect/accounts/{acct}` is the **account's** (`active` from
+creation), not the file's. To know whether a vendor is verified, read `compliance`.
+</Warning>
+
+No webhook is emitted when the file changes state: query this endpoint when you need it. Field
+details: [API reference](/en/api-reference/connect/accounts).
 
 ## Errors
 

@@ -116,7 +116,8 @@ connu, à ne pas découvrir en production.
 `connect.account.created` et `connect.account.updated` **ne sont pas émis** aujourd'hui.
 N'attendez pas de webhook à la création d'un vendeur ni au changement de son état de
 vérification : lisez son état avec
-[`GET /v1/connect/accounts/{acct}`](/fr/connect/accounts/manage).
+[`GET /v1/connect/accounts/{acct}`](/fr/connect/accounts/manage) et sa conformité avec
+[`GET /v1/connect/accounts/{acct}/compliance`](/fr/connect/accounts/onboarding).
 </Warning>
 
 ## Idempotence de livraison

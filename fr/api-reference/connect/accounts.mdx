@@ -162,7 +162,7 @@ GET /v1/connect/accounts/{acct}
 
 ### Renvoie
 
-Un `connect_account` **sans** `type`, `currency` ni `created_at`, augmenté de `balances` :
+Un `connect_account` **sans** `type` ni `currency`, augmenté de `balances` :
 
 <ResponseField name="balances" type="array">
   Une entrée par devise. `[]` pour un vendeur sans portefeuille : état nominal, réponse `200`.
@@ -194,6 +194,54 @@ GET /v1/connect/accounts/{acct}/transactions
 `{ object: "list", data, has_more }` : pagination **par page**, donc **sans `next_cursor`**.
 Chaque entrée porte `id`, `object`, `amount`, `currency`, `amount_fee`, `created_at`,
 `available_at`, `matured_at`.
+
+---
+
+## Lire la conformité d'un compte connecté
+
+```bash
+GET /v1/connect/accounts/{acct}/compliance
+```
+
+L'état de vérification du vendeur et ce qu'il est **autorisé** à faire. Deux lectures faites
+auprès du service d'identité, rendues **ensemble ou pas du tout**.
+
+### Renvoie
+
+```json 200
+{
+  "object": "connect_compliance",
+  "account": "acct_01HZVENDOR0000000000000000",
+  "verification": { "status": "approved" },
+  "capabilities": { "resolved": true, "allowed_operations": ["collect", "withdraw"] }
+}
+```
+
+<ResponseField name="verification.status" type="string | null">
+  Statut brut du dossier de vérification : `created`, `pending`, `documents_submitted`,
+  `in_review`, `approved`, `rejected`, `needs_info`, `suspended`. **`null`** quand aucun dossier
+  n'existe — vendeur créé, [lien d'onboarding](/fr/connect/accounts/onboarding) jamais ouvert.
+  C'est un état nominal, pas une erreur.
+</ResponseField>
+
+<ResponseField name="capabilities.resolved" type="boolean">
+  `false` tant qu'aucune politique n'est attachée au vendeur — typiquement avant l'approbation
+  de son dossier. Dans ce cas `allowed_operations` est `[]`.
+</ResponseField>
+
+<ResponseField name="capabilities.allowed_operations" type="string[]">
+  Les opérations que le vendeur peut effectuer : `collect` (encaisser pour son compte) et
+  `withdraw` (recevoir un [versement](/fr/connect/payouts)).
+</ResponseField>
+
+<Warning>
+**`verification.status` est un affichage ; `capabilities.allowed_operations` est la seule
+autorité.** Un dossier `approved` ne signifie pas qu'un versement passera : c'est la présence de
+`withdraw` dans `allowed_operations` qui le dit. Ne dérivez jamais une capacité du statut.
+</Warning>
+
+Un `503 E_IDENTITY_UNAVAILABLE` rend un corps **sans** `verification` ni `capabilities` :
+réessayez, n'interprétez pas comme « aucune capacité ».
 
 ---
 
@@ -264,7 +312,7 @@ Voir la [référence des erreurs Connect](/fr/connect/errors).
 | `422` | `connect.controller_mode_unset`, `E_CONNECT_VENDOR_EMPTY_BALANCE`, `E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE`, `E_PENDING_WITHDRAW` |
 | `429` | `E_TOO_MANY_REQUESTS` : création de vendeur uniquement |
 | `502` | `E_CONNECT_ONBOARDING_UNSUPPORTED`, `E_REFERENTIAL_COUNTRY_MISSING` |
-| `503` | `E_SSO_UNAVAILABLE`, `E_SERVICE_UNAVAILABLE` |
+| `503` | `E_SSO_UNAVAILABLE`, `E_SERVICE_UNAVAILABLE`, `E_IDENTITY_UNAVAILABLE` (conformité) |
 
 ## Événements associés
 
@@ -274,5 +322,6 @@ Voir la [référence des erreurs Connect](/fr/connect/errors).
 
 <Note>
 `connect.account.created` et `connect.account.updated` **ne sont pas émis**. Lisez l'état d'un
-vendeur avec `GET /v1/connect/accounts/{acct}`.
+vendeur avec `GET /v1/connect/accounts/{acct}`, et l'état de sa vérification avec
+`GET /v1/connect/accounts/{acct}/compliance`.
 </Note>
