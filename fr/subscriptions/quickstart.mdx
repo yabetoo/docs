@@ -5,8 +5,8 @@ icon: "rocket"
 ---
 
 <Info>
-Utilisez une clé `sk_test_` sur `https://buy.sandbox.yabetoopay.com`. Le mode de l'abonnement
-est celui de la clé : un abonnement créé en test reste en test pour toute sa vie.
+Utilisez une clé `sk_test_` sur `https://buy.api.yabetoopay.com` — il n'y a qu'un seul hôte, c'est
+la clé qui porte le mode. Un abonnement créé en test reste en test pour toute sa vie.
 </Info>
 
 <Steps>
@@ -15,7 +15,7 @@ est celui de la clé : un abonnement créé en test reste en test pour toute sa 
     `billingInterval` et `billingIntervalCount`.
 
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/prices \
+    curl -X POST https://buy.api.yabetoopay.com/v1/prices \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -42,7 +42,7 @@ est celui de la clé : un abonnement créé en test reste en test pour toute sa 
     **par défaut** : c'est elle qui sera sollicitée à chaque renouvellement.
 
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions \
+    curl -X POST https://buy.api.yabetoopay.com/v1/subscriptions \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{

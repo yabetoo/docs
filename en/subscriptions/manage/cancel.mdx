@@ -22,7 +22,7 @@ answering `200` without changing the status. The symptom reads as "cancellation 
 ## At period end (default)
 
 ```bash
-curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../cancel \
+curl -X POST https://buy.api.yabetoopay.com/v1/subscriptions/sub_.../cancel \
   -H "Authorization: Bearer sk_test_..." \
   -H "Content-Type: application/json" \
   -d '{ "reason": "customer_request" }'
@@ -54,7 +54,7 @@ subscription at the due date.
 ## Immediately
 
 ```bash
-curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../cancel \
+curl -X POST https://buy.api.yabetoopay.com/v1/subscriptions/sub_.../cancel \
   -H "Authorization: Bearer sk_test_..." \
   -H "Content-Type: application/json" \
   -d '{ "cancelImmediately": true, "reason": "fraud" }'

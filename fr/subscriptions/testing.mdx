@@ -1,6 +1,6 @@
 ---
 title: "Tester"
-description: "Horloges de test pour simuler le temps, et ce qu'il faut savoir du sandbox Mobile Money."
+description: "Horloges de test pour simuler le temps, et ce qu'il faut savoir des paiements Mobile Money en mode test."
 icon: "flask"
 ---
 
@@ -32,7 +32,7 @@ réelle et attend une réponse du numéro de test.
 <Steps>
   <Step title="Créez l'horloge">
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks \
+    curl -X POST https://buy.api.yabetoopay.com/v1/test-helpers/test-clocks \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{ "frozenTime": "2026-09-17T10:00:00Z", "name": "renouvellement mensuel" }'
@@ -45,7 +45,7 @@ réelle et attend une réponse du numéro de test.
     L'abonnement se crée normalement (API ou page hébergée), puis se rattache — il n'y a pas de
     champ d'horloge à la création.
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../attach \
+    curl -X POST https://buy.api.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../attach \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{ "subscriptionId": "sub_..." }'
@@ -54,7 +54,7 @@ réelle et attend une réponse du numéro de test.
   </Step>
   <Step title="Avancez">
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../advance \
+    curl -X POST https://buy.api.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../advance \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{ "frozenTime": "2026-10-18T10:00:00Z" }'
@@ -101,9 +101,9 @@ Les erreurs de ces routes ont la forme `{ "error": "…", "code": "…" }` : `TE
 (403, mode live), `TEST_CLOCK_COMPLETED` (400), `SUBSCRIPTION_NOT_FOUND` / `CUSTOMER_NOT_FOUND`
 (404 — inconnu, ou pas à vous).
 
-## Sandbox Mobile Money
+## Paiements Mobile Money en mode test
 
-Les demandes de paiement du sandbox suivent les règles générales de test de Yabetoo : voir
+Les demandes de paiement en mode test suivent les règles générales de test de Yabetoo : voir
 [Tester votre intégration](/fr/developer-tools/test/overview). Deux points propres aux
 abonnements :
 

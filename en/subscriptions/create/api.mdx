@@ -11,12 +11,11 @@ pay on their own, see the [hosted page](/en/subscriptions/create/hosted).
 ## The call
 
 ```bash
-POST https://buy.sandbox.yabetoopay.com/v1/subscriptions   # Sandbox
-POST https://buy.api.yabetoopay.com/v1/subscriptions       # Production
+POST https://buy.api.yabetoopay.com/v1/subscriptions
 ```
 
 ```bash
-curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions \
+curl -X POST https://buy.api.yabetoopay.com/v1/subscriptions \
   -H "Authorization: Bearer sk_test_..." \
   -H "Content-Type: application/json" \
   -d '{

@@ -8,9 +8,11 @@ Integration guide: [Subscriptions](/en/subscriptions/overview).
 ## Base URL
 
 ```bash
-https://buy.sandbox.yabetoopay.com   # Sandbox (sk_test_ key)
-https://buy.api.yabetoopay.com       # Production (sk_live_ key)
+https://buy.api.yabetoopay.com
 ```
+
+A single host for both modes: an `sk_test_` key works in test mode, an `sk_live_` key in live
+mode.
 
 The paths below are relative to this base. The subscription's mode (test or live) is that of
 the key that creates it, and it is frozen.
