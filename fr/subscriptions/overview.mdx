@@ -69,9 +69,13 @@ Produit ──► Prix (récurrent) ──► Abonnement ──► Facture (une 
 ## Environnements
 
 ```bash
-https://buy.sandbox.yabetoopay.com   # Sandbox — clé sk_test_
-https://buy.api.yabetoopay.com       # Production — clé sk_live_
+https://buy.api.yabetoopay.com
 ```
+
+Il n'y a **qu'un seul hôte**. Le mode est porté par la **clé** : une `sk_test_` travaille en mode
+test (`isLive: false`, les paiements partent vers l'environnement de test de Yabetoo Pay), une
+`sk_live_` en mode live. Les données des deux modes sont séparées, mais servies par la même API
+et visibles dans le même tableau de bord (bascule test/live).
 
 Le **mode** d'un abonnement (test ou live) est celui de la clé qui l'a créé, et il est figé :
 toute sa facturation suit ce mode. Pour simuler le passage du temps en test, utilisez les

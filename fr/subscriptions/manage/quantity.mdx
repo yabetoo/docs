@@ -18,7 +18,7 @@ PUT /v1/subscriptions/{id}/quantity
 | `reason` | Non | Texte libre, conservé dans l'historique. |
 
 ```bash
-curl -X PUT https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../quantity \
+curl -X PUT https://buy.api.yabetoopay.com/v1/subscriptions/sub_.../quantity \
   -H "Authorization: Bearer sk_test_..." \
   -H "Content-Type: application/json" \
   -d '{ "itemId": "si_...", "quantity": 3, "reason": "two more seats" }'

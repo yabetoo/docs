@@ -23,7 +23,7 @@ marche pas ».
 ## En fin de période (défaut)
 
 ```bash
-curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../cancel \
+curl -X POST https://buy.api.yabetoopay.com/v1/subscriptions/sub_.../cancel \
   -H "Authorization: Bearer sk_test_..." \
   -H "Content-Type: application/json" \
   -d '{ "reason": "customer_request" }'
@@ -55,7 +55,7 @@ abonnement à l'échéance.
 ## Immédiatement
 
 ```bash
-curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../cancel \
+curl -X POST https://buy.api.yabetoopay.com/v1/subscriptions/sub_.../cancel \
   -H "Authorization: Bearer sk_test_..." \
   -H "Content-Type: application/json" \
   -d '{ "cancelImmediately": true, "reason": "fraud" }'

@@ -1,6 +1,6 @@
 ---
 title: "Testing"
-description: "Test clocks to simulate time, and what to know about the Mobile Money sandbox."
+description: "Test clocks to simulate time, and what to know about test-mode Mobile Money payments."
 icon: "flask"
 ---
 
@@ -31,7 +31,7 @@ waits for an answer from the test number.
 <Steps>
   <Step title="Create the clock">
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks \
+    curl -X POST https://buy.api.yabetoopay.com/v1/test-helpers/test-clocks \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{ "frozenTime": "2026-09-17T10:00:00Z", "name": "monthly renewal" }'
@@ -44,7 +44,7 @@ waits for an answer from the test number.
     The subscription is created normally (API or hosted page), then attached — there is no
     clock field at creation.
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../attach \
+    curl -X POST https://buy.api.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../attach \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{ "subscriptionId": "sub_..." }'
@@ -53,7 +53,7 @@ waits for an answer from the test number.
   </Step>
   <Step title="Advance">
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../advance \
+    curl -X POST https://buy.api.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../advance \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{ "frozenTime": "2026-10-18T10:00:00Z" }'
@@ -100,9 +100,9 @@ Errors on these routes have the shape `{ "error": "…", "code": "…" }`: `TEST
 (403, live mode), `TEST_CLOCK_COMPLETED` (400), `SUBSCRIPTION_NOT_FOUND` / `CUSTOMER_NOT_FOUND`
 (404 — unknown, or not yours).
 
-## Mobile Money sandbox
+## Mobile Money payments in test mode
 
-Sandbox payment requests follow Yabetoo's general testing rules: see
+Test-mode payment requests follow Yabetoo's general testing rules: see
 [Test your integration](/en/developer-tools/test/overview). Two points specific to
 subscriptions:
 
