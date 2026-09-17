@@ -76,7 +76,7 @@ $yabetoo = new YabetooClient($secretKey);
 Once you have your API keys, you can start making authenticated requests to the Yabetoo API. Include your secret key in the Authorization header:
 
 ```bash
-curl -X POST "https://api.yabetoopay.com/v1/checkout-sessions" \
+curl -X POST "https://buy.api.yabetoopay.com/v1/checkout/sessions" \
   -H "Authorization: Bearer your_secret_key_here" \
   -H "Content-Type: application/json" \
   -d '{

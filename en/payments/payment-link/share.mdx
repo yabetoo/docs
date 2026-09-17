@@ -10,14 +10,14 @@ After creating a payment link, you receive a unique URL in the response:
 ```json
 {
   "id": "plink_abc123def456ghi789jkl012",
-  "url": "https://checkout.yabetoo.com/p/training",
+  "url": "https://pay.yabetoo.com/p/training",
   "slug": "training"
 }
 ```
 
 The URL can take two forms:
-- **With custom slug**: `https://checkout.yabetoo.com/p/training`
-- **With ID**: `https://checkout.yabetoo.com/p/plink_abc123def456ghi789jkl012`
+- **With custom slug**: `https://pay.yabetoo.com/p/training`
+- **With ID**: `https://pay.yabetoo.com/p/plink_abc123def456ghi789jkl012`
 
 ## Sharing Methods
 
@@ -36,7 +36,7 @@ The URL can take two forms:
       <p>Thank you for your order. Click the button below to proceed with payment:</p>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="https://checkout.yabetoo.com/p/training"
+        <a href="https://pay.yabetoo.com/p/training"
            style="background-color: #0070f3;
                   color: white;
                   padding: 14px 28px;
@@ -62,7 +62,7 @@ The URL can take two forms:
     Short and direct format:
 
     ```text
-    [Your Company] Pay your order of 25,000 XOF securely: https://checkout.yabetoo.com/p/training
+    [Your Company] Pay your order of 25,000 XOF securely: https://pay.yabetoo.com/p/training
     ```
 
     <Tip>
@@ -79,7 +79,7 @@ The URL can take two forms:
     Hello! 👋
 
     Here's the link to complete your order:
-    https://checkout.yabetoo.com/p/training
+    https://pay.yabetoo.com/p/training
 
     Amount: 25,000 XOF
 
@@ -96,46 +96,19 @@ The URL can take two forms:
     🎉 New collection available!
 
     Order directly via this secure link:
-    👉 https://checkout.yabetoo.com/p/summer-collection
+    👉 https://pay.yabetoo.com/p/summer-collection
 
     Mobile money payment accepted 📱
     ```
   </Tab>
 </Tabs>
 
-## Generate a QR Code
-
-Create a QR code to allow customers to scan and access the link:
-
-```bash
-curl https://api.yabetoo.com/v1/payment-links/plink_abc123/qr \
-  -H "Authorization: Bearer sk_live_..." \
-  --output qr-code.png
-```
-
-### QR Code Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `size` | number | Size in pixels (default: 300) |
-| `format` | string | Image format: `png`, `svg` (default: `png`) |
-
-```bash
-curl "https://api.yabetoo.com/v1/payment-links/plink_abc123/qr?size=500&format=svg" \
-  -H "Authorization: Bearer sk_live_..." \
-  --output qr-code.svg
-```
-
-<Tip>
-  QR codes are ideal for posters, flyers, business cards, and presentations.
-</Tip>
-
 ## Website Integration
 
 ### Payment Button
 
 ```html
-<a href="https://checkout.yabetoo.com/p/training"
+<a href="https://pay.yabetoo.com/p/training"
    class="yabetoo-payment-button"
    target="_blank">
   Buy Now - 25,000 XOF
@@ -163,7 +136,7 @@ curl "https://api.yabetoo.com/v1/payment-links/plink_abc123/qr?size=500&format=s
 
 ```html
 <iframe
-  src="https://checkout.yabetoo.com/p/training?embed=true"
+  src="https://pay.yabetoo.com/p/training"
   width="100%"
   height="600"
   frameborder="0"
@@ -173,23 +146,10 @@ curl "https://api.yabetoo.com/v1/payment-links/plink_abc123/qr?size=500&format=s
 
 ## URL Parameters
 
-You can add parameters to the URL to customize the experience:
-
-| Parameter | Description |
-|-----------|-------------|
-| `prefill_email` | Pre-fill customer email |
-| `prefill_name` | Pre-fill customer name |
-| `prefill_phone` | Pre-fill phone number |
-| `locale` | Interface language (`fr`, `en`) |
-| `utm_source` | Campaign source |
-| `utm_medium` | Campaign medium |
-| `utm_campaign` | Campaign name |
-
-### Example with Parameters
-
-```
-https://checkout.yabetoo.com/p/training?prefill_email=customer@example.com&locale=en&utm_source=newsletter&utm_campaign=summer_2024
-```
+The payment page reads **no query parameter** today: no prefilling (`prefill_*`), no language
+selection via the URL — the language follows the browser's. You may append `utm_*` parameters
+for your own analytics; the page ignores them and they are **not** forwarded in webhooks. To
+tie a payment to a campaign, use the link's `metadata` (below).
 
 ## Conversion Tracking
 
@@ -206,14 +166,6 @@ Add tracking information when creating the link:
   }
 }
 ```
-
-### With UTM Parameters
-
-```
-https://checkout.yabetoo.com/p/training?utm_source=facebook&utm_medium=social&utm_campaign=january_promo
-```
-
-These parameters are included in webhooks for conversion tracking.
 
 ## Best Practices
 
@@ -257,7 +209,7 @@ Hello [Name],
 
 Please find below the link to pay your invoice #1234 for an amount of 50,000 XOF.
 
-👉 Pay now: https://checkout.yabetoo.com/p/invoice-1234
+👉 Pay now: https://pay.yabetoo.com/p/invoice-1234
 
 Payment deadline: January 30, 2024
 
@@ -276,7 +228,7 @@ Hello [Name]!
 
 Your cart is ready. Complete your order by clicking the link below:
 
-🛒 View and pay: https://checkout.yabetoo.com/p/order-xyz
+🛒 View and pay: https://pay.yabetoo.com/p/order-xyz
 
 Summary:
 - JavaScript Course: 25,000 XOF
@@ -296,7 +248,7 @@ Hello [Name],
 
 We haven't received your payment for [Product/Service] yet.
 
-👉 Pay now: https://checkout.yabetoo.com/p/reminder-xyz
+👉 Pay now: https://pay.yabetoo.com/p/reminder-xyz
 
 The link expires on [Date].
 

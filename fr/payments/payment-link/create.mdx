@@ -8,7 +8,7 @@ description: "Créez des liens de paiement réutilisables pour collecter des pai
 ### Requête de base
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/payment-links \
+curl -X POST https://buy.api.yabetoopay.com/v1/payment-links \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -213,13 +213,13 @@ Créez une URL mémorable :
 }
 ```
 
-L'URL sera : `https://checkout.yabetoo.com/p/don-2024`
+L'URL sera : `https://pay.yabetoo.com/p/don-2024`
 
 ## Exemple complet
 
 <CodeGroup>
 ```bash cURL
-curl -X POST https://api.yabetoo.com/v1/payment-links \
+curl -X POST https://buy.api.yabetoopay.com/v1/payment-links \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -256,7 +256,7 @@ curl -X POST https://api.yabetoo.com/v1/payment-links \
 ```
 
 ```javascript JavaScript
-const response = await fetch("https://api.yabetoo.com/v1/payment-links", {
+const response = await fetch("https://buy.api.yabetoopay.com/v1/payment-links", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -292,7 +292,7 @@ console.log(paymentLink.url); // URL à partager
 import requests
 
 response = requests.post(
-    "https://api.yabetoo.com/v1/payment-links",
+    "https://buy.api.yabetoopay.com/v1/payment-links",
     headers={
         "Authorization": "Bearer sk_live_...",
         "Content-Type": "application/json"
@@ -319,7 +319,7 @@ print(payment_link["url"])
 $curl = curl_init();
 
 curl_setopt_array($curl, [
-    CURLOPT_URL => "https://api.yabetoo.com/v1/payment-links",
+    CURLOPT_URL => "https://buy.api.yabetoopay.com/v1/payment-links",
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST => true,
     CURLOPT_HTTPHEADER => [
@@ -354,7 +354,7 @@ echo $paymentLink["url"];
   "name": "Boutique Formation",
   "description": "Formations en ligne",
   "slug": "formations",
-  "url": "https://checkout.yabetoo.com/p/formations",
+  "url": "https://pay.yabetoo.com/p/formations",
   "currency": "XOF",
   "amount": null,
   "minAmount": null,
@@ -417,14 +417,14 @@ echo $paymentLink["url"];
 ### Récupérer un lien
 
 ```bash
-curl https://api.yabetoo.com/v1/payment-links/plink_abc123 \
+curl https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 
 ### Mettre à jour un lien
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/payment-links/plink_abc123 \
+curl -X PATCH https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -436,7 +436,7 @@ curl -X PATCH https://api.yabetoo.com/v1/payment-links/plink_abc123 \
 ### Désactiver un lien
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/payment-links/plink_abc123 \
+curl -X PATCH https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -447,14 +447,14 @@ curl -X PATCH https://api.yabetoo.com/v1/payment-links/plink_abc123 \
 ### Supprimer un lien
 
 ```bash
-curl -X DELETE https://api.yabetoo.com/v1/payment-links/plink_abc123 \
+curl -X DELETE https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 
 ### Lister les liens
 
 ```bash
-curl "https://api.yabetoo.com/v1/payment-links?type=product&isActive=true" \
+curl "https://buy.api.yabetoopay.com/v1/payment-links?type=product&isActive=true" \
   -H "Authorization: Bearer sk_live_..."
 ```
 

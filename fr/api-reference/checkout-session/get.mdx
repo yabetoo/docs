@@ -21,7 +21,7 @@ GET /v1/checkout/sessions/:id
 
 <CodeGroup>
 ```bash cURL
-curl https://pay.sandbox.yabetoopay.com/v1/checkout/sessions/cs_test_123456789 \
+curl https://buy.api.yabetoopay.com/v1/checkout/sessions/cs_test_123456789 \
   -H "Authorization: Bearer YOUR_SECRET_KEY"
 ```
 
@@ -69,7 +69,7 @@ CheckoutSession session = CheckoutSession.retrieve("cs_test_123456789");
     "currency": "XAF",
     "status": "complete",
     "payment_status": "paid",
-    "url": "https://checkout.yabetoopay.com/c/cs_test_123456789",
+    "url": "https://pay.yabetoo.com/c/cs_test_123456789",
     "customer_details": {
       "email": "client@example.com",
       "name": "Jean Dupont"
