@@ -1,0 +1,104 @@
+---
+title: "Create through the hosted page"
+description: "The customer picks and pays on pay.yabetoo.com — checkout session or payment link."
+icon: "window"
+---
+
+Two doors lead to the hosted payment page. In both cases the subscription **is born when the
+customer confirms the payment**, with the Mobile Money number they enter — that number becomes
+their default payment method for renewals.
+
+## Checkout session in `subscription` mode
+
+Create a session with `mode: "subscription"` and lines that point at **catalogue prices**, then
+redirect the customer to `url`.
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/checkout/sessions \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "subscription",
+    "line_items": [{ "price": "price_...", "quantity": 1 }],
+    "customer_email": "ada@example.com",
+    "client_reference_id": "user-42",
+    "success_url": "https://example.com/thanks",
+    "cancel_url": "https://example.com/canceled"
+  }'
+```
+
+```json 201
+{
+  "id": "cs_...",
+  "object": "checkout.session",
+  "mode": "subscription",
+  "status": "open",
+  "payment_status": "unpaid",
+  "url": "https://pay.yabetoo.com/c/cs_...",
+  "amount_total": 5000,
+  "currency": "xaf",
+  "expires_at": 1758200000,
+  "livemode": false
+}
+```
+
+### Rules specific to `subscription` mode
+
+| Rule | Refusal |
+|---|---|
+| Every recurring line points at a **catalogue price** (`price`). An inline `price_data` is refused — a subscription is not billed on a price that does not exist. | `422` |
+| All recurring lines share the **same billing period** (`billingInterval × billingIntervalCount`). A monthly + yearly basket has no cycle. | `422` |
+| All lines share the **same currency**. | `422` |
+| A `one_time` line is accepted: it is a **one-off fee** (setup, hardware), charged on the **first cycle only**. | — |
+| A one-off fee **and** a trial on the same basket: refused — a trial bills nothing on day 0, the fee would be charged at the end of the trial. | `422` |
+| `discounts[]` is refused on this door. For a discount, use a payment link. | `422` |
+
+The trial comes from the **price**: if the first recurring price carries `trialPeriodDays`, the
+subscription is born `trialing` and nothing is billed at confirmation. See
+[Trials](/en/subscriptions/create/trials).
+
+<Warning>
+**`checkout.session.completed` is not emitted in `subscription` mode.** That event exists only
+for one-off payments. Do not wait for it: listen to `subscription.created`.
+</Warning>
+
+## Payment link of type `subscription`
+
+To sell the same subscription to many customers without an API call per sale, create a
+[payment link](/en/payments/payment-link/create) with `type: "subscription"` and your recurring
+prices. Every customer who pays through the link gets their own subscription.
+
+Promotion codes are honored on this door: the discount applies to the first invoice and, per
+the coupon's duration, to the following ones. See [Coupons](/en/products/coupons).
+
+## Finding the subscription after payment
+
+The session does not return the subscription's identifier, and the return URL does not carry it
+either. Three paths:
+
+<AccordionGroup>
+  <Accordion title="The subscription.created webhook (recommended)">
+    Its `data` carries `checkoutSessionId` — the session that created it — and `subscriptionId`.
+    Match it to your `client_reference_id` by reading the session back if needed.
+  </Accordion>
+  <Accordion title="The customer's subscriptions">
+    `GET /v1/customers/{cus}/subscriptions` or `GET /v1/subscriptions?customerId=cus_...`.
+    The customer is the one from `customer_email`.
+  </Accordion>
+  <Accordion title="The subscription object itself">
+    `idempotencyKey` equals `cs_<session id>` and `metadata.checkout_session_id` carries the
+    session: `GET /v1/subscriptions` then filter.
+  </Accordion>
+</AccordionGroup>
+
+## What the customer sees
+
+On the hosted page, the customer enters their email and Mobile Money number, then approves the
+payment request on their phone. The page waits for the operator's answer; a trial is announced
+as such ("14-day trial") and no amount is requested.
+
+<Note>
+The hosted page also serves **invoices**: the link emailed three days before each due date
+leads to `pay.yabetoo.com/i/...`, where the customer can settle early. See
+[Billing cycle](/en/subscriptions/billing/cycle).
+</Note>

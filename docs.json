@@ -104,6 +104,58 @@
             ]
           },
           {
+            "tab": "Abonnements",
+            "groups": [
+              {
+                "group": "Pour commencer",
+                "pages": [
+                  "fr/subscriptions/overview",
+                  "fr/subscriptions/quickstart",
+                  "fr/subscriptions/lifecycle"
+                ],
+                "icon": "arrows-rotate"
+              },
+              {
+                "group": "Créer un abonnement",
+                "pages": [
+                  "fr/subscriptions/create/api",
+                  "fr/subscriptions/create/hosted",
+                  "fr/subscriptions/create/trials"
+                ],
+                "icon": "plus"
+              },
+              {
+                "group": "Gérer",
+                "pages": [
+                  "fr/subscriptions/manage/cancel",
+                  "fr/subscriptions/manage/pause",
+                  "fr/subscriptions/manage/quantity",
+                  "fr/subscriptions/manage/retry-payment"
+                ],
+                "icon": "sliders"
+              },
+              {
+                "group": "Facturation",
+                "pages": [
+                  "fr/subscriptions/billing/cycle",
+                  "fr/subscriptions/billing/invoices",
+                  "fr/subscriptions/billing/failed-payments",
+                  "fr/subscriptions/customers"
+                ],
+                "icon": "file-invoice"
+              },
+              {
+                "group": "Ressources",
+                "pages": [
+                  "fr/subscriptions/webhooks",
+                  "fr/subscriptions/testing",
+                  "fr/subscriptions/errors"
+                ],
+                "icon": "book"
+              }
+            ]
+          },
+          {
             "tab": "Connect",
             "groups": [
               {
@@ -266,6 +318,13 @@
                 ]
               },
               {
+                "group": "Abonnements",
+                "pages": [
+                  "fr/api-reference/subscriptions/subscriptions",
+                  "fr/api-reference/subscriptions/test-clocks"
+                ]
+              },
+              {
                 "group": "Connect",
                 "pages": [
                   "fr/api-reference/connect/accounts",
@@ -379,6 +438,58 @@
             ]
           },
 
+          {
+            "tab": "Subscriptions",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "en/subscriptions/overview",
+                  "en/subscriptions/quickstart",
+                  "en/subscriptions/lifecycle"
+                ],
+                "icon": "arrows-rotate"
+              },
+              {
+                "group": "Create a subscription",
+                "pages": [
+                  "en/subscriptions/create/api",
+                  "en/subscriptions/create/hosted",
+                  "en/subscriptions/create/trials"
+                ],
+                "icon": "plus"
+              },
+              {
+                "group": "Manage",
+                "pages": [
+                  "en/subscriptions/manage/cancel",
+                  "en/subscriptions/manage/pause",
+                  "en/subscriptions/manage/quantity",
+                  "en/subscriptions/manage/retry-payment"
+                ],
+                "icon": "sliders"
+              },
+              {
+                "group": "Billing",
+                "pages": [
+                  "en/subscriptions/billing/cycle",
+                  "en/subscriptions/billing/invoices",
+                  "en/subscriptions/billing/failed-payments",
+                  "en/subscriptions/customers"
+                ],
+                "icon": "file-invoice"
+              },
+              {
+                "group": "Resources",
+                "pages": [
+                  "en/subscriptions/webhooks",
+                  "en/subscriptions/testing",
+                  "en/subscriptions/errors"
+                ],
+                "icon": "book"
+              }
+            ]
+          },
           {
             "tab": "Connect",
             "groups": [
@@ -539,6 +650,13 @@
                   "en/api-reference/payment-link/create",
                   "en/api-reference/payment-link/get",
                   "en/api-reference/payment-link/all"
+                ]
+              },
+              {
+                "group": "Subscriptions",
+                "pages": [
+                  "en/api-reference/subscriptions/subscriptions",
+                  "en/api-reference/subscriptions/test-clocks"
                 ]
               },
               {

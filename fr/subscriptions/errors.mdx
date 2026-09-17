@@ -1,0 +1,40 @@
+---
+title: "Erreurs"
+description: "Les codes d'erreur des routes d'abonnement, et les trois formes de corps qu'elles rendent."
+icon: "circle-exclamation"
+---
+
+## Trois formes de corps
+
+Les routes d'abonnement n'ont pas une forme d'erreur unique. Lisez le **statut**, puis :
+
+| Forme | Routes | Exemple |
+|---|---|---|
+| `errors[]` | Validation, `404`, `422` de transition, `409` | `{ "errors": [{ "message": "Subscription not found", "code": "E_SUBSCRIPTION_NOT_FOUND", "status": 404 }] }` |
+| `{ error }` | Les `400` de `retry-payment` | `{ "error": "Subscription is already active" }` |
+| `{ error, code }` | Les horloges de test | `{ "error": "Test clocks are not available in live mode", "code": "TEST_CLOCK_NOT_AVAILABLE" }` |
+
+## Codes
+
+| Code | Statut | Cause | Remédiable ? |
+|---|---|---|---|
+| `E_VALIDATION_ERROR` | 422 | Champ manquant ou hors bornes ; prix introuvable, inactif, non récurrent ou sur un produit archivé. `errors[].field` nomme le champ. | Oui : corrigez la requête. |
+| `E_SUBSCRIPTION_NOT_FOUND` | 404 | L'abonnement n'existe pas **ou appartient à un autre compte** — les deux rendent le même corps, au bit près. | Vérifiez l'identifiant et la clé. |
+| `E_SUBSCRIPTION_ALREADY_CANCELLED` | 400 | `cancel` sur un abonnement déjà `canceled`. | Non. |
+| `E_INVALID_SUBSCRIPTION_TRANSITION` | 422 | La machine à états refuse (`pause` hors `active`, `resume` hors `paused`, …). Le corps porte `fromState` et `toState`. | Relisez le [cycle de vie](/fr/subscriptions/lifecycle). |
+| `E_SUBSCRIPTION_CONCURRENCY` | 409 | Deux modifications simultanées du même abonnement. | Relisez, puis réessayez. |
+| `E_INTERNAL_SERVER_ERROR` | 500 | Message générique. Sur `POST /v1/subscriptions` : des lignes de **devises différentes**. Sur `PUT /quantity` : statut autre que `active`/`trialing`, ou `itemId` étranger à l'abonnement. | Oui, mais le corps ne le dit pas : vérifiez ces deux cas d'abord. |
+| `E_UNAUTHORIZED` | 401 | Clé absente, invalide, ou du mauvais mode. | — |
+| `TEST_CLOCK_NOT_AVAILABLE` | 403 | Horloge de test avec une clé `sk_live_`. | Utilisez une clé de test. |
+| `TEST_CLOCK_COMPLETED` | 400 | Horloge terminée : elle ne s'avance plus. | Créez-en une autre. |
+
+## Ce qui n'est pas une erreur
+
+- `POST /v1/subscriptions` rend **201** même quand le premier paiement échoue : lisez
+  `paymentStatus.success`.
+- `POST /cancel` sans `cancelImmediately` rend **200** sans changer `status` : l'annulation est
+  programmée, `cancelAt` est posé.
+- `POST /retry-payment` rend **200** avec `subscription.status` encore `past_due` sur un succès :
+  l'activation est asynchrone, `subscriptionActivationPending` est vrai.
+- Un champ inconnu dans le corps est **ignoré**, pas refusé — `cancelAtPeriodEnd`, `pauseUntil`,
+  `trial_days` n'ont aucun effet.

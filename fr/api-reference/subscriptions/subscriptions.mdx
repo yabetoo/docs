@@ -1,0 +1,275 @@
+---
+title: "Abonnements"
+description: "L'objet abonnement et ses dix endpoints."
+---
+
+Guide d'intégration : [Abonnements](/fr/subscriptions/overview).
+
+## URL de base
+
+```bash
+https://buy.sandbox.yabetoopay.com   # Sandbox (clé sk_test_)
+https://buy.api.yabetoopay.com       # Production (clé sk_live_)
+```
+
+Les chemins ci-dessous sont relatifs à cette base. Le mode de l'abonnement (test ou live) est
+celui de la clé qui le crée, et il est figé.
+
+## L'objet `subscription`
+
+Sérialisé en **camelCase**, sans champ `object`.
+
+<ResponseField name="id" type="string">Identifiant, préfixé `sub_`.</ResponseField>
+<ResponseField name="accountId" type="string">Votre compte.</ResponseField>
+<ResponseField name="customerId" type="string | null">Le client, `cus_…`.</ResponseField>
+<ResponseField name="customerEmail" type="string">L'e-mail du client au moment de la création.</ResponseField>
+<ResponseField name="status" type="string">`trialing`, `active`, `unpaid`, `past_due`, `paused`, `canceled`. Voir [Cycle de vie](/fr/subscriptions/lifecycle).</ResponseField>
+<ResponseField name="currentPeriodStart / currentPeriodEnd" type="string">Période courante (ISO 8601). Pendant l'essai, `currentPeriodEnd = trialEnd`.</ResponseField>
+<ResponseField name="nextBillingDate" type="string | null">Prochaine échéance. `null` tant que l'abonnement n'a pas été activé.</ResponseField>
+<ResponseField name="trialStart / trialEnd" type="string | null">Bornes de l'essai.</ResponseField>
+<ResponseField name="trialConverted" type="boolean">L'essai a été converti en période payante.</ResponseField>
+<ResponseField name="cancelAt" type="string | null">Annulation programmée : la date à laquelle l'abonnement passera `canceled`.</ResponseField>
+<ResponseField name="canceledAt / cancelReason" type="string | null">L'annulation effective et son motif.</ResponseField>
+<ResponseField name="pausedAt" type="string | null">Début de la pause en cours.</ResponseField>
+<ResponseField name="pauseAt" type="null">Toujours `null` — non utilisé.</ResponseField>
+<ResponseField name="isLive" type="boolean">Mode de l'abonnement.</ResponseField>
+<ResponseField name="idempotencyKey" type="string | null">La clé fournie à la création (`cs_<session>` pour un abonnement né sur la page hébergée).</ResponseField>
+<ResponseField name="testClockId" type="string | null">L'[horloge de test](/fr/api-reference/subscriptions/test-clocks) rattachée.</ResponseField>
+<ResponseField name="version" type="number">Compteur de verrou optimiste. Informatif.</ResponseField>
+<ResponseField name="metadata" type="object">Vos données, telles que fournies.</ResponseField>
+<ResponseField name="items" type="array">
+  Une entrée par ligne.
+  <Expandable title="propriétés">
+    <ResponseField name="id" type="string">`si_…`</ResponseField>
+    <ResponseField name="priceId" type="string">`price_…`</ResponseField>
+    <ResponseField name="quantity" type="number"></ResponseField>
+    <ResponseField name="price" type="object">Le prix, avec `amount`, `currency`, `billingInterval`, `billingIntervalCount`, `trialPeriodDays`, et son `product`.</ResponseField>
+  </Expandable>
+</ResponseField>
+<ResponseField name="createdAt / updatedAt" type="string">Horodatages.</ResponseField>
+
+Sur `GET /v1/subscriptions/{id}` s'ajoutent `customer` (avec `defaultPaymentMethod`), `invoices[]`
+(avec leur commande), `events[]` (l'historique interne : `created`, `paused`, `resumed`,
+`quantity_updated`, …) et `statistics` :
+
+<ResponseField name="statistics" type="object">
+  <Expandable title="propriétés">
+    <ResponseField name="totalPaid" type="number">Somme des factures `paid`.</ResponseField>
+    <ResponseField name="nextPaymentDate" type="string | null">`currentPeriodEnd`.</ResponseField>
+    <ResponseField name="nextPaymentAmount" type="number">Montant du prochain cycle, remise appliquée, hors taxe.</ResponseField>
+    <ResponseField name="invoiceCount" type="number"></ResponseField>
+    <ResponseField name="isInTrial" type="boolean"></ResponseField>
+    <ResponseField name="trialDaysRemaining" type="number">`0` hors essai.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Créer un abonnement
+
+```bash
+POST /v1/subscriptions
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `customerEmail` | `string` | Oui | Trouve ou crée le client. |
+| `firstName`, `lastName` | `string` | Non | |
+| `items[]` | `array` | Oui, 1 à 50 | `{ priceId, quantity }` — prix `recurring` actif, produit non archivé, quantité 1 à 1 000, même devise sur toutes les lignes. |
+| `paymentMethodData` | `object` | Oui | `{ type, momo: { country, msisdn, operator_name } }`. Devient la méthode par défaut du client. |
+| `trialDays` | `number` | Non | 1 à 365. Le `trialPeriodDays` du prix n'est pas lu ici. |
+| `metadata` | `object` | Non | |
+| `idempotencyKey` | `string` | **Oui** | 1 à 255 caractères, dans le corps. Rejeu → 201 avec l'existant. |
+
+### Renvoie
+
+**201**, toujours — y compris quand le paiement échoue. L'appel attend la réponse du client
+(~100 s).
+
+```json 201
+{
+  "subscription": { "id": "sub_...", "status": "active", "...": "..." },
+  "paymentStatus": { "success": true, "status": "paid", "requiresAction": false, "canRetry": false, "error": null },
+  "invoice": { "id": "inv_...", "status": "paid" }
+}
+```
+
+`paymentStatus.status` : `paid` · `trial` (essai, rien demandé) · `processing` (sans réponse) ·
+`failed` (refus, `error` renseigné) · `pending_payment` · `canceled`. Détail : [Créer par l'API](/fr/subscriptions/create/api).
+
+---
+
+## Lister vos abonnements
+
+```bash
+GET /v1/subscriptions
+```
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `page` | `number` | À partir de 1. |
+| `limit` | `number` | 1 à 100, **10 par défaut**. |
+| `status` | `string` | `active`, `canceled`, `paused`, `past_due`, `trialing`. ⚠️ `unpaid` n'est **pas** filtrable (422) ; `incomplete` est accepté mais ne correspond à rien. |
+| `customerId` | `string` | `cus_…` |
+
+### Renvoie
+
+```json 200
+{
+  "object": "list",
+  "data": [ { "id": "sub_...", "items": [ { "id": "si_...", "priceId": "price_...", "quantity": 1, "price": { "...": "..." } } ] } ],
+  "meta": { "total": 42, "perPage": 10, "currentPage": 1, "lastPage": 5, "firstPage": 1, "firstPageUrl": "/?page=1", "lastPageUrl": "/?page=5", "nextPageUrl": "/?page=2", "previousPageUrl": null }
+}
+```
+
+Tri : plus récent en premier. Les entrées portent `items[].price` mais ni `customer`, ni
+`invoices`, ni `statistics`.
+
+---
+
+## Lire un abonnement
+
+```bash
+GET /v1/subscriptions/{id}
+```
+
+Rend l'objet complet — `customer`, `invoices`, `events`, `statistics` compris. Le paramètre
+`include_details` existe mais **toute valeur le rend vrai** (`?include_details=false` inclus).
+
+---
+
+## Annuler
+
+```bash
+POST /v1/subscriptions/{id}/cancel
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `cancelImmediately` | `boolean` | Non | `true` : immédiat. Sinon en fin de période (`cancelAt = currentPeriodEnd`, statut inchangé). |
+| `reason` | `string` | Non | |
+
+Renvoie **200** et l'objet. Détail et double émission de `subscription.canceled` :
+[Annuler](/fr/subscriptions/manage/cancel).
+
+---
+
+## Suspendre · Reprendre
+
+```bash
+POST /v1/subscriptions/{id}/pause     # depuis active
+POST /v1/subscriptions/{id}/resume    # depuis paused
+```
+
+Corps ignoré. Renvoient **200** et l'objet. `422 E_INVALID_SUBSCRIPTION_TRANSITION` sinon.
+Détail : [Suspendre et reprendre](/fr/subscriptions/manage/pause).
+
+---
+
+## Modifier la quantité d'une ligne
+
+```bash
+PUT /v1/subscriptions/{id}/quantity
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `itemId` | `string` | Oui | `si_…` |
+| `quantity` | `number` | Oui | 1 à 1 000. |
+| `reason` | `string` | Non | ≤ 500 caractères. |
+
+### Renvoie
+
+```json 200
+{
+  "subscription": { "...": "..." },
+  "prorationAmount": 3333,
+  "prorationInvoice": { "id": "inv_...", "status": "open", "billingReason": "proration" },
+  "message": "Quantity updated. Proration charge of 3333 will be applied."
+}
+```
+
+`prorationAmount` et `prorationInvoice` sont absents hors prorata. La facture de prorata n'est
+**pas** prélevée automatiquement ; une baisse ne crédite rien. Détail :
+[Modifier la quantité](/fr/subscriptions/manage/quantity).
+
+---
+
+## Relancer le paiement
+
+```bash
+POST /v1/subscriptions/{id}/retry-payment
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `paymentMethodData` | `object` | Oui | `{ type, momo }`. Non mémorisé. |
+| `firstName`, `lastName` | `string` | Non | |
+
+### Renvoie
+
+```json 200
+{
+  "success": true,
+  "status": "paid",
+  "canRetry": false,
+  "requiresAction": false,
+  "error": null,
+  "subscription": { "id": "sub_...", "status": "past_due" },
+  "subscriptionActivationPending": true
+}
+```
+
+L'activation est asynchrone : écoutez `subscription.activated`. Refus en **400** `{ "error": "…" }` :
+déjà `active`, `canceled`, aucune commande impayée, `paymentMethodData` absent. Détail :
+[Relancer un paiement](/fr/subscriptions/manage/retry-payment).
+
+---
+
+## Lister les factures d'un abonnement
+
+```bash
+GET /v1/subscriptions/{id}/invoices
+```
+
+Renvoie un **tableau** (pas d'enveloppe `list`, pas de pagination) de factures, de la plus
+récente à la plus ancienne, chacune avec `order` et `order.items`. Objet facture :
+[Factures](/fr/subscriptions/billing/invoices).
+
+---
+
+## Prévisualiser la prochaine facture
+
+```bash
+GET /v1/subscriptions/{id}/upcoming-invoice
+```
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `subscription_item_id` | `string` | Avec `quantity` : simule un changement de quantité sur cette ligne. |
+| `quantity` | `number` | 1 à 1 000. |
+
+Renvoie un objet `invoice` en `status: "draft"`, jamais persisté : `billingReason`
+`subscription_cycle` (remise appliquée) ou `proration` en simulation (`discountTotal: 0`).
+Détail : [Factures](/fr/subscriptions/billing/invoices).
+
+---
+
+## Erreurs
+
+Voir [Erreurs](/fr/subscriptions/errors).
+
+| Statut | Codes |
+|---|---|
+| `400` | `E_SUBSCRIPTION_ALREADY_CANCELLED` ; `{ error }` de `retry-payment` |
+| `404` | `E_SUBSCRIPTION_NOT_FOUND` — inconnu ou d'un autre compte, même corps |
+| `409` | `E_SUBSCRIPTION_CONCURRENCY` |
+| `422` | `E_VALIDATION_ERROR`, `E_INVALID_SUBSCRIPTION_TRANSITION` |
+| `500` | `E_INTERNAL_SERVER_ERROR` — devises mixtes à la création ; statut ou `itemId` invalide sur `quantity` |
+
+## Événements associés
+
+`subscription.created` · `subscription.activated` · `subscription.updated` ·
+`subscription.past_due` · `subscription.paused` · `subscription.resumed` ·
+`subscription.canceled` · `subscription.trial_ending` · `invoice.finalized` · `invoice.paid` ·
+`invoice.voided` · `payment.completed` · `payment.failed` — voir [Webhooks](/fr/subscriptions/webhooks).

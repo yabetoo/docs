@@ -1,0 +1,80 @@
+---
+title: "Webhooks"
+description: "A subscription's events, when they go out, and what their payload carries."
+icon: "bolt"
+---
+
+All the events below are delivered to your usual webhook endpoints (see
+[Webhooks: overview](/en/developer-tools/webhook/overview) for setup, headers and signature
+verification). Subscribe to the names **as is**.
+
+## The delivered body
+
+```json
+{
+  "id": "evt_...",
+  "type": "subscription.created",
+  "created_at": "2026-09-17T10:00:00.000Z",
+  "data": { "subscriptionId": "sub_...", "customerId": "cus_...", "status": "active" }
+}
+```
+
+<Warning>
+The fields in `data` are **camelCase** (`subscriptionId`, `currentPeriodEnd`), the envelope is
+snake_case (`created_at`). Do not assume a single convention.
+</Warning>
+
+## Subscription events
+
+| Event | When | `data` |
+|---|---|---|
+| `subscription.created` | At creation, **after** the first payment attempt | `subscriptionId`, `customerId`, `customerEmail`, **`status`** (`active`, `unpaid` or `trialing`), `currentPeriodStart`, `currentPeriodEnd`, `trialStart`, `trialEnd`, `items[]{priceId, quantity}`, `createdAt`; `checkoutSessionId` if created through the hosted page |
+| `subscription.activated` | An `unpaid` or `past_due` subscription is **settled** (automatic retry or `retry-payment`). **Never** at creation nor at the end of a trial. | `subscriptionId`, `customerId`, `status: "active"`, `currentPeriodStart`, `currentPeriodEnd`, `activatedAt` |
+| `subscription.updated` | A renewal is **paid** (on day D, through the payment request). Not on a quantity change. | `subscriptionId`, `customerId`, `status`, `currentPeriodStart`, `currentPeriodEnd`, `nextBillingDate`, `updatedAt` |
+| `subscription.past_due` | A renewal failed | `subscriptionId`, `customerId`, `status: "past_due"`, `previousStatus`, `reason`, `updatedAt` |
+| `subscription.paused` / `subscription.resumed` | `POST /pause`, `POST /resume` | `subscriptionId`, `customerId`, `status`, `previousStatus`, `pausedAt` / `resumedAt` |
+| `subscription.canceled` | **Twice** on a scheduled cancellation: at the request (current `status`) then at the due date (`status: "canceled"`, `previousStatus`, `completedAt`). Once on an immediate cancellation. | `subscriptionId`, `customerId`, `status`, `reason`, `canceledAt`; `effectiveDate` at the request, `previousStatus` and `completedAt` at the due date |
+| `subscription.trial_ending` | At the **creation** of a trialing subscription through the API (not the hosted page). Not a D-3 reminder. | `subscriptionId`, `customerId`, `status: "trialing"`, `trialStart`, `trialEnd`, `trialEndDate` |
+
+<Warning>
+**Read `data.status`, never the event name alone.** `subscription.canceled` with
+`status: "active"` means "scheduled departure, rights maintained". `subscription.created` with
+`status: "unpaid"` means "the first payment did not go through".
+</Warning>
+
+## Invoice and payment events
+
+| Event | When | `data` |
+|---|---|---|
+| `invoice.finalized` | A cycle's invoice is issued — at D-3 for a renewal, at the end of the trial for the first paid period | `invoiceId`, `invoiceNumber`, `customerId`, `total`, `appliedBalance`, `amountDue`, `currency`, `finalizedAt` |
+| `invoice.paid` | The invoice is settled — through the link, the day-D request, or a retry | `invoiceId`, `subscriptionId`, `orderId`, `amount`, `currency`, `paidAt` |
+| `invoice.voided` | An invoice is voided (cycle removed by a cancellation, or `POST /void`) | `invoiceId`, `customerId`, `voidedAt`, … |
+| `payment.completed` | A subscription payment request went through | `orderId`, `paymentIntentId`, `subscriptionId`, `customerId`, `amount`, `currency`, `completedAt` |
+| `payment.failed` | A subscription payment request failed | `orderId`, `paymentIntentId`, `subscriptionId`, `customerId`, `error`, `failedAt` |
+
+<Note>
+`invoice.paid` and `payment.completed` are delivered **at least once**: on a successful
+renewal, both may arrive twice. Deduplicate on `data.invoiceId` / `data.orderId`.
+</Note>
+
+## What is not emitted
+
+So you do not wait for an event that will not come:
+
+- **`checkout.session.completed`** in `subscription` mode: only exists for one-off payments.
+  Listen to `subscription.created`.
+- **`invoice.created`**: never emitted. The first trace of an invoice is `invoice.finalized`.
+- **`invoice.overdue`**: reserved for manual invoices, never subscription invoices.
+- Nothing at the **end of a trial** nor on a **quantity change**. For the trial, watch
+  `invoice.finalized` then `invoice.paid`.
+
+## A typical journey
+
+| Step | Events |
+|---|---|
+| API subscription, payment approved | `subscription.created` (`active`), `invoice.paid`, `payment.completed` |
+| Renewal, D-3 | `invoice.finalized` |
+| Renewal, day D, approved | `invoice.paid`, `payment.completed`, `subscription.updated` |
+| Renewal, day D, declined | `payment.failed`, `subscription.past_due` |
+| D+1 retry succeeds | `invoice.paid`, `payment.completed`, `subscription.activated` |
+| The customer cancels at period end | `subscription.canceled` (`active`) … then, at the due date, `subscription.canceled` (`canceled`) |

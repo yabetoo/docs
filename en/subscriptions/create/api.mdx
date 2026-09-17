@@ -1,0 +1,148 @@
+---
+title: "Create through the API"
+description: "POST /v1/subscriptions: the subscription and its first payment request in one call."
+icon: "code"
+---
+
+Use this path when you already know the customer and their Mobile Money number — a form in
+your own application, a migration from another system, an assisted sale. To let the customer
+pay on their own, see the [hosted page](/en/subscriptions/create/hosted).
+
+## The call
+
+```bash
+POST https://buy.sandbox.yabetoopay.com/v1/subscriptions   # Sandbox
+POST https://buy.api.yabetoopay.com/v1/subscriptions       # Production
+```
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerEmail": "ada@example.com",
+    "firstName": "Ada",
+    "lastName": "Lovelace",
+    "items": [
+      { "priceId": "price_...", "quantity": 1 }
+    ],
+    "paymentMethodData": {
+      "type": "momo",
+      "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" }
+    },
+    "trialDays": 14,
+    "metadata": { "plan": "pro" },
+    "idempotencyKey": "signup-ada-2026-09"
+  }'
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `customerEmail` | Yes | Identifies the customer. Found if it exists on your account, created otherwise. |
+| `firstName`, `lastName` | No | Set when the customer is created. |
+| `items[]` | Yes, 1 to 50 | `priceId` of an **active `recurring`** price whose product is not archived; `quantity` from 1 to 1,000. All lines must share the **same currency**. |
+| `paymentMethodData` | Yes | `type` and, for Mobile Money, `momo: { country, msisdn, operator_name }`. Becomes the customer's **default** method. |
+| `trialDays` | No | 1 to 365. See [Trials](/en/subscriptions/create/trials). |
+| `metadata` | No | Free-form object, returned as is. |
+| `idempotencyKey` | **Yes** | In the **body**, not a header. 1 to 255 characters. |
+
+<Warning>
+**`idempotencyKey` is required and lives in the body** — unlike Yabetoo's other write routes,
+which take an `Idempotency-Key` header. A replay with the same key returns **201** with the
+existing subscription, creating and billing nothing: it is the only protection against a
+duplicate subscription on a network retry.
+</Warning>
+
+<Note>
+`paymentMethodData.momo` is technically optional for the validator, but a `paymentMethodData`
+without `momo` makes the payment request **fail**: the subscription is born `unpaid`. Always
+provide the number.
+</Note>
+
+## What happens
+
+<Steps>
+  <Step title="The customer is found or created">
+    By `customerEmail`, on your account. The provided payment method is added and becomes their
+    **default** — even if they already had one.
+  </Step>
+  <Step title="The subscription is created">
+    `unpaid` without a trial, `trialing` with one. The current period starts now; without a
+    trial, it ends at `now + the first price's interval`.
+  </Step>
+  <Step title="Without a trial: invoice and payment request">
+    A `subscription_create` invoice is issued for the first period, and a **payment request**
+    is pushed to the customer's number. **The call waits for the answer** — the customer has
+    about **100 seconds** to approve on their phone.
+  </Step>
+  <Step title="Outcome">
+    Approved → the subscription becomes `active`, the invoice `paid`, `nextBillingDate` is set.
+    Declined or unanswered → the subscription stays `unpaid`, the invoice `open`.
+  </Step>
+</Steps>
+
+With a trial, nothing is billed at creation: the call returns immediately, and the first
+payment request goes out at the end of the trial.
+
+## The response
+
+Always **201**, whether the payment went through or not. Read `paymentStatus`.
+
+```json 201
+{
+  "subscription": {
+    "id": "sub_...",
+    "accountId": "acct_...",
+    "customerId": "cus_...",
+    "customerEmail": "ada@example.com",
+    "status": "active",
+    "currentPeriodStart": "2026-09-17T10:00:00.000Z",
+    "currentPeriodEnd": "2026-10-17T10:00:00.000Z",
+    "nextBillingDate": "2026-10-17T10:00:00.000Z",
+    "trialStart": null,
+    "trialEnd": null,
+    "isLive": false,
+    "idempotencyKey": "signup-ada-2026-09",
+    "metadata": { "plan": "pro" },
+    "items": [
+      { "id": "si_...", "priceId": "price_...", "quantity": 1, "price": { "id": "price_...", "amount": 5000, "currency": "xaf", "billingInterval": "month", "billingIntervalCount": 1 } }
+    ]
+  },
+  "paymentStatus": { "success": true, "status": "paid", "requiresAction": false },
+  "invoice": { "id": "inv_...", "status": "paid" }
+}
+```
+
+| `paymentStatus.status` | `success` | Subscription | Meaning |
+|---|---|---|---|
+| `paid` | `true` | `active` | The customer approved. |
+| `trial` | `true` | `trialing` | Nothing was requested: the trial is running. |
+| `processing` | `false` | `unpaid` | No answer from the customer within the window. |
+| `failed` | `false` | `unpaid` | Declined by the operator or the customer; `paymentStatus.error` carries the reason. |
+| `pending_payment`, `canceled` | `false` | `unpaid` | Rare cases, handle like `failed`. |
+
+<Note>
+When `success` is `false`, `canRetry` is `true`: settle it with
+[`retry-payment`](/en/subscriptions/manage/retry-payment). If the customer approved **after**
+the window, the retry recognizes the payment already made without requesting a second one.
+</Note>
+
+## Replay
+
+Same `idempotencyKey` on the same account → **201**, the existing subscription,
+`paymentStatus` derived from its current status (`paid` if `active`, `trial` if `trialing`, its
+status otherwise). No invoice, no payment request.
+
+## Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `422` | `E_VALIDATION_ERROR` | Missing field, price not found / not recurring / inactive / archived product, quantity out of bounds, more than 50 lines. The body carries `errors[]` with the offending field. |
+| `500` | `E_INTERNAL_SERVER_ERROR` | Lines in **different currencies**. The message is generic: check your prices. |
+| `401` | `E_UNAUTHORIZED` | Missing or invalid key. |
+
+## Events
+
+`subscription.created` goes out **after** the payment attempt: `data.status` is therefore
+`active`, `unpaid` or `trialing` — never an "in progress" status. If the payment went through
+you also receive `invoice.paid` and `payment.completed`. See [Webhooks](/en/subscriptions/webhooks).

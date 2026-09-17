@@ -1,0 +1,85 @@
+---
+title: "Cycle de vie"
+description: "Les six statuts d'un abonnement, et ce qui fait passer de l'un à l'autre."
+icon: "diagram-project"
+---
+
+Un abonnement a **six statuts**. Toutes les transitions passent par une machine à états : une
+transition non listée ici est refusée en `422 E_INVALID_SUBSCRIPTION_TRANSITION`.
+
+## Les statuts
+
+| Statut | Signification | Facturé ? |
+|---|---|---|
+| `trialing` | En période d'essai. Aucune facture tant que l'essai court. | Non |
+| `active` | En règle. Chaque échéance produit une facture et une demande de paiement. | Oui |
+| `unpaid` | Le **premier** paiement n'a pas abouti. C'est l'état **initial** d'un abonnement sans essai dont la demande de paiement a été refusée ou n'a pas reçu de réponse. | En attente du premier règlement |
+| `past_due` | Un **renouvellement** a échoué. Les relances automatiques sont en cours ou épuisées. | Relances |
+| `paused` | Suspendu par vous. Aucune facture. | Non |
+| `canceled` | Terminé. **Définitif.** | Non |
+
+<Warning>
+`unpaid` n'est pas un état d'échec terminal : c'est le point de départ de tout abonnement sans
+essai tant que son premier paiement n'est pas confirmé. Un abonnement `unpaid` se régularise par
+[`retry-payment`](/fr/subscriptions/manage/retry-payment).
+</Warning>
+
+## Les transitions
+
+```
+trialing ──► active      (fin d'essai, ou premier paiement pendant l'essai)
+trialing ──► unpaid      (paiement refusé pendant l'essai)
+trialing ──► past_due
+trialing ──► canceled
+
+active   ──► past_due    (échec d'un renouvellement)
+active   ──► paused      (POST /pause)
+active   ──► unpaid
+active   ──► canceled    (POST /cancel, ou échéance d'une annulation programmée)
+
+past_due ──► active      (régularisation : relance réussie ou retry-payment)
+past_due ──► unpaid
+past_due ──► canceled
+
+unpaid   ──► active      (retry-payment réussi)
+unpaid   ──► canceled
+
+paused   ──► active      (POST /resume)
+paused   ──► canceled
+
+canceled ──► (aucune)
+```
+
+Ce qui **n'existe pas** : `paused` depuis `trialing` (mettez fin à l'essai ou annulez), et tout
+retour depuis `canceled`. Pour reprendre un client dont l'abonnement est annulé, créez-en un
+nouveau.
+
+## Les champs qui datent la vie de l'abonnement
+
+| Champ | Posé quand |
+|---|---|
+| `currentPeriodStart` / `currentPeriodEnd` | La période en cours. Pendant l'essai, la période **est** l'essai (`currentPeriodEnd = trialEnd`). Avancée à chaque renouvellement. |
+| `nextBillingDate` | La prochaine échéance. Égale à `currentPeriodEnd` une fois l'abonnement actif. |
+| `trialStart` / `trialEnd` / `trialConverted` | L'essai et sa conversion. |
+| `cancelAt` | Une annulation **programmée** en fin de période. Le statut reste inchangé jusqu'à cette date. |
+| `canceledAt` / `cancelReason` | L'annulation effective. |
+| `pausedAt` | La pause en cours (`null` sinon). |
+
+<Note>
+`currentPeriodEnd` est la borne de ce qui a été **facturé**, pas de ce qui a été **payé**. Un
+abonnement `past_due` a une période courante déjà avancée et une facture ouverte dessus. Pour
+savoir jusqu'où le client a réellement payé, lisez ses factures `paid`
+([Factures](/fr/subscriptions/billing/invoices)).
+</Note>
+
+## Qui déclenche quoi
+
+| Transition | Déclencheur | Quand |
+|---|---|---|
+| Fin d'essai → `active` | Cron **horaire** | Dans l'heure qui suit `trialEnd`. La première demande de paiement part au **11 h suivant** (Brazzaville). |
+| Renouvellement | Cron **quotidien, 11 h Brazzaville** | Sur tout abonnement `active` dont `currentPeriodEnd` est passé. |
+| Annulation programmée → `canceled` | Cron **quotidien, 3 h UTC** | Sur tout abonnement dont `cancelAt` est passé, quel que soit son statut. |
+| Relances d'un impayé | Événements différés | J+1, J+3, J+7 après l'échec. |
+
+Le détail de chaque étape : [Cycle de facturation](/fr/subscriptions/billing/cycle),
+[Essais](/fr/subscriptions/create/trials), [Annuler](/fr/subscriptions/manage/cancel).

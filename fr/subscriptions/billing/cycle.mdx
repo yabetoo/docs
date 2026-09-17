@@ -1,0 +1,101 @@
+---
+title: "Cycle de facturation"
+description: "Ce qui se passe à chaque échéance, dans quel ordre, et à quelle heure."
+icon: "calendar-days"
+---
+
+Un abonnement `active` est facturé **d'avance**, à chaque `currentPeriodEnd`, pour la période
+qui commence. Le mécanisme tient en deux rendez-vous quotidiens, tous deux à **11 h heure de
+Brazzaville** (UTC+1).
+
+## J-3 : la facture est émise et envoyée
+
+Trois jours avant `currentPeriodEnd`, Yabetoo :
+
+1. génère la facture du **cycle à venir** (`billingReason: "subscription_cycle"`, période
+   `[currentPeriodEnd, currentPeriodEnd + intervalle]`) et la finalise — elle reçoit son numéro ;
+2. l'envoie par e-mail au client, avec un **lien de paiement** vers la page hébergée ;
+3. émet `invoice.finalized`.
+
+La période de l'abonnement, elle, **ne bouge pas** : c'est le jour J qui l'avance.
+
+Le client peut régler cette facture depuis le lien, à tout moment avant l'échéance. Dans ce cas
+vous recevez `invoice.paid` tout de suite, et le jour J ne demandera rien.
+
+<Note>
+Le rappel ne part pas pour un abonnement dont l'annulation est programmée avant la fin de la
+période (`cancelAt ≤ currentPeriodEnd`).
+</Note>
+
+## Jour J : la période avance et le paiement est demandé
+
+Le cron quotidien prend tout abonnement `active` dont `currentPeriodEnd` est passé, et pour
+chacun, dans **une seule transaction** :
+
+<Steps>
+  <Step title="Avancer la période">
+    `currentPeriodStart` ← ancien `currentPeriodEnd`, `currentPeriodEnd` ← + intervalle. C'est
+    fait **avant** de demander le paiement, et jamais reculé en cas d'échec — c'est ce qui rend
+    la facture du cycle unique.
+  </Step>
+  <Step title="Retrouver ou créer la facture du cycle">
+    Celle de J-3 si elle existe, sinon une nouvelle. Le **solde client** (avoirs) est imputé :
+    `amountDue = total − appliedBalance`. Si elle est déjà `paid`, tout s'arrête ici — rien
+    n'est demandé.
+  </Step>
+  <Step title="Demander le paiement">
+    Une intention de paiement est créée pour `amountDue`, et une **demande** est poussée sur la
+    méthode de paiement **par défaut** du client — relue à ce moment, pas celle de la création.
+    L'appel attend la réponse opérateur.
+  </Step>
+  <Step title="Succès">
+    Facture `paid`, `paidAt` posé. Événements : `invoice.paid`, `payment.completed`,
+    `subscription.updated` (avec les nouvelles bornes de période).
+  </Step>
+  <Step title="Échec ou pas de méthode par défaut">
+    Facture `open`, `lastPaymentError` renseigné. L'abonnement passe **`past_due`**, `payment.failed`
+    et `subscription.past_due` sont émis, et le calendrier de relances démarre. Voir
+    [Paiements échoués](/fr/subscriptions/billing/failed-payments).
+  </Step>
+</Steps>
+
+<Warning>
+**Il n'y a pas de prélèvement.** À chaque échéance, le client reçoit une demande sur son
+téléphone et doit l'approuver. Un client qui ne répond pas dans le délai est un cas nominal :
+c'est pour lui que la facture est envoyée à J-3 avec un lien, et que les relances existent.
+</Warning>
+
+## Ce que vous recevez
+
+| Moment | Événements |
+|---|---|
+| J-3 | `invoice.finalized` |
+| Client paie via le lien avant J | `invoice.paid` |
+| J, succès | `invoice.paid`, `payment.completed`, `subscription.updated` |
+| J, échec | `payment.failed`, `subscription.past_due` |
+
+<Note>
+`invoice.paid` et `payment.completed` peuvent arriver **deux fois** pour un même renouvellement
+réussi (deux chemins internes les émettent). Dédupliquez sur `data.invoiceId` / `data.orderId`.
+</Note>
+
+## Lire où en est un abonnement
+
+- `currentPeriodEnd` : la borne de ce qui a été **facturé**. Sur un abonnement `past_due`, elle
+  est déjà avancée.
+- La dernière facture `paid` (`GET /v1/subscriptions/{id}/invoices`) : jusqu'où le client a
+  **payé**.
+- `statistics.nextPaymentDate` et `statistics.nextPaymentAmount` sur le détail : la prochaine
+  échéance et son montant (remise appliquée, hors taxe).
+
+## Le premier cycle
+
+Il diffère selon la porte d'entrée :
+
+| Création | Première facture |
+|---|---|
+| API sans essai | Immédiate, `billingReason: "subscription_create"`, demande de paiement dans l'appel. |
+| Page hébergée sans essai | Immédiate, réglée sur la page. |
+| Avec essai | À la fin de l'essai, au 11 h suivant — voir [Essais](/fr/subscriptions/create/trials). |
+
+Les cycles suivants sont tous des `subscription_cycle` et suivent le mécanisme ci-dessus.
