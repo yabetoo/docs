@@ -171,7 +171,7 @@ call**.
 <Steps>
   <Step title="Create the product with its price">
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/products \
+    curl -X POST https://buy.api.yabetoopay.com/v1/products \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -288,7 +288,7 @@ call**.
 ### Retrieve a Product
 
 ```bash
-curl https://api.yabetoo.com/v1/products/prod_abc123 \
+curl https://buy.api.yabetoopay.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 
@@ -298,7 +298,7 @@ The verb is **`PUT`**, and the update is partial: only the fields present in the
 changed.
 
 ```bash
-curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -316,7 +316,7 @@ curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
 ### Archive a Product
 
 ```bash
-curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -331,7 +331,7 @@ curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
 </Warning>
 
 ```bash
-curl -X DELETE https://api.yabetoo.com/v1/products/prod_abc123 \
+curl -X DELETE https://buy.api.yabetoopay.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 

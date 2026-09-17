@@ -38,7 +38,7 @@ A **Checkout Session** represents your customer's payment session. It controls w
 ### Basic Request
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/checkout/sessions \
+curl -X POST https://buy.api.yabetoopay.com/v1/checkout/sessions \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -277,7 +277,7 @@ Allow the customer to modify quantity on the payment page:
 
 <CodeGroup>
 ```bash cURL
-curl -X POST https://api.yabetoo.com/v1/checkout/sessions \
+curl -X POST https://buy.api.yabetoopay.com/v1/checkout/sessions \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -322,7 +322,7 @@ curl -X POST https://api.yabetoo.com/v1/checkout/sessions \
 ```
 
 ```javascript JavaScript
-const response = await fetch("https://api.yabetoo.com/v1/checkout/sessions", {
+const response = await fetch("https://buy.api.yabetoopay.com/v1/checkout/sessions", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -357,7 +357,7 @@ const session = await response.json();
 import requests
 
 response = requests.post(
-    "https://api.yabetoo.com/v1/checkout/sessions",
+    "https://buy.api.yabetoopay.com/v1/checkout/sessions",
     headers={
         "Authorization": "Bearer sk_live_...",
         "Content-Type": "application/json"
@@ -388,7 +388,7 @@ session = response.json()
 $curl = curl_init();
 
 curl_setopt_array($curl, [
-    CURLOPT_URL => "https://api.yabetoo.com/v1/checkout/sessions",
+    CURLOPT_URL => "https://buy.api.yabetoopay.com/v1/checkout/sessions",
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST => true,
     CURLOPT_HTTPHEADER => [
@@ -428,7 +428,7 @@ $session = json_decode($response, true);
   "mode": "payment",
   "status": "open",
   "payment_status": "unpaid",
-  "url": "https://checkout.yabetoo.com/cs_abc123def456ghi789",
+  "url": "https://pay.yabetoo.com/c/cs_abc123def456ghi789",
   "success_url": "https://your-site.com/success?session_id={CHECKOUT_SESSION_ID}",
   "cancel_url": "https://your-site.com/cancel",
   "customer_email": "customer@example.com",
@@ -515,7 +515,7 @@ const sessionId = new URLSearchParams(window.location.search).get("session_id");
 
 // Verify status server-side
 const response = await fetch(
-  "https://api.yabetoo.com/v1/checkout/sessions/" + sessionId,
+  "https://buy.api.yabetoopay.com/v1/checkout/sessions/" + sessionId,
   {
     headers: {
       Authorization: "Bearer sk_live_...",
