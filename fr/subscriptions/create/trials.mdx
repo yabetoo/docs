@@ -1,0 +1,68 @@
+---
+title: "Essais gratuits"
+description: "Un abonnement qui commence sans paiement, et ce qui se passe quand l'essai se termine."
+icon: "hourglass-half"
+---
+
+Un abonnement en essai naît `trialing`, ne facture rien, et se convertit tout seul à
+l'échéance.
+
+## D'où vient la durée de l'essai
+
+| Porte | Source de l'essai |
+|---|---|
+| `POST /v1/subscriptions` | Le champ **`trialDays`** de la requête (1 à 365). Le `trialPeriodDays` du prix **n'est pas lu** sur cette porte. |
+| Session de checkout / lien de paiement | Le **`trialPeriodDays` du premier prix récurrent** du panier. Le corps de la session n'a pas de champ d'essai. |
+
+<Warning>
+Les deux portes ne lisent pas la même source. Un prix avec `trialPeriodDays: 14` donne 14 jours
+d'essai sur la page hébergée, et **zéro** par l'API si vous omettez `trialDays`. Posez les deux
+si vous utilisez les deux portes.
+</Warning>
+
+## Pendant l'essai
+
+- `status: "trialing"`, `trialStart` et `trialEnd` posés.
+- La période courante **est** l'essai : `currentPeriodEnd = trialEnd`. Un essai de 14 jours sur
+  un plan mensuel donne 14 jours, pas 14 + 30.
+- Aucune facture, aucune demande de paiement.
+- Vous recevez `subscription.trial_ending` **à la création** (porte API seulement — la page
+  hébergée ne l'émet pas). Ce n'est pas un rappel à J-3 : ne l'utilisez pas comme tel.
+- `pause` est refusé pendant l'essai. `cancel` est possible (voir ci-dessous).
+
+## À la fin de l'essai
+
+<Steps>
+  <Step title="Conversion, dans l'heure">
+    Un cron horaire trouve les essais échus et passe l'abonnement `active`. La période payante
+    est ancrée sur `trialEnd` : `currentPeriodStart = trialEnd`, `currentPeriodEnd = trialEnd +
+    intervalle`, `trialConverted = true`. **Aucun webhook `subscription.*` n'est émis** à ce
+    moment.
+  </Step>
+  <Step title="Première demande de paiement, au 11 h suivant (Brazzaville)">
+    La facture de la première période payante est émise et une demande de paiement est poussée
+    sur le numéro Mobile Money par défaut du client. Vous recevez `invoice.finalized`, puis
+    `invoice.paid` et `payment.completed` si le client approuve.
+  </Step>
+</Steps>
+
+<Warning>
+**Si cette première demande échoue, l'abonnement reste `active`** — il ne passe pas `past_due`
+et cette facture-là n'entre pas dans les relances automatiques (elle est de type
+`subscription_create`, pas `subscription_cycle`). Elle reste `open` et payable par le lien
+reçu par e-mail ; le cron du jour de l'échéance suivante la retentera. Surveillez
+`invoice.finalized` **sans** `invoice.paid` dans la journée, et proposez au client de régler
+par le lien ou relancez avec [`retry-payment`](/fr/subscriptions/manage/retry-payment).
+</Warning>
+
+## Annuler pendant l'essai
+
+Utilisez **`cancelImmediately: true`**. Une annulation « en fin de période » pendant l'essai
+pose `cancelAt = trialEnd`, mais la conversion tourne toutes les heures alors que les annulations
+programmées ne s'exécutent qu'à **3 h UTC** : l'abonnement serait converti et une demande de
+paiement partirait avant que l'annulation ne s'applique.
+
+## Vérifier l'état de l'essai
+
+`GET /v1/subscriptions/{id}` rend `statistics.isInTrial` et `statistics.trialDaysRemaining`,
+en plus de `trialEnd`.

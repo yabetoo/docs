@@ -1,0 +1,116 @@
+---
+title: "Quickstart"
+description: "A recurring price, a subscription, a first payment — in three calls."
+icon: "rocket"
+---
+
+<Info>
+Use an `sk_test_` key on `https://buy.sandbox.yabetoopay.com`. The subscription's mode is the
+key's: a subscription created in test stays in test for its whole life.
+</Info>
+
+<Steps>
+  <Step title="Create a product and its recurring price">
+    A subscription is built on a price of `type: "recurring"`. The cadence is carried by
+    `billingInterval` and `billingIntervalCount`.
+
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/prices \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "productId": "prod_...",
+        "amount": 5000,
+        "currency": "xaf",
+        "type": "recurring",
+        "billingInterval": "month",
+        "billingIntervalCount": 1
+      }'
+    ```
+
+    <Warning>
+    The API does not make `billingInterval` and `billingIntervalCount` mandatory on a
+    `recurring` price. **Always set them**: a recurring price without a cadence creates a
+    subscription that never renews, with no error.
+    </Warning>
+
+    Field details: [Prices](/en/products/prices).
+  </Step>
+
+  <Step title="Create the subscription with the customer's Mobile Money number">
+    The customer is found or created by email. Their payment method becomes their **default**
+    one: it is the one requested at every renewal.
+
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "customerEmail": "ada@example.com",
+        "firstName": "Ada",
+        "items": [{ "priceId": "price_...", "quantity": 1 }],
+        "paymentMethodData": {
+          "type": "momo",
+          "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" }
+        },
+        "idempotencyKey": "signup-ada-2026-09"
+      }'
+    ```
+
+    The response comes back **after** the payment request — the call waits for the operator's
+    answer.
+
+    ```json 201
+    {
+      "subscription": {
+        "id": "sub_...",
+        "status": "active",
+        "customerEmail": "ada@example.com",
+        "currentPeriodStart": "2026-09-17T10:00:00.000Z",
+        "currentPeriodEnd": "2026-10-17T10:00:00.000Z",
+        "nextBillingDate": "2026-10-17T10:00:00.000Z",
+        "items": [{ "id": "si_...", "priceId": "price_...", "quantity": 1 }]
+      },
+      "paymentStatus": { "success": true, "status": "paid", "requiresAction": false },
+      "invoice": { "id": "inv_...", "status": "paid" }
+    }
+    ```
+
+    If the customer declines or does not answer, the response is **still a 201**:
+    `paymentStatus.success` is `false` and the subscription is `unpaid`. See
+    [Create through the API](/en/subscriptions/create/api).
+  </Step>
+
+  <Step title="Listen to webhooks">
+    Two events tell the subscription's story:
+
+    | Event | When |
+    |---|---|
+    | `subscription.created` | At creation — `data.status` is `active`, `unpaid` or `trialing` depending on the first payment's outcome |
+    | `invoice.paid` | At every settled cycle |
+
+    The full list: [Webhooks](/en/subscriptions/webhooks).
+  </Step>
+
+  <Step title="Simulate the renewal">
+    In test mode, a [test clock](/en/subscriptions/testing) moves the subscription to its due
+    date without waiting a month.
+  </Step>
+</Steps>
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Lifecycle" icon="diagram-project" href="/en/subscriptions/lifecycle">
+    The six statuses and their transitions.
+  </Card>
+  <Card title="Hosted page" icon="window" href="/en/subscriptions/create/hosted">
+    Let the customer subscribe on their own.
+  </Card>
+  <Card title="Billing cycle" icon="calendar" href="/en/subscriptions/billing/cycle">
+    What happens at each due date, and when.
+  </Card>
+  <Card title="API reference" icon="book" href="/en/api-reference/subscriptions/subscriptions">
+    The object and its ten endpoints.
+  </Card>
+</CardGroup>

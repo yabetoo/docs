@@ -1,0 +1,149 @@
+---
+title: "Créer par l'API"
+description: "POST /v1/subscriptions : l'abonnement et sa première demande de paiement en un appel."
+icon: "code"
+---
+
+Utilisez ce chemin quand vous connaissez déjà le client et son numéro Mobile Money — un
+formulaire dans votre propre application, une migration depuis un autre système, une vente
+assistée. Pour laisser le client payer lui-même, voir la
+[page hébergée](/fr/subscriptions/create/hosted).
+
+## L'appel
+
+```bash
+POST https://buy.sandbox.yabetoopay.com/v1/subscriptions   # Sandbox
+POST https://buy.api.yabetoopay.com/v1/subscriptions       # Production
+```
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerEmail": "ada@example.com",
+    "firstName": "Ada",
+    "lastName": "Lovelace",
+    "items": [
+      { "priceId": "price_...", "quantity": 1 }
+    ],
+    "paymentMethodData": {
+      "type": "momo",
+      "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" }
+    },
+    "trialDays": 14,
+    "metadata": { "plan": "pro" },
+    "idempotencyKey": "signup-ada-2026-09"
+  }'
+```
+
+| Champ | Obligatoire | Description |
+|---|---|---|
+| `customerEmail` | Oui | Identifie le client. Trouvé s'il existe sur votre compte, créé sinon. |
+| `firstName`, `lastName` | Non | Renseignés à la création du client. |
+| `items[]` | Oui, 1 à 50 | `priceId` d'un prix **`recurring` actif**, dont le produit n'est pas archivé ; `quantity` de 1 à 1 000. Toutes les lignes doivent partager la **même devise**. |
+| `paymentMethodData` | Oui | `type` et, pour Mobile Money, `momo: { country, msisdn, operator_name }`. Devient la méthode **par défaut** du client. |
+| `trialDays` | Non | 1 à 365. Voir [Essais](/fr/subscriptions/create/trials). |
+| `metadata` | Non | Objet libre, rendu tel quel. |
+| `idempotencyKey` | **Oui** | Dans le **corps**, pas en en-tête. 1 à 255 caractères. |
+
+<Warning>
+**`idempotencyKey` est obligatoire et vit dans le corps** — à rebours des autres routes
+d'écriture de Yabetoo, qui prennent un en-tête `Idempotency-Key`. Un rejeu avec la même clé
+rend **201** avec l'abonnement existant, sans créer ni facturer quoi que ce soit : c'est la
+seule protection contre un double abonnement sur un retry réseau.
+</Warning>
+
+<Note>
+`paymentMethodData.momo` est techniquement optionnel pour le validateur, mais un
+`paymentMethodData` sans `momo` fait **échouer** la demande de paiement : l'abonnement naît
+`unpaid`. Fournissez toujours le numéro.
+</Note>
+
+## Ce qui se passe
+
+<Steps>
+  <Step title="Le client est trouvé ou créé">
+    Par `customerEmail`, sur votre compte. La méthode de paiement fournie est ajoutée et
+    devient sa méthode **par défaut** — même s'il en avait déjà une.
+  </Step>
+  <Step title="L'abonnement est créé">
+    `unpaid` sans essai, `trialing` avec. La période courante démarre maintenant ; sans essai,
+    elle se termine à `maintenant + intervalle du premier prix`.
+  </Step>
+  <Step title="Sans essai : facture et demande de paiement">
+    Une facture `subscription_create` est émise pour la première période, et une **demande de
+    paiement** est poussée sur le numéro du client. **L'appel attend la réponse** — le client a
+    environ **100 secondes** pour approuver sur son téléphone.
+  </Step>
+  <Step title="Résultat">
+    Approuvé → l'abonnement passe `active`, la facture `paid`, `nextBillingDate` est posée.
+    Refusé ou sans réponse → l'abonnement reste `unpaid`, la facture `open`.
+  </Step>
+</Steps>
+
+Avec un essai, rien n'est facturé à la création : l'appel rend immédiatement, et la première
+demande de paiement partira à la fin de l'essai.
+
+## La réponse
+
+Toujours **201**, que le paiement ait abouti ou non. Lisez `paymentStatus`.
+
+```json 201
+{
+  "subscription": {
+    "id": "sub_...",
+    "accountId": "acct_...",
+    "customerId": "cus_...",
+    "customerEmail": "ada@example.com",
+    "status": "active",
+    "currentPeriodStart": "2026-09-17T10:00:00.000Z",
+    "currentPeriodEnd": "2026-10-17T10:00:00.000Z",
+    "nextBillingDate": "2026-10-17T10:00:00.000Z",
+    "trialStart": null,
+    "trialEnd": null,
+    "isLive": false,
+    "idempotencyKey": "signup-ada-2026-09",
+    "metadata": { "plan": "pro" },
+    "items": [
+      { "id": "si_...", "priceId": "price_...", "quantity": 1, "price": { "id": "price_...", "amount": 5000, "currency": "xaf", "billingInterval": "month", "billingIntervalCount": 1 } }
+    ]
+  },
+  "paymentStatus": { "success": true, "status": "paid", "requiresAction": false },
+  "invoice": { "id": "inv_...", "status": "paid" }
+}
+```
+
+| `paymentStatus.status` | `success` | Abonnement | Ce que ça veut dire |
+|---|---|---|---|
+| `paid` | `true` | `active` | Le client a approuvé. |
+| `trial` | `true` | `trialing` | Rien n'a été demandé : l'essai court. |
+| `processing` | `false` | `unpaid` | Pas de réponse du client dans le délai. |
+| `failed` | `false` | `unpaid` | Refus de l'opérateur ou du client ; `paymentStatus.error` porte le motif. |
+| `pending_payment`, `canceled` | `false` | `unpaid` | Cas rares, même conduite que `failed`. |
+
+<Note>
+Quand `success` est `false`, `canRetry` vaut `true` : régularisez avec
+[`retry-payment`](/fr/subscriptions/manage/retry-payment). Si le client a approuvé **après** le
+délai, la relance reconnaît le paiement déjà passé sans lui en demander un second.
+</Note>
+
+## Rejeu
+
+Même `idempotencyKey` sur le même compte → **201**, l'abonnement existant, `paymentStatus`
+dérivé de son statut courant (`paid` s'il est `active`, `trial` s'il est `trialing`, son statut
+sinon). Aucune facture, aucune demande de paiement.
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `422` | `E_VALIDATION_ERROR` | Champ manquant, prix introuvable / non récurrent / inactif / produit archivé, quantité hors bornes, plus de 50 lignes. Le corps porte `errors[]` avec le champ fautif. |
+| `500` | `E_INTERNAL_SERVER_ERROR` | Lignes de **devises différentes**. Le message est générique : vérifiez vos prix. |
+| `401` | `E_UNAUTHORIZED` | Clé absente ou invalide. |
+
+## Événements
+
+`subscription.created` part **après** la tentative de paiement : `data.status` vaut donc
+`active`, `unpaid` ou `trialing` — pas un statut « en cours ». Si le paiement a abouti, vous
+recevez aussi `invoice.paid` et `payment.completed`. Voir [Webhooks](/fr/subscriptions/webhooks).

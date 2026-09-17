@@ -1,0 +1,40 @@
+---
+title: "Errors"
+description: "The error codes of the subscription routes, and the three body shapes they return."
+icon: "circle-exclamation"
+---
+
+## Three body shapes
+
+The subscription routes do not have a single error shape. Read the **status**, then:
+
+| Shape | Routes | Example |
+|---|---|---|
+| `errors[]` | Validation, `404`, transition `422`, `409` | `{ "errors": [{ "message": "Subscription not found", "code": "E_SUBSCRIPTION_NOT_FOUND", "status": 404 }] }` |
+| `{ error }` | The `400`s of `retry-payment` | `{ "error": "Subscription is already active" }` |
+| `{ error, code }` | Test clocks | `{ "error": "Test clocks are not available in live mode", "code": "TEST_CLOCK_NOT_AVAILABLE" }` |
+
+## Codes
+
+| Code | Status | Cause | Fixable? |
+|---|---|---|---|
+| `E_VALIDATION_ERROR` | 422 | Missing or out-of-bounds field; price not found, inactive, not recurring or on an archived product. `errors[].field` names the field. | Yes: fix the request. |
+| `E_SUBSCRIPTION_NOT_FOUND` | 404 | The subscription does not exist **or belongs to another account** — both return the same body, byte for byte. | Check the identifier and the key. |
+| `E_SUBSCRIPTION_ALREADY_CANCELLED` | 400 | `cancel` on an already `canceled` subscription. | No. |
+| `E_INVALID_SUBSCRIPTION_TRANSITION` | 422 | The state machine refuses (`pause` outside `active`, `resume` outside `paused`, …). The body carries `fromState` and `toState`. | Re-read the [lifecycle](/en/subscriptions/lifecycle). |
+| `E_SUBSCRIPTION_CONCURRENCY` | 409 | Two simultaneous modifications of the same subscription. | Read again, then retry. |
+| `E_INTERNAL_SERVER_ERROR` | 500 | Generic message. On `POST /v1/subscriptions`: lines in **different currencies**. On `PUT /quantity`: status other than `active`/`trialing`, or an `itemId` foreign to the subscription. | Yes, but the body does not say so: check these two cases first. |
+| `E_UNAUTHORIZED` | 401 | Missing, invalid, or wrong-mode key. | — |
+| `TEST_CLOCK_NOT_AVAILABLE` | 403 | Test clock with an `sk_live_` key. | Use a test key. |
+| `TEST_CLOCK_COMPLETED` | 400 | Completed clock: it no longer advances. | Create another one. |
+
+## What is not an error
+
+- `POST /v1/subscriptions` returns **201** even when the first payment fails: read
+  `paymentStatus.success`.
+- `POST /cancel` without `cancelImmediately` returns **200** without changing `status`: the
+  cancellation is scheduled, `cancelAt` is set.
+- `POST /retry-payment` returns **200** with `subscription.status` still `past_due` on success:
+  activation is asynchronous, `subscriptionActivationPending` is true.
+- An unknown field in the body is **ignored**, not refused — `cancelAtPeriodEnd`, `pauseUntil`,
+  `trial_days` have no effect.

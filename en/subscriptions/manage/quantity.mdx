@@ -1,0 +1,85 @@
+---
+title: "Change the quantity"
+description: "Increase or decrease a line's quantity, and what becomes of the proration."
+icon: "sliders"
+---
+
+This is the **only change** possible on an existing subscription. There is no price change, and
+no adding or removing a line: for that, cancel and recreate.
+
+```bash
+PUT /v1/subscriptions/{id}/quantity
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `itemId` | Yes | The line (`si_…`), read from the subscription's `items[]`. |
+| `quantity` | Yes | 1 to 1,000. |
+| `reason` | No | Free text, kept in the history. |
+
+```bash
+curl -X PUT https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../quantity \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "itemId": "si_...", "quantity": 3, "reason": "two more seats" }'
+```
+
+Allowed on an `active` or `trialing` subscription only.
+
+## What happens
+
+The quantity is updated **immediately**: the next cycle is billed on the new quantity. What
+happens to the **current** cycle depends on the state:
+
+| State | Mid-period? | Effect on the current cycle |
+|---|---|---|
+| `trialing` | — | None. Nothing is billed during a trial. |
+| `active` | No (exactly on the boundary) | None. |
+| `active`, **increase** | Yes | A proration is computed on the remaining time, and a **proration invoice** (`billingReason: "proration"`) is created as `open`. |
+| `active`, **decrease** | Yes | A negative proration is computed and **returned** in the response, but **no credit is written** — nothing will be deducted from the next cycle. |
+
+<Warning>
+**The proration invoice is never charged automatically.** It is created `open`, without a
+number, without an email and without a payment link, and no payment request goes out. It shows
+up in `GET /v1/subscriptions/{id}/invoices`. If you want to collect the proration, it is up to
+you to bill it another way; if you do not, ignore it.
+</Warning>
+
+<Warning>
+**A mid-period decrease credits nothing.** The response message announces a credit "on the
+next invoice"; that credit is not implemented. The customer pays the current cycle on the old
+quantity, and the next one on the new.
+</Warning>
+
+## The response
+
+```json 200
+{
+  "subscription": { "id": "sub_...", "status": "active", "items": [{ "id": "si_...", "quantity": 3 }] },
+  "prorationAmount": 3333,
+  "prorationInvoice": { "id": "inv_...", "status": "open", "billingReason": "proration", "total": 3333 },
+  "message": "Quantity updated. Proration charge of 3333 will be applied."
+}
+```
+
+`prorationAmount` and `prorationInvoice` are absent when no proration applies.
+`prorationAmount` is negative on a decrease (without `prorationInvoice`).
+
+## Simulate before changing
+
+`GET /v1/subscriptions/{id}/upcoming-invoice?subscription_item_id=si_...&quantity=3` returns
+the proration preview **without writing anything**. See [Invoices](/en/subscriptions/billing/invoices#previewing-the-next-invoice).
+
+## No event
+
+This change emits **no webhook** — neither `subscription.updated` nor `invoice.*`. It is
+recorded in the subscription's internal history (`events[]` on the detail, type
+`quantity_updated`).
+
+## Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `422` | `E_VALIDATION_ERROR` | Missing `itemId`, `quantity` out of bounds. |
+| `500` | `E_INTERNAL_SERVER_ERROR` | Status other than `active`/`trialing`, or an `itemId` that does not belong to this subscription. The message is generic. |
+| `404` | `E_SUBSCRIPTION_NOT_FOUND` | Unknown or another account's. |

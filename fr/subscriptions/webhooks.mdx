@@ -1,0 +1,80 @@
+---
+title: "Webhooks"
+description: "Les événements d'un abonnement, quand ils partent, et ce que porte leur charge utile."
+icon: "bolt"
+---
+
+Tous les événements ci-dessous sont livrés sur vos endpoints webhook habituels (voir
+[Webhooks : vue d'ensemble](/fr/developer-tools/webhook/overview) pour la configuration, les
+en-têtes et la vérification de signature). Abonnez-vous aux noms **tels quels**.
+
+## Le corps livré
+
+```json
+{
+  "id": "evt_...",
+  "type": "subscription.created",
+  "created_at": "2026-09-17T10:00:00.000Z",
+  "data": { "subscriptionId": "sub_...", "customerId": "cus_...", "status": "active" }
+}
+```
+
+<Warning>
+Les champs de `data` sont en **camelCase** (`subscriptionId`, `currentPeriodEnd`), l'enveloppe
+en snake_case (`created_at`). Ne présumez pas d'une convention unique.
+</Warning>
+
+## Événements d'abonnement
+
+| Événement | Quand | `data` |
+|---|---|---|
+| `subscription.created` | À la création, **après** la tentative de premier paiement | `subscriptionId`, `customerId`, `customerEmail`, **`status`** (`active`, `unpaid` ou `trialing`), `currentPeriodStart`, `currentPeriodEnd`, `trialStart`, `trialEnd`, `items[]{priceId, quantity}`, `createdAt` ; `checkoutSessionId` si créé par la page hébergée |
+| `subscription.activated` | Un abonnement `unpaid` ou `past_due` est **régularisé** (relance automatique ou `retry-payment`). **Jamais** à la création ni à la fin d'un essai. | `subscriptionId`, `customerId`, `status: "active"`, `currentPeriodStart`, `currentPeriodEnd`, `activatedAt` |
+| `subscription.updated` | Renouvellement **payé** (le jour J, par la demande de paiement). Pas sur un changement de quantité. | `subscriptionId`, `customerId`, `status`, `currentPeriodStart`, `currentPeriodEnd`, `nextBillingDate`, `updatedAt` |
+| `subscription.past_due` | Échec d'un renouvellement | `subscriptionId`, `customerId`, `status: "past_due"`, `previousStatus`, `reason`, `updatedAt` |
+| `subscription.paused` / `subscription.resumed` | `POST /pause`, `POST /resume` | `subscriptionId`, `customerId`, `status`, `previousStatus`, `pausedAt` / `resumedAt` |
+| `subscription.canceled` | **Deux fois** sur une annulation programmée : à la demande (`status` courant) puis à l'échéance (`status: "canceled"`, `previousStatus`, `completedAt`). Une fois sur une annulation immédiate. | `subscriptionId`, `customerId`, `status`, `reason`, `canceledAt` ; `effectiveDate` à la demande, `previousStatus` et `completedAt` à l'échéance |
+| `subscription.trial_ending` | À la **création** d'un abonnement en essai par l'API (pas par la page hébergée). Ce n'est pas un rappel J-3. | `subscriptionId`, `customerId`, `status: "trialing"`, `trialStart`, `trialEnd`, `trialEndDate` |
+
+<Warning>
+**Lisez `data.status`, jamais le seul nom de l'événement.** `subscription.canceled` avec
+`status: "active"` veut dire « départ programmé, droits maintenus ». `subscription.created` avec
+`status: "unpaid"` veut dire « le premier paiement n'a pas abouti ».
+</Warning>
+
+## Événements de facture et de paiement
+
+| Événement | Quand | `data` |
+|---|---|---|
+| `invoice.finalized` | La facture d'un cycle est émise — à J-3 pour un renouvellement, à la fin de l'essai pour la première période payante | `invoiceId`, `invoiceNumber`, `customerId`, `total`, `appliedBalance`, `amountDue`, `currency`, `finalizedAt` |
+| `invoice.paid` | La facture est réglée — par le lien, par la demande du jour J, par une relance | `invoiceId`, `subscriptionId`, `orderId`, `amount`, `currency`, `paidAt` |
+| `invoice.voided` | Une facture est annulée (cycle supprimé par une résiliation, ou `POST /void`) | `invoiceId`, `customerId`, `voidedAt`, … |
+| `payment.completed` | Une demande de paiement d'abonnement a abouti | `orderId`, `paymentIntentId`, `subscriptionId`, `customerId`, `amount`, `currency`, `completedAt` |
+| `payment.failed` | Une demande de paiement d'abonnement a échoué | `orderId`, `paymentIntentId`, `subscriptionId`, `customerId`, `error`, `failedAt` |
+
+<Note>
+`invoice.paid` et `payment.completed` sont livrés **au moins une fois** : sur un renouvellement
+réussi, les deux peuvent arriver deux fois. Dédupliquez sur `data.invoiceId` / `data.orderId`.
+</Note>
+
+## Ce qui n'est pas émis
+
+Pour ne pas attendre un événement qui ne viendra pas :
+
+- **`checkout.session.completed`** en mode `subscription` : n'existe que pour les paiements
+  ponctuels. Écoutez `subscription.created`.
+- **`invoice.created`** : jamais émis. La première trace d'une facture est `invoice.finalized`.
+- **`invoice.overdue`** : réservé aux factures manuelles, jamais aux factures d'abonnement.
+- Rien à la **fin d'un essai** ni sur un **changement de quantité**. Pour l'essai, surveillez
+  `invoice.finalized` puis `invoice.paid`.
+
+## Un parcours type
+
+| Étape | Événements |
+|---|---|
+| Souscription par l'API, paiement approuvé | `subscription.created` (`active`), `invoice.paid`, `payment.completed` |
+| Renouvellement, J-3 | `invoice.finalized` |
+| Renouvellement, jour J, approuvé | `invoice.paid`, `payment.completed`, `subscription.updated` |
+| Renouvellement, jour J, refusé | `payment.failed`, `subscription.past_due` |
+| Relance J+1 réussie | `invoice.paid`, `payment.completed`, `subscription.activated` |
+| Le client résilie en fin de période | `subscription.canceled` (`active`) … puis, à l'échéance, `subscription.canceled` (`canceled`) |

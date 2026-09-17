@@ -1,0 +1,94 @@
+---
+title: "Cancel"
+description: "At period end or immediately — and why the event goes out twice."
+icon: "ban"
+---
+
+```bash
+POST /v1/subscriptions/{id}/cancel
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `cancelImmediately` | No | `true`: immediate cancellation. Absent or `false`: at **period end**. |
+| `reason` | No | Free text, kept in `cancelReason`. |
+
+<Warning>
+The field is called **`cancelImmediately`**. An unknown name — `cancelAtPeriodEnd`,
+`cancel_immediately` — is **silently ignored** and the call takes the "period end" branch,
+answering `200` without changing the status. The symptom reads as "cancellation does not work".
+</Warning>
+
+## At period end (default)
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../cancel \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "reason": "customer_request" }'
+```
+
+- `cancelAt` is set to `currentPeriodEnd`. **The status does not change**: the customer has
+  paid until then, they keep access.
+- A daily cron (**03:00 UTC**) moves the subscription to `canceled` once the date is reached,
+  whatever its status at that point — including `paused` or `past_due`.
+- No further invoice or reminder goes out for the next cycle. If its anticipated invoice had
+  already been issued at D-3, it is voided when the cancellation executes.
+
+```json 200
+{
+  "id": "sub_...",
+  "status": "active",
+  "cancelAt": "2026-10-17T10:00:00.000Z",
+  "canceledAt": null,
+  "cancelReason": "customer_request"
+}
+```
+
+<Note>
+There is **no** route to revoke a scheduled cancellation. A second `cancel` reschedules it
+(same date), it does not undo it. To keep the customer, you will have to recreate a
+subscription at the due date.
+</Note>
+
+## Immediately
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../cancel \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "cancelImmediately": true, "reason": "fraud" }'
+```
+
+- `status: "canceled"`, `canceledAt` set, `cancelAt` reset to `null`.
+- The anticipated invoice for the next cycle is voided in the **same transaction**: if that
+  void fails, nothing is cancelled and the call returns 500 — retry.
+- No refund is triggered.
+
+## The `subscription.canceled` event goes out twice
+
+This is the trap of this route. On a **scheduled** cancellation:
+
+| Moment | `data.status` | Meaning |
+|---|---|---|
+| At the request | The **current** status (`active`, …) | The customer asked to leave. Their rights **hold** until `cancelAt`. |
+| At the due date (cron) | `canceled` | The subscription is over. `data.previousStatus` and `data.completedAt` are set. |
+
+An **immediate** cancellation emits it only once, with `status: "canceled"`.
+
+<Warning>
+**Never** cut off access on the event name alone. Read `data.status`: cutting off at the first
+emission takes away weeks the customer has paid for.
+</Warning>
+
+## During a trial
+
+Prefer `cancelImmediately: true`: see [Trials](/en/subscriptions/create/trials#cancelling-during-a-trial).
+
+## Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `404` | `E_SUBSCRIPTION_NOT_FOUND` | Unknown, or belonging to another account — same response, byte for byte. |
+| `400` | `E_SUBSCRIPTION_ALREADY_CANCELLED` | Already `canceled`. |
+| `422` | `E_INVALID_SUBSCRIPTION_TRANSITION` | Transition refused by the state machine. |

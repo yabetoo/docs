@@ -1,0 +1,105 @@
+---
+title: "Créer par la page hébergée"
+description: "Le client choisit et paie lui-même sur pay.yabetoo.com — session de checkout ou lien de paiement."
+icon: "window"
+---
+
+Deux portes mènent à la page de paiement hébergée. Dans les deux cas, l'abonnement **naît à la
+confirmation du paiement** par le client, avec le numéro Mobile Money qu'il saisit — ce numéro
+devient sa méthode de paiement par défaut pour les renouvellements.
+
+## Session de checkout en mode `subscription`
+
+Créez une session avec `mode: "subscription"` et des lignes qui pointent des **prix du
+catalogue**, puis redirigez le client vers `url`.
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/checkout/sessions \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "subscription",
+    "line_items": [{ "price": "price_...", "quantity": 1 }],
+    "customer_email": "ada@example.com",
+    "client_reference_id": "user-42",
+    "success_url": "https://example.com/merci",
+    "cancel_url": "https://example.com/annule"
+  }'
+```
+
+```json 201
+{
+  "id": "cs_...",
+  "object": "checkout.session",
+  "mode": "subscription",
+  "status": "open",
+  "payment_status": "unpaid",
+  "url": "https://pay.yabetoo.com/c/cs_...",
+  "amount_total": 5000,
+  "currency": "xaf",
+  "expires_at": 1758200000,
+  "livemode": false
+}
+```
+
+### Règles propres au mode `subscription`
+
+| Règle | Refus |
+|---|---|
+| Chaque ligne récurrente pointe un **prix du catalogue** (`price`). Un `price_data` inline est refusé — un abonnement ne se facture pas sur un prix qui n'existe pas. | `422` |
+| Toutes les lignes récurrentes ont la **même périodicité** (`billingInterval × billingIntervalCount`). Un panier mensuel + annuel n'a pas de cycle. | `422` |
+| Toutes les lignes ont la **même devise**. | `422` |
+| Une ligne `one_time` est acceptée : c'est un **frais unique** (mise en service, matériel), débité au **premier cycle et à lui seul**. | — |
+| Frais unique **et** essai sur le même panier : refusé — un essai ne facture rien au jour 0, les frais partiraient à la fin de l'essai. | `422` |
+| `discounts[]` est refusé sur cette porte. Pour une remise, passez par un lien de paiement. | `422` |
+
+L'essai vient du **prix** : si le premier prix récurrent porte `trialPeriodDays`, l'abonnement
+naît `trialing` et rien n'est facturé à la confirmation. Voir
+[Essais](/fr/subscriptions/create/trials).
+
+<Warning>
+**`checkout.session.completed` n'est pas émis en mode `subscription`.** Cet événement
+n'existe que pour les paiements ponctuels. N'attendez pas sur lui : écoutez
+`subscription.created`.
+</Warning>
+
+## Lien de paiement de type `subscription`
+
+Pour vendre le même abonnement à beaucoup de clients sans appel d'API par vente, créez un
+[lien de paiement](/fr/payments/payment-link/create) avec `type: "subscription"` et vos prix
+récurrents. Chaque client qui paie via ce lien obtient son propre abonnement.
+
+Les codes promotionnels sont honorés sur cette porte : la remise s'applique à la première
+facture et, selon la durée du coupon, aux suivantes. Voir [Coupons](/fr/products/coupons).
+
+## Retrouver l'abonnement après le paiement
+
+La session ne rend pas l'identifiant de l'abonnement, et l'URL de retour ne le porte pas
+non plus. Trois chemins :
+
+<AccordionGroup>
+  <Accordion title="Le webhook subscription.created (recommandé)">
+    Son `data` porte `checkoutSessionId` — la session qui l'a créé — et `subscriptionId`.
+    Rapprochez-le de votre `client_reference_id` en relisant la session si besoin.
+  </Accordion>
+  <Accordion title="Les abonnements du client">
+    `GET /v1/customers/{cus}/subscriptions` ou `GET /v1/subscriptions?customerId=cus_...`.
+    Le client est celui de `customer_email`.
+  </Accordion>
+  <Accordion title="L'objet abonnement lui-même">
+    `idempotencyKey` vaut `cs_<id de session>` et `metadata.checkout_session_id` porte la
+    session : `GET /v1/subscriptions` puis filtrez.
+  </Accordion>
+</AccordionGroup>
+
+## Ce que le client voit
+
+Sur la page hébergée, le client renseigne son e-mail et son numéro Mobile Money, puis approuve
+la demande de paiement sur son téléphone. La page attend le résultat opérateur ; un essai est
+annoncé comme tel (« 14 jours d'essai ») et aucun montant n'est demandé.
+
+<Note>
+La page hébergée est aussi celle qui sert les **factures** : le lien reçu par e-mail trois jours
+avant chaque échéance mène à `pay.yabetoo.com/i/...`, où le client peut régler à l'avance. Voir
+[Cycle de facturation](/fr/subscriptions/billing/cycle).
+</Note>

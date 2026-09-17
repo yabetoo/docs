@@ -1,0 +1,95 @@
+---
+title: "Annuler"
+description: "En fin de période ou immédiatement — et pourquoi l'événement part deux fois."
+icon: "ban"
+---
+
+```bash
+POST /v1/subscriptions/{id}/cancel
+```
+
+| Champ | Obligatoire | Description |
+|---|---|---|
+| `cancelImmediately` | Non | `true` : annulation immédiate. Absent ou `false` : en **fin de période**. |
+| `reason` | Non | Texte libre, conservé dans `cancelReason`. |
+
+<Warning>
+Le champ s'appelle **`cancelImmediately`**. Un nom inconnu — `cancelAtPeriodEnd`,
+`cancel_immediately` — est **ignoré en silence** et l'appel part sur la branche « fin de
+période », en répondant `200` sans changer le statut. Le symptôme se lit « l'annulation ne
+marche pas ».
+</Warning>
+
+## En fin de période (défaut)
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../cancel \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "reason": "customer_request" }'
+```
+
+- `cancelAt` est posé à `currentPeriodEnd`. **Le statut ne change pas** : le client a payé
+  jusque-là, il garde l'accès.
+- Un cron quotidien (**3 h UTC**) passe l'abonnement `canceled` une fois la date atteinte,
+  quel que soit son statut à ce moment — y compris `paused` ou `past_due`.
+- Plus aucune facture ni rappel ne part pour le cycle suivant. Si sa facture anticipée avait déjà
+  été émise à J-3, elle est annulée (`void`) au moment où l'annulation s'exécute.
+
+```json 200
+{
+  "id": "sub_...",
+  "status": "active",
+  "cancelAt": "2026-10-17T10:00:00.000Z",
+  "canceledAt": null,
+  "cancelReason": "customer_request"
+}
+```
+
+<Note>
+Il n'existe **pas** de route pour révoquer une annulation programmée. Un second `cancel` la
+reprogramme (même date), il ne l'annule pas. Pour garder le client, il faudra recréer un
+abonnement à l'échéance.
+</Note>
+
+## Immédiatement
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../cancel \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "cancelImmediately": true, "reason": "fraud" }'
+```
+
+- `status: "canceled"`, `canceledAt` posé, `cancelAt` remis à `null`.
+- La facture anticipée du cycle suivant est annulée dans la **même transaction** : si cette
+  annulation échoue, rien n'est annulé et l'appel rend 500 — réessayez.
+- Aucun remboursement n'est déclenché.
+
+## L'événement `subscription.canceled` part deux fois
+
+C'est le piège de cette route. Sur une annulation **programmée** :
+
+| Moment | `data.status` | Sens |
+|---|---|---|
+| À la demande | Le statut **courant** (`active`, …) | Le client a demandé à partir. Ses droits **tiennent** jusqu'à `cancelAt`. |
+| À l'échéance (cron) | `canceled` | L'abonnement est terminé. `data.previousStatus` et `data.completedAt` sont posés. |
+
+Une annulation **immédiate** n'en émet qu'un, avec `status: "canceled"`.
+
+<Warning>
+Ne coupez **jamais** un accès sur le seul nom de l'événement. Lisez `data.status` : couper à la
+première émission retire au client des semaines qu'il a payées.
+</Warning>
+
+## Pendant un essai
+
+Préférez `cancelImmediately: true` : voir [Essais](/fr/subscriptions/create/trials).
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `404` | `E_SUBSCRIPTION_NOT_FOUND` | Inconnu, ou d'un autre compte — même réponse au bit près. |
+| `400` | `E_SUBSCRIPTION_ALREADY_CANCELLED` | Déjà `canceled`. |
+| `422` | `E_INVALID_SUBSCRIPTION_TRANSITION` | Transition refusée par la machine à états. |

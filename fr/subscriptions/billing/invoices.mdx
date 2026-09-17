@@ -1,0 +1,128 @@
+---
+title: "Factures"
+description: "L'objet facture d'un abonnement, ses statuts, et comment le lire, le prévisualiser et le clore."
+icon: "file-invoice"
+---
+
+Chaque cycle d'un abonnement produit une **facture** (`inv_`). C'est elle qui porte le montant
+demandé au client, l'historique des tentatives de paiement et le lien de paiement envoyé par
+e-mail.
+
+## L'objet `invoice`
+
+Les champs utiles pour un abonnement (camelCase) :
+
+<ResponseField name="id" type="string">Identifiant, préfixé `inv_`.</ResponseField>
+<ResponseField name="invoiceNumber" type="string | null">Numéro séquentiel, posé à la finalisation. `null` sur une facture de prorata.</ResponseField>
+<ResponseField name="status" type="string">`draft`, `open`, `paid`, `void`, `uncollectible`. Voir ci-dessous.</ResponseField>
+<ResponseField name="billingReason" type="string">
+  Pourquoi la facture existe :
+  `subscription_create` (première période, création par l'API sans essai — et première période payante après un essai),
+  `subscription_cycle` (renouvellement), `proration` (hausse de quantité en cours de période),
+  `subscription_update`, `manual` (hors abonnement).
+</ResponseField>
+<ResponseField name="subscriptionId" type="string | null">L'abonnement, `sub_…`.</ResponseField>
+<ResponseField name="customerId" type="string | null">Le client, `cus_…`.</ResponseField>
+<ResponseField name="currency" type="string">Devise, en minuscules.</ResponseField>
+<ResponseField name="subtotal / discountTotal / taxAmount / total" type="number">Le chiffrage des lignes.</ResponseField>
+<ResponseField name="appliedBalance" type="number">Avoir client imputé sur cette facture.</ResponseField>
+<ResponseField name="amountDue" type="number">`total − appliedBalance` : ce qui est réellement demandé au client.</ResponseField>
+<ResponseField name="amountPaid / amountRemaining" type="number">L'encaissé et le reste.</ResponseField>
+<ResponseField name="billingPeriodStart / billingPeriodEnd" type="string | null">La période couverte.</ResponseField>
+<ResponseField name="attemptCount / retryCount / nextAttemptAt / lastAttemptAt / lastPaymentError" type="…">
+  L'historique des tentatives de paiement et le motif du dernier échec.
+</ResponseField>
+<ResponseField name="finalizedAt / paidAt / voidedAt / markedUncollectibleAt" type="string | null">Les dates de chaque étape.</ResponseField>
+<ResponseField name="hostedPaymentUrl" type="string | null">Le lien de paiement envoyé au client (page hébergée).</ResponseField>
+<ResponseField name="pdfUrl" type="string | null">Le PDF, quand il a été généré.</ResponseField>
+<ResponseField name="lineItems[]" type="array">Les lignes : `description`, `quantity`, `unitAmount`, `amount`, `taxAmount`, `priceId`, `periodStart`, `periodEnd`.</ResponseField>
+
+## Les statuts
+
+```
+draft ──► open ──► paid
+             │
+             ├──► void            (annulée : cycle supprimé par une résiliation, ou POST /void)
+             └──► uncollectible   (abandonnée : POST /mark-uncollectible)
+```
+
+| Statut | Signification pour un abonnement |
+|---|---|
+| `draft` | N'existe que sur l'aperçu `upcoming-invoice`. Les factures de cycle naissent finalisées. |
+| `open` | Finalisée, numérotée, envoyée. Payable par le lien. Le jour J la demande de paiement porte dessus. |
+| `paid` | Réglée. C'est la seule preuve que le client a payé un cycle. |
+| `void` | Annulée. Posé automatiquement sur la facture anticipée d'un cycle qui n'aura pas lieu (annulation). |
+| `uncollectible` | Vous avez renoncé à l'encaisser. Ne change rien au statut de l'abonnement. |
+
+## Lister les factures d'un abonnement
+
+```bash
+GET /v1/subscriptions/{id}/invoices
+```
+
+Toutes les factures, de la plus récente à la plus ancienne, **sans pagination**, chacune avec
+sa commande et ses lignes. Les factures de prorata y sont.
+
+```bash
+GET /v1/invoices?subscription_id=sub_...&status=open&page=1&limit=25
+```
+
+La liste générale, paginée, filtrable par `status`, `customer_id`, `subscription_id`, `from`,
+`to`.
+
+## Lire, télécharger, clore
+
+| Appel | Effet |
+|---|---|
+| `GET /v1/invoices/{id}` | La facture avec ses lignes. |
+| `GET /v1/invoices/{id}/pdf` | `{ "url": "…" }`, une URL signée vers le PDF. `404` si le PDF n'a pas encore été généré. |
+| `POST /v1/invoices/{id}/void` `{ reason? }` | Annule une facture `open`. Utile pour renoncer à un cycle sans annuler l'abonnement. |
+| `POST /v1/invoices/{id}/mark-uncollectible` | Marque une facture `open` comme irrécouvrable. |
+
+<Warning>
+Annuler (`void`) la facture d'un cycle **n'arrête pas** les relances déjà programmées, et ne
+change pas le statut `past_due` de l'abonnement : ce sont deux objets. Pour arrêter la
+facturation, agissez sur l'abonnement ([annuler](/fr/subscriptions/manage/cancel) ou
+[suspendre](/fr/subscriptions/manage/pause)).
+</Warning>
+
+## Aperçu de la prochaine facture
+
+```bash
+GET /v1/subscriptions/{id}/upcoming-invoice
+```
+
+Rend ce que le prochain cycle facturera, chiffré par le **même calculateur** que la facture
+réelle, sans rien écrire.
+
+```json 200
+{
+  "object": "invoice",
+  "status": "draft",
+  "billingReason": "subscription_cycle",
+  "subscriptionId": "sub_...",
+  "currency": "xaf",
+  "subtotal": 15000,
+  "discountTotal": 1500,
+  "taxAmount": 0,
+  "total": 13500,
+  "amountDue": 13500,
+  "periodStart": "2026-10-17T10:00:00.000Z",
+  "periodEnd": "2026-11-17T10:00:00.000Z",
+  "lineItems": [
+    { "description": "Plan Pro", "quantity": 3, "unitAmount": 5000, "amount": 15000, "discountAmount": 1500, "taxAmount": 0, "priceId": "price_...", "proration": false }
+  ]
+}
+```
+
+Avec `?subscription_item_id=si_...&quantity=5`, l'aperçu **simule un changement de quantité** :
+`billingReason` devient `proration`, une ligne de prorata pour le reste de la période courante
+s'ajoute, et la remise n'est pas répartie (`discountTotal: 0`). Le montant réel sera calculé au
+moment du changement — voir [Modifier la quantité](/fr/subscriptions/manage/quantity).
+
+## Solde client
+
+Un avoir crédité au client (`POST /v1/customers/{id}/balance/credit`) est **imputé
+automatiquement** sur la prochaine facture de cycle : `appliedBalance` monte, `amountDue`
+baisse, et si l'avoir couvre tout, aucune demande de paiement ne part. Voir
+[Clients](/fr/subscriptions/customers).

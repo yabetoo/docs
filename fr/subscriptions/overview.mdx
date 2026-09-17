@@ -1,0 +1,90 @@
+---
+title: "Vue d'ensemble"
+description: "Facturez vos clients de façon récurrente, en Mobile Money."
+icon: "arrows-rotate"
+---
+
+Un **abonnement** facture un client à intervalle régulier — chaque semaine, chaque mois, chaque
+année — pour un ou plusieurs produits. Yabetoo génère la facture de chaque cycle, demande le
+paiement au client sur son numéro Mobile Money, relance en cas d'échec et vous notifie par
+webhook à chaque étape.
+
+## Le modèle
+
+```
+Produit ──► Prix (récurrent) ──► Abonnement ──► Facture (une par cycle)
+                                     │
+                                     └─► Client + méthode de paiement par défaut
+```
+
+| Objet | Préfixe | Rôle |
+|---|---|---|
+| **Produit** | `prod_` | Ce que vous vendez. Voir [Produits](/fr/products/products). |
+| **Prix** | `price_` | Combien et à quelle cadence : `type: "recurring"`, `billingInterval` (`day`, `week`, `month`, `year`) × `billingIntervalCount`, `trialPeriodDays`. Voir [Prix](/fr/products/prices). |
+| **Client** | `cus_` | La personne facturée, identifiée par son e-mail, avec une **méthode de paiement par défaut** (numéro Mobile Money). |
+| **Abonnement** | `sub_` | Le lien entre un client et un ou plusieurs prix récurrents, avec sa période courante et son statut. |
+| **Ligne d'abonnement** | `si_` | Un prix × une quantité. |
+| **Facture** | `inv_` | Le montant dû pour un cycle, avec ses lignes, son statut et l'historique des tentatives de paiement. |
+
+## Ce qui se passe à chaque cycle
+
+<Steps>
+  <Step title="Trois jours avant l'échéance">
+    Yabetoo émet la facture du cycle à venir et l'envoie par e-mail au client, avec un lien de
+    paiement. Le client peut la régler à l'avance.
+  </Step>
+  <Step title="Le jour de l'échéance, à 11 h (Brazzaville)">
+    Si la facture n'est pas encore payée, une **demande de paiement** est poussée sur le numéro
+    Mobile Money par défaut du client. Il l'approuve sur son téléphone.
+  </Step>
+  <Step title="Succès">
+    La facture passe `paid`, vous recevez `invoice.paid`, la période avance.
+  </Step>
+  <Step title="Échec">
+    L'abonnement passe `past_due`, et trois relances automatiques partent à J+1, J+3 et J+7.
+    Voir [Paiements échoués](/fr/subscriptions/billing/failed-payments).
+  </Step>
+</Steps>
+
+<Warning>
+**Mobile Money n'a pas de prélèvement automatique.** Un renouvellement ne se débite pas : il se
+**demande**, et le client doit l'approuver sur son téléphone. C'est pour cela que la demande part à
+11 h heure locale, jamais la nuit, et que l'échec d'un renouvellement est un cas nominal à gérer
+— pas une exception.
+</Warning>
+
+## Deux façons de créer un abonnement
+
+<CardGroup cols={2}>
+  <Card title="Par l'API" icon="code" href="/fr/subscriptions/create/api">
+    Vous connaissez le client et son numéro Mobile Money : un appel à `POST /v1/subscriptions`
+    crée l'abonnement et demande le premier paiement.
+  </Card>
+  <Card title="Par la page de paiement hébergée" icon="window" href="/fr/subscriptions/create/hosted">
+    Le client choisit et paie lui-même sur `pay.yabetoo.com`, via une session de checkout en mode
+    `subscription` ou un lien de paiement.
+  </Card>
+</CardGroup>
+
+## Environnements
+
+```bash
+https://buy.sandbox.yabetoopay.com   # Sandbox — clé sk_test_
+https://buy.api.yabetoopay.com       # Production — clé sk_live_
+```
+
+Le **mode** d'un abonnement (test ou live) est celui de la clé qui l'a créé, et il est figé :
+toute sa facturation suit ce mode. Pour simuler le passage du temps en test, utilisez les
+[horloges de test](/fr/subscriptions/testing).
+
+## Ce que le système ne fait pas
+
+Pour ne pas le découvrir en production :
+
+- **Pas de changement de prix** sur un abonnement existant. Seule la **quantité** d'une ligne se
+  modifie (`PUT /v1/subscriptions/{id}/quantity`). Pour changer d'offre : annuler et recréer.
+- **Pas d'annulation automatique** après les relances : un abonnement impayé reste `past_due`
+  jusqu'à ce que vous le régularisiez ou l'annuliez.
+- **Pas de crédit automatique** sur une baisse de quantité en cours de période.
+- **Pas d'e-mail automatique** au client pour un échec de paiement, une annulation ou une fin
+  d'essai : seules les factures sont envoyées par e-mail.

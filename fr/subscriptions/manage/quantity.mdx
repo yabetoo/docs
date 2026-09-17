@@ -1,0 +1,85 @@
+---
+title: "Modifier la quantité"
+description: "Augmenter ou réduire la quantité d'une ligne, et ce qu'il advient du prorata."
+icon: "sliders"
+---
+
+C'est la **seule modification** possible sur un abonnement existant. Il n'y a pas de changement
+de prix, ni d'ajout ou de retrait de ligne : pour cela, annulez et recréez.
+
+```bash
+PUT /v1/subscriptions/{id}/quantity
+```
+
+| Champ | Obligatoire | Description |
+|---|---|---|
+| `itemId` | Oui | La ligne (`si_…`), lue dans `items[]` de l'abonnement. |
+| `quantity` | Oui | 1 à 1 000. |
+| `reason` | Non | Texte libre, conservé dans l'historique. |
+
+```bash
+curl -X PUT https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../quantity \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{ "itemId": "si_...", "quantity": 3, "reason": "two more seats" }'
+```
+
+Autorisé sur un abonnement `active` ou `trialing` seulement.
+
+## Ce qui se passe
+
+La quantité est mise à jour **immédiatement** : le prochain cycle est facturé sur la nouvelle
+quantité. Ce qui se passe pour le cycle **en cours** dépend de l'état :
+
+| État | En cours de période ? | Effet sur le cycle en cours |
+|---|---|---|
+| `trialing` | — | Aucun. Rien n'est facturé pendant l'essai. |
+| `active` | Non (à la borne exacte) | Aucun. |
+| `active`, **hausse** | Oui | Un prorata est calculé au temps restant, et une **facture de prorata** (`billingReason: "proration"`) est créée en `open`. |
+| `active`, **baisse** | Oui | Un prorata négatif est calculé et **rendu** dans la réponse, mais **aucun avoir n'est écrit** — rien ne sera déduit du prochain cycle. |
+
+<Warning>
+**La facture de prorata n'est jamais prélevée automatiquement.** Elle est créée `open`, sans
+numéro, sans envoi d'e-mail et sans lien de paiement, et aucune demande de paiement ne part.
+Elle apparaît dans `GET /v1/subscriptions/{id}/invoices`. Si vous voulez encaisser le prorata,
+c'est à vous de le facturer par un autre moyen ; si vous ne le voulez pas, ignorez-la.
+</Warning>
+
+<Warning>
+**Une baisse en cours de période ne crédite rien.** Le message de réponse annonce un crédit
+« sur la prochaine facture » ; ce crédit n'est pas implémenté. Le client paie le cycle en cours
+sur l'ancienne quantité, et le suivant sur la nouvelle.
+</Warning>
+
+## La réponse
+
+```json 200
+{
+  "subscription": { "id": "sub_...", "status": "active", "items": [{ "id": "si_...", "quantity": 3 }] },
+  "prorationAmount": 3333,
+  "prorationInvoice": { "id": "inv_...", "status": "open", "billingReason": "proration", "total": 3333 },
+  "message": "Quantity updated. Proration charge of 3333 will be applied."
+}
+```
+
+`prorationAmount` et `prorationInvoice` sont absents quand aucun prorata ne s'applique.
+`prorationAmount` est négatif sur une baisse (sans `prorationInvoice`).
+
+## Simuler avant de modifier
+
+`GET /v1/subscriptions/{id}/upcoming-invoice?subscription_item_id=si_...&quantity=3` rend
+l'aperçu du prorata **sans rien écrire**. Voir [Factures](/fr/subscriptions/billing/invoices).
+
+## Aucun événement
+
+Ce changement n'émet **aucun webhook** — ni `subscription.updated`, ni `invoice.*`. Il est
+consigné dans l'historique interne de l'abonnement (`events[]` du détail, type
+`quantity_updated`).
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `422` | `E_VALIDATION_ERROR` | `itemId` manquant, `quantity` hors bornes. |
+| `500` | `E_INTERNAL_SERVER_ERROR` | Statut autre que `active`/`trialing`, ou `itemId` qui n'appartient pas à cet abonnement. Le message est générique. |
+| `404` | `E_SUBSCRIPTION_NOT_FOUND` | Inconnu ou d'un autre compte. |

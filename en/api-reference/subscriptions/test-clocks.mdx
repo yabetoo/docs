@@ -1,0 +1,125 @@
+---
+title: "Test clocks"
+description: "Simulate the passage of time on a subscription, in test mode."
+---
+
+Guide: [Testing](/en/subscriptions/testing).
+
+## Base URL
+
+```bash
+https://buy.sandbox.yabetoopay.com/v1/test-helpers   # Sandbox (sk_test_ key)
+```
+
+These routes only exist in **test mode**: an `sk_live_` key receives
+`403 { "error": "Test clocks are not available in live mode", "code": "TEST_CLOCK_NOT_AVAILABLE" }`.
+
+## The `test_clock` object
+
+<ResponseField name="id" type="string">Identifier, prefixed `clock_`.</ResponseField>
+<ResponseField name="accountId" type="string">Your account.</ResponseField>
+<ResponseField name="name" type="string | null">Free label.</ResponseField>
+<ResponseField name="frozenTime" type="string">The clock's current instant (ISO 8601).</ResponseField>
+<ResponseField name="status" type="string">`ready`, `advancing`, `completed`.</ResponseField>
+<ResponseField name="subscriptions / customers" type="array">On the list: the attached objects.</ResponseField>
+<ResponseField name="createdAt / updatedAt" type="string"></ResponseField>
+
+---
+
+## Create a clock
+
+```bash
+POST /v1/test-helpers/test-clocks
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `frozenTime` | `string` (date) | Yes | The starting instant. |
+| `name` | `string` | No | ≤ 255 characters. |
+
+Returns **201** and the object.
+
+---
+
+## List · Retrieve · Delete
+
+```bash
+GET    /v1/test-helpers/test-clocks
+GET    /v1/test-helpers/test-clocks/{id}
+DELETE /v1/test-helpers/test-clocks/{id}
+```
+
+Deleting **detaches** the attached subscriptions and customers, which go back to real time.
+
+---
+
+## Attach
+
+```bash
+POST /v1/test-helpers/test-clocks/{id}/attach
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `subscriptionId` | `string` | A **test** subscription of your account. |
+| `customerId` | `string` | A customer of your account, **and all their test subscriptions**. |
+
+At least one of the two. Returns **200** `{ testClock, attached: [{ type, id }] }`.
+
+---
+
+## Advance
+
+```bash
+POST /v1/test-helpers/test-clocks/{id}/advance
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `frozenTime` | `string` (date) | Yes | Strictly later than the current instant (`400` otherwise). |
+
+Replays, for every attached subscription, everything real time would have triggered between
+the two instants: trial end, D-3 reminder (invoice issued and sent), due date (`billing.due`,
+which invoices and **requests payment**), scheduled cancellation.
+
+```json 200
+{
+  "testClock": { "id": "clock_...", "frozenTime": "2026-10-18T10:00:00.000Z", "status": "ready" },
+  "triggeredEvents": [{ "event": "subscription/billing.due", "subscriptionId": "sub_..." }],
+  "advancedFrom": "2026-09-17T10:00:00.000Z",
+  "advancedTo": "2026-10-18T10:00:00.000Z"
+}
+```
+
+The triggered processing is asynchronous: its outcome is read on the subscription, its
+invoices and your webhooks.
+
+---
+
+## Simulate in one call
+
+```bash
+POST /v1/test-helpers/test-clocks/simulate
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `subscriptionId` | `string` | Yes | |
+| `advanceTo` | `string` (date) | Yes | Later than `startFrom`. |
+| `startFrom` | `string` (date) | No | Default: the subscription's `currentPeriodStart`. |
+| `name` | `string` | No | |
+
+Creates the clock, attaches the subscription, advances. Same response as `advance`.
+
+---
+
+## Errors
+
+Body `{ "error": "…", "code": "…" }`.
+
+| Status | Code | Cause |
+|---|---|---|
+| `403` | `TEST_CLOCK_NOT_AVAILABLE` | Live key. |
+| `400` | `TEST_CLOCK_COMPLETED` | Completed clock. |
+| `400` | — | `frozenTime` not later; `advanceTo` not later than `startFrom`. |
+| `404` | `TEST_CLOCK_NOT_FOUND`, `SUBSCRIPTION_NOT_FOUND`, `CUSTOMER_NOT_FOUND` | Unknown, or not yours — same response. |
