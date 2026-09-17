@@ -67,9 +67,13 @@ time, never at night, and why a failed renewal is a nominal case to handle — n
 ## Environments
 
 ```bash
-https://buy.sandbox.yabetoopay.com   # Sandbox — sk_test_ key
-https://buy.api.yabetoopay.com       # Production — sk_live_ key
+https://buy.api.yabetoopay.com
 ```
+
+There is **a single host**. The mode is carried by the **key**: an `sk_test_` key works in test
+mode (`isLive: false`, payments go to Yabetoo Pay's test environment), an `sk_live_` key in live
+mode. Data from the two modes is kept apart, but served by the same API and visible in the same
+dashboard (test/live toggle).
 
 A subscription's **mode** (test or live) is that of the key that created it, and it is frozen:
 all of its billing follows that mode. To simulate the passage of time in test mode, use

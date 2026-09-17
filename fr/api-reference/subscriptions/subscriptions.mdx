@@ -8,9 +8,11 @@ Guide d'intégration : [Abonnements](/fr/subscriptions/overview).
 ## URL de base
 
 ```bash
-https://buy.sandbox.yabetoopay.com   # Sandbox (clé sk_test_)
-https://buy.api.yabetoopay.com       # Production (clé sk_live_)
+https://buy.api.yabetoopay.com
 ```
+
+Un seul hôte pour les deux modes : une clé `sk_test_` travaille en mode test, une clé
+`sk_live_` en mode live.
 
 Les chemins ci-dessous sont relatifs à cette base. Le mode de l'abonnement (test ou live) est
 celui de la clé qui le crée, et il est figé.

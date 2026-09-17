@@ -5,8 +5,8 @@ icon: "rocket"
 ---
 
 <Info>
-Use an `sk_test_` key on `https://buy.sandbox.yabetoopay.com`. The subscription's mode is the
-key's: a subscription created in test stays in test for its whole life.
+Use an `sk_test_` key on `https://buy.api.yabetoopay.com` — there is a single host, the key
+carries the mode. A subscription created in test stays in test for its whole life.
 </Info>
 
 <Steps>
@@ -15,7 +15,7 @@ key's: a subscription created in test stays in test for its whole life.
     `billingInterval` and `billingIntervalCount`.
 
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/prices \
+    curl -X POST https://buy.api.yabetoopay.com/v1/prices \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -42,7 +42,7 @@ key's: a subscription created in test stays in test for its whole life.
     one: it is the one requested at every renewal.
 
     ```bash
-    curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions \
+    curl -X POST https://buy.api.yabetoopay.com/v1/subscriptions \
       -H "Authorization: Bearer sk_test_..." \
       -H "Content-Type: application/json" \
       -d '{
