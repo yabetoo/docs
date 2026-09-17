@@ -1,0 +1,84 @@
+---
+title: "Customers and payment methods"
+description: "The customer behind the subscription: their default Mobile Money number, their subscriptions, their balance."
+icon: "user"
+---
+
+A subscription belongs to a **customer** (`cus_`), identified by email on your account. What
+matters for recurring billing is their **default payment method**: it, and it alone, receives
+the payment request at every due date and every retry.
+
+## Creating or finding a customer
+
+You usually do not have to: `POST /v1/subscriptions` and the hosted page find or create the
+customer by email. To manage them explicitly:
+
+| Call | Role |
+|---|---|
+| `POST /v1/customers` `{ email, firstName?, lastName?, metadata? }` | Create. |
+| `GET /v1/customers` · `GET /v1/customers/{id}` · `PUT /v1/customers/{id}` | List, read, update. |
+| `GET /v1/customers/{id}/subscriptions` | Their subscriptions. |
+| `GET /v1/customers/{id}/invoices` | Their invoices. |
+
+## Payment methods
+
+```bash
+GET    /v1/customers/{id}/payment-methods
+POST   /v1/customers/{id}/payment-methods
+DELETE /v1/customers/{id}/payment-methods/{pmId}
+```
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/customers/cus_.../payment-methods \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "momo",
+    "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" },
+    "setAsDefault": true
+  }'
+```
+
+```json 201
+{
+  "id": "pm_...",
+  "customerId": "cus_...",
+  "type": "momo",
+  "data": { "type": "momo", "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" } },
+  "isDefault": true
+}
+```
+
+Rules:
+
+- The same number added twice is **not** duplicated: the existing method is returned, and
+  becomes the default if `setAsDefault` is true.
+- `setAsDefault` defaults to `false` on this route. When a subscription is created, the
+  provided method **always** becomes the default.
+- Deleting the default method leaves the customer **without** a default: the next renewal
+  fails immediately (`past_due`). Add the new one before removing the old one.
+
+<Warning>
+**Changing a customer's number is this route** — not `retry-payment`. A `paymentMethodData`
+passed to `retry-payment` is used for that attempt only and is not saved.
+</Warning>
+
+## Customer balance
+
+A credit balance is applied automatically to the customer's next cycle invoice.
+
+| Call | Role |
+|---|---|
+| `GET /v1/customers/{id}/balance?currency=XAF` | `{ customerId, currency, balance }`. |
+| `POST /v1/customers/{id}/balance/credit` `{ amount, currency, description?, metadata? }` | Credit (a commercial gesture, a compensation). |
+| `POST /v1/customers/{id}/balance/debit` `{ amount, currency, description?, metadata? }` | Debit. |
+| `GET /v1/customers/{id}/balance-transactions` | The history, paginated. |
+
+`currency` is a 3-letter ISO 4217 code; send it in **uppercase** (`XAF`), the canonical form
+— the API normalizes both, but the balance and the invoice must match.
+
+<Note>
+This is how you "credit" a mid-period quantity decrease, since
+[the API does not do it on its own](/en/subscriptions/manage/quantity): compute the proration
+and credit it here. It will be deducted from the next cycle.
+</Note>

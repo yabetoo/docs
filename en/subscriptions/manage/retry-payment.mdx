@@ -1,0 +1,82 @@
+---
+title: "Retry a payment"
+description: "Settle an unpaid or past_due subscription on demand."
+icon: "rotate-right"
+---
+
+Automatic retries have their schedule ([Failed payments](/en/subscriptions/billing/failed-payments)).
+This route is for when you do not want to wait for it: the customer tells you "I topped up my
+account, try again", or gave you a new number.
+
+```bash
+POST /v1/subscriptions/{id}/retry-payment
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `paymentMethodData` | Yes | `{ type, momo: { country, msisdn, operator_name } }`. May differ from the customer's default method — it is **not** saved as the new default. |
+| `firstName`, `lastName` | No | Passed along with the payment request. |
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../retry-payment \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "paymentMethodData": {
+      "type": "momo",
+      "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" }
+    }
+  }'
+```
+
+## What happens
+
+The subscription's **latest unpaid order** is retried on its existing payment intent — no new
+invoice, no new intent. A payment request is pushed to the provided number, and the call waits
+for the customer's answer (~100 s).
+
+If the customer had approved a previous request **after** the initial call's window, the
+payment is recognized as is: no second request goes out.
+
+## The response
+
+```json 200
+{
+  "success": true,
+  "status": "paid",
+  "canRetry": false,
+  "requiresAction": false,
+  "subscription": { "id": "sub_...", "status": "past_due" },
+  "subscriptionActivationPending": true
+}
+```
+
+<Warning>
+**On success, `subscription.status` is still `past_due` (or `unpaid`) in the response.** It is
+not a stale read: activation is **asynchronous**, done by the payment event's handler a few
+tens of milliseconds later. The `subscriptionActivationPending: true` field says so. To act on
+the activation, listen to `subscription.activated` — this is the only path that emits it.
+</Warning>
+
+On failure: `success: false`, `status: "failed"` (or `processing`), `error` carries the reason,
+`canRetry: true`. The subscription's status does not change.
+
+<Note>
+A `failed` on a **cycle** invoice counts as an attempt in the automatic retry schedule and
+reschedules the next one; a `processing` (the customer did not answer) does not count. On the
+**creation** invoice (`subscription_create`), there is no automatic retry: only this route can
+settle it.
+</Note>
+
+## Errors
+
+This route returns its business refusals as **400** with a `{ "error": "…" }` body — a
+different shape from the other routes:
+
+| Status | Body | Cause |
+|---|---|---|
+| `400` | `{ "error": "Subscription is already active" }` | Nothing to retry. |
+| `400` | `{ "error": "Cannot retry payment for canceled subscription" }` | Subscription `canceled`. |
+| `400` | `{ "error": "No unpaid order found for this subscription" }` | No unpaid order — the latest invoice is already `paid`. |
+| `400` | `{ "error": "Payment method data is required" }` | `paymentMethodData` missing. |
+| `404` | `errors[].code = E_SUBSCRIPTION_NOT_FOUND` | Unknown or another account's. |

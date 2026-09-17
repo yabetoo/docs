@@ -1,0 +1,125 @@
+---
+title: "Horloges de test"
+description: "Simuler le passage du temps sur un abonnement, en mode test."
+---
+
+Guide : [Tester](/fr/subscriptions/testing).
+
+## URL de base
+
+```bash
+https://buy.sandbox.yabetoopay.com/v1/test-helpers   # Sandbox (clé sk_test_)
+```
+
+Ces routes n'existent qu'en **mode test** : une clé `sk_live_` reçoit
+`403 { "error": "Test clocks are not available in live mode", "code": "TEST_CLOCK_NOT_AVAILABLE" }`.
+
+## L'objet `test_clock`
+
+<ResponseField name="id" type="string">Identifiant, préfixé `clock_`.</ResponseField>
+<ResponseField name="accountId" type="string">Votre compte.</ResponseField>
+<ResponseField name="name" type="string | null">Libellé libre.</ResponseField>
+<ResponseField name="frozenTime" type="string">L'instant courant de l'horloge (ISO 8601).</ResponseField>
+<ResponseField name="status" type="string">`ready`, `advancing`, `completed`.</ResponseField>
+<ResponseField name="subscriptions / customers" type="array">Sur la liste : les objets rattachés.</ResponseField>
+<ResponseField name="createdAt / updatedAt" type="string"></ResponseField>
+
+---
+
+## Créer une horloge
+
+```bash
+POST /v1/test-helpers/test-clocks
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `frozenTime` | `string` (date) | Oui | L'instant de départ. |
+| `name` | `string` | Non | ≤ 255 caractères. |
+
+Renvoie **201** et l'objet.
+
+---
+
+## Lister · Lire · Supprimer
+
+```bash
+GET    /v1/test-helpers/test-clocks
+GET    /v1/test-helpers/test-clocks/{id}
+DELETE /v1/test-helpers/test-clocks/{id}
+```
+
+La suppression **détache** les abonnements et clients rattachés, qui reviennent à l'heure réelle.
+
+---
+
+## Rattacher
+
+```bash
+POST /v1/test-helpers/test-clocks/{id}/attach
+```
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `subscriptionId` | `string` | Un abonnement de **test** de votre compte. |
+| `customerId` | `string` | Un client de votre compte, **et tous ses abonnements de test**. |
+
+Au moins l'un des deux. Renvoie **200** `{ testClock, attached: [{ type, id }] }`.
+
+---
+
+## Avancer
+
+```bash
+POST /v1/test-helpers/test-clocks/{id}/advance
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `frozenTime` | `string` (date) | Oui | Strictement postérieur à l'instant courant (`400` sinon). |
+
+Rejoue, pour chaque abonnement rattaché, tout ce que le temps réel aurait déclenché entre les
+deux instants : fin d'essai, rappel J-3 (facture émise et envoyée), échéance (`billing.due`,
+qui facture et **demande le paiement**), annulation programmée.
+
+```json 200
+{
+  "testClock": { "id": "clock_...", "frozenTime": "2026-10-18T10:00:00.000Z", "status": "ready" },
+  "triggeredEvents": [{ "event": "subscription/billing.due", "subscriptionId": "sub_..." }],
+  "advancedFrom": "2026-09-17T10:00:00.000Z",
+  "advancedTo": "2026-10-18T10:00:00.000Z"
+}
+```
+
+Les traitements déclenchés sont asynchrones : leur issue se lit sur l'abonnement, ses
+factures et vos webhooks.
+
+---
+
+## Simuler en un appel
+
+```bash
+POST /v1/test-helpers/test-clocks/simulate
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `subscriptionId` | `string` | Oui | |
+| `advanceTo` | `string` (date) | Oui | Postérieur à `startFrom`. |
+| `startFrom` | `string` (date) | Non | Défaut : `currentPeriodStart` de l'abonnement. |
+| `name` | `string` | Non | |
+
+Crée l'horloge, rattache l'abonnement, avance. Même réponse que `advance`.
+
+---
+
+## Erreurs
+
+Corps `{ "error": "…", "code": "…" }`.
+
+| Statut | Code | Cause |
+|---|---|---|
+| `403` | `TEST_CLOCK_NOT_AVAILABLE` | Clé live. |
+| `400` | `TEST_CLOCK_COMPLETED` | Horloge terminée. |
+| `400` | — | `frozenTime` non postérieur ; `advanceTo` non postérieur à `startFrom`. |
+| `404` | `TEST_CLOCK_NOT_FOUND`, `SUBSCRIPTION_NOT_FOUND`, `CUSTOMER_NOT_FOUND` | Inconnu, ou pas à vous — même réponse. |

@@ -1,0 +1,67 @@
+---
+title: "Free trials"
+description: "A subscription that starts without a payment, and what happens when the trial ends."
+icon: "hourglass-half"
+---
+
+A subscription with a trial is born `trialing`, bills nothing, and converts on its own when the
+trial ends.
+
+## Where the trial length comes from
+
+| Door | Source of the trial |
+|---|---|
+| `POST /v1/subscriptions` | The request's **`trialDays`** field (1 to 365). The price's `trialPeriodDays` **is not read** on this door. |
+| Checkout session / payment link | The **`trialPeriodDays` of the first recurring price** in the basket. The session body has no trial field. |
+
+<Warning>
+The two doors do not read the same source. A price with `trialPeriodDays: 14` gives 14 days of
+trial on the hosted page, and **zero** through the API if you omit `trialDays`. Set both if you
+use both doors.
+</Warning>
+
+## During the trial
+
+- `status: "trialing"`, `trialStart` and `trialEnd` set.
+- The current period **is** the trial: `currentPeriodEnd = trialEnd`. A 14-day trial on a
+  monthly plan gives 14 days, not 14 + 30.
+- No invoice, no payment request.
+- You receive `subscription.trial_ending` **at creation** (API door only — the hosted page does
+  not emit it). It is not a D-3 reminder: do not use it as one.
+- `pause` is refused during a trial. `cancel` is possible (see below).
+
+## When the trial ends
+
+<Steps>
+  <Step title="Conversion, within the hour">
+    An hourly cron finds expired trials and moves the subscription to `active`. The paid period
+    is anchored on `trialEnd`: `currentPeriodStart = trialEnd`, `currentPeriodEnd = trialEnd +
+    interval`, `trialConverted = true`. **No `subscription.*` webhook is emitted** at that point.
+  </Step>
+  <Step title="First payment request, at the next 11:00 (Brazzaville)">
+    The invoice for the first paid period is issued and a payment request is pushed to the
+    customer's default Mobile Money number. You receive `invoice.finalized`, then `invoice.paid`
+    and `payment.completed` if the customer approves.
+  </Step>
+</Steps>
+
+<Warning>
+**If that first request fails, the subscription stays `active`** — it does not become
+`past_due`, and that invoice does not enter the automatic retries (it is a
+`subscription_create` invoice, not a `subscription_cycle` one). It stays `open` and payable
+through the emailed link; the cron will retry it on the next due date. Watch for
+`invoice.finalized` **without** `invoice.paid` within the day, and either point the customer to
+the link or retry with [`retry-payment`](/en/subscriptions/manage/retry-payment).
+</Warning>
+
+## Cancelling during a trial
+
+Use **`cancelImmediately: true`**. An "at period end" cancellation during a trial sets
+`cancelAt = trialEnd`, but conversion runs hourly while scheduled cancellations only run at
+**03:00 UTC**: the subscription would be converted and a payment request would go out before
+the cancellation applies.
+
+## Checking the trial state
+
+`GET /v1/subscriptions/{id}` returns `statistics.isInTrial` and `statistics.trialDaysRemaining`,
+in addition to `trialEnd`.

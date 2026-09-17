@@ -1,0 +1,71 @@
+---
+title: "Paiements échoués"
+description: "Ce que fait Yabetoo quand un renouvellement n'est pas payé — et ce qu'il ne fait pas."
+icon: "triangle-exclamation"
+---
+
+Un renouvellement échoue quand le client refuse la demande de paiement, ne répond pas dans le
+délai, n'a pas le solde, ou n'a plus de méthode de paiement par défaut. Voici la séquence.
+
+## Le jour de l'échéance
+
+<Steps>
+  <Step title="L'abonnement passe past_due">
+    Dès le **premier** échec, dans la même transaction que la tentative. Vous recevez
+    `payment.failed` et `subscription.past_due`. La facture reste `open` avec
+    `lastPaymentError` renseigné.
+  </Step>
+  <Step title="Les relances sont programmées">
+    Trois tentatives automatiques, sur la méthode de paiement **par défaut** du client, relue à
+    chaque fois :
+
+    | Tentative | Quand |
+    |---|---|
+    | 1 | J+1 |
+    | 2 | J+3 |
+    | 3 | J+7 |
+
+    Chaque relance est une nouvelle **demande** sur le téléphone du client. `attemptCount` et
+    `nextAttemptAt` sur la facture suivent le calendrier.
+  </Step>
+  <Step title="Un succès régularise">
+    La facture passe `paid`, l'abonnement repasse `active` et vous recevez
+    **`subscription.activated`** — c'est le seul chemin qui émet cet événement, avec
+    [`retry-payment`](/fr/subscriptions/manage/retry-payment).
+  </Step>
+  <Step title="Après la troisième, rien">
+    L'abonnement **reste `past_due`**, indéfiniment. Aucune annulation automatique, aucun
+    passage en `unpaid` ou `uncollectible`. C'est à vous de décider : relancer à la demande,
+    [annuler](/fr/subscriptions/manage/cancel), ou attendre.
+  </Step>
+</Steps>
+
+<Warning>
+**Aucun e-mail n'est envoyé au client sur un échec de paiement**, ni à la première tentative ni
+aux suivantes. Le seul e-mail qu'il a reçu est celui de la facture, trois jours avant
+l'échéance, avec son lien de paiement. Si vous voulez prévenir le client, faites-le depuis vos
+webhooks (`payment.failed`, `subscription.past_due`).
+</Warning>
+
+## Cas particuliers
+
+| Situation | Comportement |
+|---|---|
+| Aucune méthode de paiement par défaut | `past_due` immédiat, **une seule** relance à J+1 (qui échouera de la même façon), puis rien. Ajoutez une méthode au client ([Clients](/fr/subscriptions/customers)) puis `retry-payment`. |
+| Erreur classée **permanente** par l'opérateur | Aucune relance automatique. `past_due` tout de suite, à vous de jouer. |
+| Le client paie la facture par le **lien** pendant les relances | La facture passe `paid`, mais la relance suivante tourne quand même et la trouve payée : elle s'arrête sans rien demander. |
+| Échec de la **première** facture après un essai (`subscription_create`) | Pas de `past_due`, pas de relances : l'abonnement reste `active` avec une facture `open`. Voir [Essais](/fr/subscriptions/create/trials). |
+| Échec du premier paiement à la création par l'API | L'abonnement est `unpaid`, pas `past_due`. Pas de relances automatiques : seul `retry-payment` le règle. |
+
+<Note>
+Un `past_due` prolongé laisse le client avec ses **droits** : rien dans Yabetoo ne les coupe.
+Si votre produit doit restreindre l'accès d'un client impayé, faites-le sur réception de
+`subscription.past_due`, et rendez-le sur `subscription.activated`.
+</Note>
+
+## Lire l'état d'un impayé
+
+- `GET /v1/subscriptions/{id}` : `status: "past_due"`, `currentPeriodEnd` déjà avancé.
+- `GET /v1/subscriptions/{id}/invoices` : la facture `open` du cycle, avec `attemptCount`,
+  `nextAttemptAt`, `lastPaymentError`.
+- `GET /v1/invoices?subscription_id=sub_...&status=open` : la même chose, paginée.

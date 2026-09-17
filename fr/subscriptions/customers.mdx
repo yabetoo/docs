@@ -1,0 +1,87 @@
+---
+title: "Clients et méthodes de paiement"
+description: "Le client derrière l'abonnement : son numéro Mobile Money par défaut, ses abonnements, son solde."
+icon: "user"
+---
+
+Un abonnement appartient à un **client** (`cus_`), identifié par son e-mail sur votre compte.
+Ce qui compte pour la facturation récurrente, c'est sa **méthode de paiement par défaut** :
+c'est elle, et elle seule, qui reçoit la demande de paiement à chaque échéance et à chaque
+relance.
+
+## Créer ou retrouver un client
+
+Vous n'avez généralement pas à le faire : `POST /v1/subscriptions` et la page hébergée trouvent
+ou créent le client par son e-mail. Pour le gérer explicitement :
+
+| Appel | Rôle |
+|---|---|
+| `POST /v1/customers` `{ email, firstName?, lastName?, metadata? }` | Créer. |
+| `GET /v1/customers` · `GET /v1/customers/{id}` · `PUT /v1/customers/{id}` | Lister, lire, modifier. |
+| `GET /v1/customers/{id}/subscriptions` | Ses abonnements. |
+| `GET /v1/customers/{id}/invoices` | Ses factures. |
+
+## Méthodes de paiement
+
+```bash
+GET    /v1/customers/{id}/payment-methods
+POST   /v1/customers/{id}/payment-methods
+DELETE /v1/customers/{id}/payment-methods/{pmId}
+```
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/customers/cus_.../payment-methods \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "momo",
+    "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" },
+    "setAsDefault": true
+  }'
+```
+
+```json 201
+{
+  "id": "pm_...",
+  "customerId": "cus_...",
+  "type": "momo",
+  "data": { "type": "momo", "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" } },
+  "isDefault": true
+}
+```
+
+Règles :
+
+- Le même numéro ajouté deux fois n'est **pas** dupliqué : la méthode existante est rendue, et
+  passe par défaut si `setAsDefault` est vrai.
+- `setAsDefault` vaut `false` par défaut sur cette route. À la création d'un abonnement, la
+  méthode fournie devient **toujours** la méthode par défaut.
+- Supprimer la méthode par défaut laisse le client **sans** méthode par défaut : le prochain
+  renouvellement échouera immédiatement (`past_due`). Ajoutez la nouvelle avant de retirer
+  l'ancienne.
+
+<Warning>
+**Changer le numéro d'un client, c'est cette route** — pas `retry-payment`. Un
+`paymentMethodData` passé à `retry-payment` sert à cette tentative seulement et n'est pas
+mémorisé.
+</Warning>
+
+## Solde client
+
+Un solde créditeur (avoir) s'impute automatiquement sur la prochaine facture de cycle du client.
+
+| Appel | Rôle |
+|---|---|
+| `GET /v1/customers/{id}/balance?currency=XAF` | `{ customerId, currency, balance }`. |
+| `POST /v1/customers/{id}/balance/credit` `{ amount, currency, description?, metadata? }` | Créditer (un geste commercial, une compensation). |
+| `POST /v1/customers/{id}/balance/debit` `{ amount, currency, description?, metadata? }` | Débiter. |
+| `GET /v1/customers/{id}/balance-transactions` | L'historique, paginé. |
+
+`currency` est un code ISO 4217 à 3 lettres ; envoyez-le en **majuscules** (`XAF`), c'est la
+forme canonique — l'API normalise les deux, mais le solde et la facture doivent se rejoindre.
+
+<Note>
+C'est ainsi que vous « créditez » une baisse de quantité en cours de période, puisque
+[l'API ne le fait pas seule](/fr/subscriptions/manage/quantity) : calculez le prorata et
+créditez-le ici. Il sera déduit du prochain cycle.
+</Note>

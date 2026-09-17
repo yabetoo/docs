@@ -1,0 +1,126 @@
+---
+title: "Invoices"
+description: "A subscription's invoice object, its statuses, and how to read, preview and close it."
+icon: "file-invoice"
+---
+
+Every subscription cycle produces an **invoice** (`inv_`). It carries the amount requested from
+the customer, the payment attempt history, and the payment link sent by email.
+
+## The `invoice` object
+
+The fields that matter for a subscription (camelCase):
+
+<ResponseField name="id" type="string">Identifier, prefixed `inv_`.</ResponseField>
+<ResponseField name="invoiceNumber" type="string | null">Sequential number, set at finalization. `null` on a proration invoice.</ResponseField>
+<ResponseField name="status" type="string">`draft`, `open`, `paid`, `void`, `uncollectible`. See below.</ResponseField>
+<ResponseField name="billingReason" type="string">
+  Why the invoice exists:
+  `subscription_create` (first period, API creation without a trial — and first paid period after a trial),
+  `subscription_cycle` (renewal), `proration` (mid-period quantity increase),
+  `subscription_update`, `manual` (outside a subscription).
+</ResponseField>
+<ResponseField name="subscriptionId" type="string | null">The subscription, `sub_…`.</ResponseField>
+<ResponseField name="customerId" type="string | null">The customer, `cus_…`.</ResponseField>
+<ResponseField name="currency" type="string">Currency, lowercase.</ResponseField>
+<ResponseField name="subtotal / discountTotal / taxAmount / total" type="number">The line totals.</ResponseField>
+<ResponseField name="appliedBalance" type="number">Customer credit applied to this invoice.</ResponseField>
+<ResponseField name="amountDue" type="number">`total − appliedBalance`: what is actually requested from the customer.</ResponseField>
+<ResponseField name="amountPaid / amountRemaining" type="number">Collected and remaining.</ResponseField>
+<ResponseField name="billingPeriodStart / billingPeriodEnd" type="string | null">The period covered.</ResponseField>
+<ResponseField name="attemptCount / retryCount / nextAttemptAt / lastAttemptAt / lastPaymentError" type="…">
+  Payment attempt history and the reason for the last failure.
+</ResponseField>
+<ResponseField name="finalizedAt / paidAt / voidedAt / markedUncollectibleAt" type="string | null">The date of each step.</ResponseField>
+<ResponseField name="hostedPaymentUrl" type="string | null">The payment link sent to the customer (hosted page).</ResponseField>
+<ResponseField name="pdfUrl" type="string | null">The PDF, once generated.</ResponseField>
+<ResponseField name="lineItems[]" type="array">The lines: `description`, `quantity`, `unitAmount`, `amount`, `taxAmount`, `priceId`, `periodStart`, `periodEnd`.</ResponseField>
+
+## The statuses
+
+```
+draft ──► open ──► paid
+             │
+             ├──► void            (cancelled: cycle removed by a cancellation, or POST /void)
+             └──► uncollectible   (given up: POST /mark-uncollectible)
+```
+
+| Status | Meaning for a subscription |
+|---|---|
+| `draft` | Only exists on the `upcoming-invoice` preview. Cycle invoices are born finalized. |
+| `open` | Finalized, numbered, sent. Payable through the link. On day D the payment request is for it. |
+| `paid` | Settled. The only proof that the customer paid a cycle. |
+| `void` | Cancelled. Set automatically on the anticipated invoice of a cycle that will not happen (cancellation). |
+| `uncollectible` | You gave up collecting it. Changes nothing on the subscription's status. |
+
+## Listing a subscription's invoices
+
+```bash
+GET /v1/subscriptions/{id}/invoices
+```
+
+All invoices, newest first, **without pagination**, each with its order and lines. Proration
+invoices are included.
+
+```bash
+GET /v1/invoices?subscription_id=sub_...&status=open&page=1&limit=25
+```
+
+The general list, paginated, filterable by `status`, `customer_id`, `subscription_id`, `from`,
+`to`.
+
+## Read, download, close
+
+| Call | Effect |
+|---|---|
+| `GET /v1/invoices/{id}` | The invoice with its lines. |
+| `GET /v1/invoices/{id}/pdf` | `{ "url": "…" }`, a signed URL to the PDF. `404` if the PDF has not been generated yet. |
+| `POST /v1/invoices/{id}/void` `{ reason? }` | Voids an `open` invoice. Useful to waive a cycle without cancelling the subscription. |
+| `POST /v1/invoices/{id}/mark-uncollectible` | Marks an `open` invoice as uncollectible. |
+
+<Warning>
+Voiding a cycle's invoice **does not stop** already-scheduled retries, and does not change the
+subscription's `past_due` status: they are two objects. To stop billing, act on the
+subscription ([cancel](/en/subscriptions/manage/cancel) or [pause](/en/subscriptions/manage/pause)).
+</Warning>
+
+## Previewing the next invoice
+
+```bash
+GET /v1/subscriptions/{id}/upcoming-invoice
+```
+
+Returns what the next cycle will bill, computed by the **same calculator** as the real invoice,
+without writing anything.
+
+```json 200
+{
+  "object": "invoice",
+  "status": "draft",
+  "billingReason": "subscription_cycle",
+  "subscriptionId": "sub_...",
+  "currency": "xaf",
+  "subtotal": 15000,
+  "discountTotal": 1500,
+  "taxAmount": 0,
+  "total": 13500,
+  "amountDue": 13500,
+  "periodStart": "2026-10-17T10:00:00.000Z",
+  "periodEnd": "2026-11-17T10:00:00.000Z",
+  "lineItems": [
+    { "description": "Pro plan", "quantity": 3, "unitAmount": 5000, "amount": 15000, "discountAmount": 1500, "taxAmount": 0, "priceId": "price_...", "proration": false }
+  ]
+}
+```
+
+With `?subscription_item_id=si_...&quantity=5`, the preview **simulates a quantity change**:
+`billingReason` becomes `proration`, a proration line for the rest of the current period is
+added, and the discount is not spread (`discountTotal: 0`). The real amount is computed at the
+time of the change — see [Change the quantity](/en/subscriptions/manage/quantity).
+
+## Customer balance
+
+A credit granted to the customer (`POST /v1/customers/{id}/balance/credit`) is **applied
+automatically** to the next cycle invoice: `appliedBalance` goes up, `amountDue` goes down, and
+if the credit covers everything, no payment request goes out. See
+[Customers](/en/subscriptions/customers).

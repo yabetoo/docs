@@ -1,0 +1,51 @@
+---
+title: "Suspendre et reprendre"
+description: "Geler la facturation d'un abonnement actif, puis la relancer."
+icon: "pause"
+---
+
+## Suspendre
+
+```bash
+POST /v1/subscriptions/{id}/pause
+```
+
+Depuis `active` **seulement**. L'abonnement passe `paused`, `pausedAt` est posé.
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../pause \
+  -H "Authorization: Bearer sk_test_..."
+```
+
+- Aucune facture, aucune demande de paiement tant que l'abonnement est en pause : le cron de
+  renouvellement ne regarde que les abonnements `active`.
+- Le corps de la requête est **ignoré**. Il n'existe pas de reprise programmée (`pauseUntil`
+  n'a aucun effet) : la reprise est un appel explicite.
+- Une annulation programmée (`cancelAt`) s'exécute **même en pause**.
+
+Événement : `subscription.paused` (`data.previousStatus`, `data.pausedAt`).
+
+## Reprendre
+
+```bash
+POST /v1/subscriptions/{id}/resume
+```
+
+Depuis `paused` seulement. L'abonnement repasse `active`, `pausedAt` est remis à `null`.
+
+<Warning>
+**La période n'est pas décalée par la pause.** `currentPeriodEnd` reste celui d'avant. Si cette
+date est passée pendant la pause, le prochain cron quotidien facture, dès la reprise, le cycle
+qui **commence à cette date** — le temps passé en pause n'est ni décalé ni crédité. Une pause
+ne suspend que les demandes de paiement ; elle ne « gèle » pas le calendrier de l'abonnement.
+</Warning>
+
+Événement : `subscription.resumed` (`data.previousStatus`, `data.resumedAt`).
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `422` | `E_INVALID_SUBSCRIPTION_TRANSITION` | `pause` hors `active` (y compris pendant un essai), `resume` hors `paused`. Le corps porte `fromState` et `toState`. |
+| `404` | `E_SUBSCRIPTION_NOT_FOUND` | Inconnu ou d'un autre compte. |
+| `409` | `E_SUBSCRIPTION_CONCURRENCY` | Modification concurrente : relisez et réessayez. |

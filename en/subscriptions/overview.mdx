@@ -1,0 +1,88 @@
+---
+title: "Overview"
+description: "Bill your customers on a recurring basis, over Mobile Money."
+icon: "arrows-rotate"
+---
+
+A **subscription** bills a customer at a regular interval — weekly, monthly, yearly — for one
+or more products. Yabetoo generates the invoice for each cycle, asks the customer for payment on
+their Mobile Money number, retries on failure, and notifies you by webhook at every step.
+
+## The model
+
+```
+Product ──► Price (recurring) ──► Subscription ──► Invoice (one per cycle)
+                                       │
+                                       └─► Customer + default payment method
+```
+
+| Object | Prefix | Role |
+|---|---|---|
+| **Product** | `prod_` | What you sell. See [Products](/en/products/products). |
+| **Price** | `price_` | How much and how often: `type: "recurring"`, `billingInterval` (`day`, `week`, `month`, `year`) × `billingIntervalCount`, `trialPeriodDays`. See [Prices](/en/products/prices). |
+| **Customer** | `cus_` | The person billed, identified by email, with a **default payment method** (a Mobile Money number). |
+| **Subscription** | `sub_` | The link between a customer and one or more recurring prices, with its current period and status. |
+| **Subscription item** | `si_` | One price × one quantity. |
+| **Invoice** | `inv_` | The amount due for a cycle, with its lines, status and payment attempt history. |
+
+## What happens every cycle
+
+<Steps>
+  <Step title="Three days before the due date">
+    Yabetoo issues the invoice for the upcoming cycle and emails it to the customer with a
+    payment link. The customer can settle it early.
+  </Step>
+  <Step title="On the due date, at 11:00 (Brazzaville)">
+    If the invoice is still unpaid, a **payment request** is pushed to the customer's default
+    Mobile Money number. They approve it on their phone.
+  </Step>
+  <Step title="Success">
+    The invoice becomes `paid`, you receive `invoice.paid`, the period advances.
+  </Step>
+  <Step title="Failure">
+    The subscription becomes `past_due`, and three automatic retries go out at D+1, D+3 and D+7.
+    See [Failed payments](/en/subscriptions/billing/failed-payments).
+  </Step>
+</Steps>
+
+<Warning>
+**Mobile Money has no automatic debit.** A renewal is not charged: it is **requested**, and the
+customer has to approve it on their phone. That is why the request goes out at 11:00 local
+time, never at night, and why a failed renewal is a nominal case to handle — not an exception.
+</Warning>
+
+## Two ways to create a subscription
+
+<CardGroup cols={2}>
+  <Card title="Through the API" icon="code" href="/en/subscriptions/create/api">
+    You know the customer and their Mobile Money number: one call to `POST /v1/subscriptions`
+    creates the subscription and requests the first payment.
+  </Card>
+  <Card title="Through the hosted payment page" icon="window" href="/en/subscriptions/create/hosted">
+    The customer picks and pays on `pay.yabetoo.com`, through a checkout session in
+    `subscription` mode or a payment link.
+  </Card>
+</CardGroup>
+
+## Environments
+
+```bash
+https://buy.sandbox.yabetoopay.com   # Sandbox — sk_test_ key
+https://buy.api.yabetoopay.com       # Production — sk_live_ key
+```
+
+A subscription's **mode** (test or live) is that of the key that created it, and it is frozen:
+all of its billing follows that mode. To simulate the passage of time in test mode, use
+[test clocks](/en/subscriptions/testing).
+
+## What the system does not do
+
+So you do not find out in production:
+
+- **No price change** on an existing subscription. Only the **quantity** of a line can change
+  (`PUT /v1/subscriptions/{id}/quantity`). To change plan: cancel and recreate.
+- **No automatic cancellation** after the retries: an unpaid subscription stays `past_due`
+  until you settle it or cancel it.
+- **No automatic credit** on a mid-period quantity decrease.
+- **No automatic email** to the customer on a failed payment, a cancellation or a trial ending:
+  only invoices are emailed.

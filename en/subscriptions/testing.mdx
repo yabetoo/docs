@@ -1,0 +1,113 @@
+---
+title: "Testing"
+description: "Test clocks to simulate time, and what to know about the Mobile Money sandbox."
+icon: "flask"
+---
+
+A subscription lives over weeks. To check a renewal, a trial ending or a scheduled cancellation
+without waiting, attach it to a **test clock** and advance it.
+
+<Info>
+Clocks only exist in **test mode**: with an `sk_live_` key these routes return
+`403 TEST_CLOCK_NOT_AVAILABLE`. A live subscription cannot be attached.
+</Info>
+
+## The principle
+
+A clock (`clock_`) carries a frozen instant, `frozenTime`. Subscriptions attached to it read
+that instant instead of the real time to date their invoices and payments. **Advancing** the
+clock to a date replays everything real time would have triggered between the two instants:
+trial end, D-3 reminder, billing due date, scheduled cancellation.
+
+<Warning>
+An advance **triggers the processing immediately** — not at the next 11:00. The crossed due
+date produces a `subscription/billing.due` that invoices and **requests payment** on the
+customer's default method, exactly like the cron: on the MTN sandbox, that request is real and
+waits for an answer from the test number.
+</Warning>
+
+## The journey
+
+<Steps>
+  <Step title="Create the clock">
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{ "frozenTime": "2026-09-17T10:00:00Z", "name": "monthly renewal" }'
+    ```
+    ```json 201
+    { "id": "clock_...", "frozenTime": "2026-09-17T10:00:00.000Z", "status": "ready", "name": "monthly renewal" }
+    ```
+  </Step>
+  <Step title="Create the subscription, then attach it">
+    The subscription is created normally (API or hosted page), then attached — there is no
+    clock field at creation.
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../attach \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{ "subscriptionId": "sub_..." }'
+    ```
+    With `customerId` instead, the customer **and all their test subscriptions** are attached.
+  </Step>
+  <Step title="Advance">
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../advance \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{ "frozenTime": "2026-10-18T10:00:00Z" }'
+    ```
+    ```json 200
+    {
+      "testClock": { "id": "clock_...", "frozenTime": "2026-10-18T10:00:00.000Z", "status": "ready" },
+      "triggeredEvents": [
+        { "event": "subscription/billing.due", "subscriptionId": "sub_..." }
+      ],
+      "advancedFrom": "2026-09-17T10:00:00.000Z",
+      "advancedTo": "2026-10-18T10:00:00.000Z"
+    }
+    ```
+    `frozenTime` must be **later** than the clock's current instant (`400` otherwise). The
+    triggered processing is asynchronous: read the subscription and its invoices a few seconds
+    later, or wait for your webhooks.
+  </Step>
+</Steps>
+
+`triggeredEvents` names what the advance woke up — `subscription/trial.ended`,
+`subscription/billing.due`, a scheduled cancellation — without guaranteeing the outcome: a
+`billing.due` may end in `past_due` if the test number declines.
+
+## In one call: `simulate`
+
+```bash
+POST /v1/test-helpers/test-clocks/simulate
+{ "subscriptionId": "sub_...", "advanceTo": "2026-10-18T10:00:00Z", "startFrom": "...", "name": "..." }
+```
+
+Creates a clock at `startFrom` (defaults to the subscription's `currentPeriodStart`), attaches
+the subscription and advances to `advanceTo`. `advanceTo` must be later than `startFrom`.
+
+## Other routes
+
+| Call | Role |
+|---|---|
+| `GET /v1/test-helpers/test-clocks` | Your clocks, with their attached subscriptions and customers. |
+| `GET /v1/test-helpers/test-clocks/{id}` | One clock. |
+| `DELETE /v1/test-helpers/test-clocks/{id}` | Delete. Attached subscriptions go back to real time. |
+
+Errors on these routes have the shape `{ "error": "…", "code": "…" }`: `TEST_CLOCK_NOT_AVAILABLE`
+(403, live mode), `TEST_CLOCK_COMPLETED` (400), `SUBSCRIPTION_NOT_FOUND` / `CUSTOMER_NOT_FOUND`
+(404 — unknown, or not yours).
+
+## Mobile Money sandbox
+
+Sandbox payment requests follow Yabetoo's general testing rules: see
+[Test your integration](/en/developer-tools/test/overview). Two points specific to
+subscriptions:
+
+- The first payment of a subscription created through the API **waits** for the test number's
+  answer within the call itself. A number that does not answer yields
+  `paymentStatus.status: "processing"` and an `unpaid` subscription.
+- A renewal triggered by a clock makes the same request, outside your call: its outcome is read
+  on the subscription (`active` or `past_due`) and in your webhooks.

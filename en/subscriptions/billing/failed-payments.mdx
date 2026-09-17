@@ -1,0 +1,71 @@
+---
+title: "Failed payments"
+description: "What Yabetoo does when a renewal is not paid — and what it does not do."
+icon: "triangle-exclamation"
+---
+
+A renewal fails when the customer declines the payment request, does not answer within the
+window, lacks the balance, or no longer has a default payment method. Here is the sequence.
+
+## On the due date
+
+<Steps>
+  <Step title="The subscription becomes past_due">
+    On the **first** failure, in the same transaction as the attempt. You receive
+    `payment.failed` and `subscription.past_due`. The invoice stays `open` with
+    `lastPaymentError` set.
+  </Step>
+  <Step title="Retries are scheduled">
+    Three automatic attempts, on the customer's **default** payment method, read again each
+    time:
+
+    | Attempt | When |
+    |---|---|
+    | 1 | D+1 |
+    | 2 | D+3 |
+    | 3 | D+7 |
+
+    Each retry is a new **request** on the customer's phone. `attemptCount` and `nextAttemptAt`
+    on the invoice follow the schedule.
+  </Step>
+  <Step title="A success settles it">
+    The invoice becomes `paid`, the subscription goes back to `active` and you receive
+    **`subscription.activated`** — the only path that emits this event, along with
+    [`retry-payment`](/en/subscriptions/manage/retry-payment).
+  </Step>
+  <Step title="After the third, nothing">
+    The subscription **stays `past_due`**, indefinitely. No automatic cancellation, no move to
+    `unpaid` or `uncollectible`. It is up to you: retry on demand,
+    [cancel](/en/subscriptions/manage/cancel), or wait.
+  </Step>
+</Steps>
+
+<Warning>
+**No email is sent to the customer on a failed payment**, neither on the first attempt nor the
+following ones. The only email they received is the invoice, three days before the due date,
+with its payment link. If you want to warn the customer, do it from your webhooks
+(`payment.failed`, `subscription.past_due`).
+</Warning>
+
+## Special cases
+
+| Situation | Behavior |
+|---|---|
+| No default payment method | Immediate `past_due`, **a single** retry at D+1 (which fails the same way), then nothing. Add a method to the customer ([Customers](/en/subscriptions/customers)) then `retry-payment`. |
+| Error classified as **permanent** by the operator | No automatic retry. `past_due` right away, your move. |
+| The customer pays the invoice through the **link** during the retries | The invoice becomes `paid`, but the next retry still runs and finds it paid: it stops without requesting anything. |
+| Failure of the **first** invoice after a trial (`subscription_create`) | No `past_due`, no retries: the subscription stays `active` with an `open` invoice. See [Trials](/en/subscriptions/create/trials). |
+| Failure of the first payment at API creation | The subscription is `unpaid`, not `past_due`. No automatic retries: only `retry-payment` settles it. |
+
+<Note>
+A prolonged `past_due` leaves the customer with their **rights**: nothing in Yabetoo cuts them
+off. If your product must restrict an unpaid customer's access, do it on `subscription.past_due`,
+and restore it on `subscription.activated`.
+</Note>
+
+## Reading the state of an unpaid subscription
+
+- `GET /v1/subscriptions/{id}`: `status: "past_due"`, `currentPeriodEnd` already advanced.
+- `GET /v1/subscriptions/{id}/invoices`: the cycle's `open` invoice, with `attemptCount`,
+  `nextAttemptAt`, `lastPaymentError`.
+- `GET /v1/invoices?subscription_id=sub_...&status=open`: the same, paginated.

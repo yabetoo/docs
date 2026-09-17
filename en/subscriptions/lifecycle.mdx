@@ -1,0 +1,84 @@
+---
+title: "Lifecycle"
+description: "The six statuses of a subscription, and what moves it from one to another."
+icon: "diagram-project"
+---
+
+A subscription has **six statuses**. Every transition goes through a state machine: a
+transition not listed here is refused with `422 E_INVALID_SUBSCRIPTION_TRANSITION`.
+
+## The statuses
+
+| Status | Meaning | Billed? |
+|---|---|---|
+| `trialing` | In its trial period. No invoice while the trial runs. | No |
+| `active` | In good standing. Every due date produces an invoice and a payment request. | Yes |
+| `unpaid` | The **first** payment did not go through. This is the **initial** state of a subscription without a trial whose payment request was declined or unanswered. | Awaiting first settlement |
+| `past_due` | A **renewal** failed. Automatic retries are in progress or exhausted. | Retries |
+| `paused` | Suspended by you. No invoice. | No |
+| `canceled` | Over. **Final.** | No |
+
+<Warning>
+`unpaid` is not a terminal failure state: it is the starting point of every subscription
+without a trial, until its first payment is confirmed. An `unpaid` subscription is settled
+through [`retry-payment`](/en/subscriptions/manage/retry-payment).
+</Warning>
+
+## The transitions
+
+```
+trialing ──► active      (trial ends, or first payment during the trial)
+trialing ──► unpaid      (payment declined during the trial)
+trialing ──► past_due
+trialing ──► canceled
+
+active   ──► past_due    (a renewal fails)
+active   ──► paused      (POST /pause)
+active   ──► unpaid
+active   ──► canceled    (POST /cancel, or a scheduled cancellation comes due)
+
+past_due ──► active      (settled: a successful retry or retry-payment)
+past_due ──► unpaid
+past_due ──► canceled
+
+unpaid   ──► active      (successful retry-payment)
+unpaid   ──► canceled
+
+paused   ──► active      (POST /resume)
+paused   ──► canceled
+
+canceled ──► (none)
+```
+
+What **does not exist**: `paused` from `trialing` (end the trial or cancel), and any return from
+`canceled`. To win back a customer whose subscription is canceled, create a new one.
+
+## The fields that date a subscription's life
+
+| Field | Set when |
+|---|---|
+| `currentPeriodStart` / `currentPeriodEnd` | The current period. During a trial, the period **is** the trial (`currentPeriodEnd = trialEnd`). Advanced at each renewal. |
+| `nextBillingDate` | The next due date. Equal to `currentPeriodEnd` once the subscription is active. |
+| `trialStart` / `trialEnd` / `trialConverted` | The trial and its conversion. |
+| `cancelAt` | A cancellation **scheduled** at period end. The status stays unchanged until that date. |
+| `canceledAt` / `cancelReason` | The effective cancellation. |
+| `pausedAt` | The current pause (`null` otherwise). |
+
+<Note>
+`currentPeriodEnd` is the boundary of what has been **invoiced**, not of what has been
+**paid**. A `past_due` subscription has an already-advanced current period and an open invoice
+on it. To know how far the customer has actually paid, read their `paid` invoices
+([Invoices](/en/subscriptions/billing/invoices)).
+</Note>
+
+## What triggers what
+
+| Transition | Trigger | When |
+|---|---|---|
+| Trial end → `active` | **Hourly** cron | Within the hour following `trialEnd`. The first payment request goes out at the **next 11:00** (Brazzaville). |
+| Renewal | **Daily** cron, 11:00 Brazzaville | On every `active` subscription whose `currentPeriodEnd` has passed. |
+| Scheduled cancellation → `canceled` | **Daily** cron, 03:00 UTC | On every subscription whose `cancelAt` has passed, whatever its status. |
+| Retries of an unpaid renewal | Delayed events | D+1, D+3, D+7 after the failure. |
+
+Details of each step: [Billing cycle](/en/subscriptions/billing/cycle),
+[Trials](/en/subscriptions/create/trials), [Cancel](/en/subscriptions/manage/cancel).

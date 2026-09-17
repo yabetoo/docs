@@ -1,0 +1,51 @@
+---
+title: "Pause and resume"
+description: "Freeze billing on an active subscription, then start it again."
+icon: "pause"
+---
+
+## Pause
+
+```bash
+POST /v1/subscriptions/{id}/pause
+```
+
+From `active` **only**. The subscription becomes `paused`, `pausedAt` is set.
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../pause \
+  -H "Authorization: Bearer sk_test_..."
+```
+
+- No invoice, no payment request while the subscription is paused: the renewal cron only
+  looks at `active` subscriptions.
+- The request body is **ignored**. There is no scheduled resume (`pauseUntil` has no effect):
+  resuming is an explicit call.
+- A scheduled cancellation (`cancelAt`) executes **even while paused**.
+
+Event: `subscription.paused` (`data.previousStatus`, `data.pausedAt`).
+
+## Resume
+
+```bash
+POST /v1/subscriptions/{id}/resume
+```
+
+From `paused` only. The subscription goes back to `active`, `pausedAt` is reset to `null`.
+
+<Warning>
+**The period is not shifted by the pause.** `currentPeriodEnd` stays what it was. If that date
+passed during the pause, the next daily cron bills, as soon as you resume, the cycle that
+**starts at that date** — time spent paused is neither shifted nor credited. A pause only
+suspends payment requests; it does not "freeze" the subscription's calendar.
+</Warning>
+
+Event: `subscription.resumed` (`data.previousStatus`, `data.resumedAt`).
+
+## Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `422` | `E_INVALID_SUBSCRIPTION_TRANSITION` | `pause` outside `active` (including during a trial), `resume` outside `paused`. The body carries `fromState` and `toState`. |
+| `404` | `E_SUBSCRIPTION_NOT_FOUND` | Unknown or another account's. |
+| `409` | `E_SUBSCRIPTION_CONCURRENCY` | Concurrent modification: read again and retry. |

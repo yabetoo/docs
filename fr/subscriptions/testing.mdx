@@ -1,0 +1,114 @@
+---
+title: "Tester"
+description: "Horloges de test pour simuler le temps, et ce qu'il faut savoir du sandbox Mobile Money."
+icon: "flask"
+---
+
+Un abonnement vit sur des semaines. Pour vérifier un renouvellement, une fin d'essai ou une
+annulation programmée sans attendre, attachez-le à une **horloge de test** et avancez-la.
+
+<Info>
+Les horloges n'existent qu'en **mode test** : avec une clé `sk_live_`, ces routes rendent
+`403 TEST_CLOCK_NOT_AVAILABLE`. Un abonnement live ne peut pas être rattaché.
+</Info>
+
+## Le principe
+
+Une horloge (`clock_`) porte un instant figé, `frozenTime`. Les abonnements qui lui sont
+rattachés lisent cet instant à la place de l'heure réelle pour dater leurs factures et leurs
+paiements. **Avancer** l'horloge à une date rejoue tout ce que le temps réel aurait déclenché
+entre les deux instants : fin d'essai, rappel J-3, échéance de facturation, annulation
+programmée.
+
+<Warning>
+Une avance **déclenche immédiatement** les traitements — pas au prochain 11 h. L'échéance
+franchie produit un `subscription/billing.due` qui facture et **demande le paiement** sur la
+méthode par défaut du client, exactement comme le cron : sur le sandbox MTN, cette demande est
+réelle et attend une réponse du numéro de test.
+</Warning>
+
+## Le parcours
+
+<Steps>
+  <Step title="Créez l'horloge">
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{ "frozenTime": "2026-09-17T10:00:00Z", "name": "renouvellement mensuel" }'
+    ```
+    ```json 201
+    { "id": "clock_...", "frozenTime": "2026-09-17T10:00:00.000Z", "status": "ready", "name": "renouvellement mensuel" }
+    ```
+  </Step>
+  <Step title="Créez l'abonnement, puis rattachez-le">
+    L'abonnement se crée normalement (API ou page hébergée), puis se rattache — il n'y a pas de
+    champ d'horloge à la création.
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../attach \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{ "subscriptionId": "sub_..." }'
+    ```
+    Avec `customerId` à la place, le client **et tous ses abonnements de test** sont rattachés.
+  </Step>
+  <Step title="Avancez">
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/test-helpers/test-clocks/clock_.../advance \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{ "frozenTime": "2026-10-18T10:00:00Z" }'
+    ```
+    ```json 200
+    {
+      "testClock": { "id": "clock_...", "frozenTime": "2026-10-18T10:00:00.000Z", "status": "ready" },
+      "triggeredEvents": [
+        { "event": "subscription/billing.due", "subscriptionId": "sub_..." }
+      ],
+      "advancedFrom": "2026-09-17T10:00:00.000Z",
+      "advancedTo": "2026-10-18T10:00:00.000Z"
+    }
+    ```
+    `frozenTime` doit être **postérieur** à l'instant courant de l'horloge (`400` sinon). Les
+    traitements déclenchés sont asynchrones : lisez l'abonnement et ses factures quelques
+    secondes après, ou attendez vos webhooks.
+  </Step>
+</Steps>
+
+`triggeredEvents` nomme ce que l'avance a réveillé — `subscription/trial.ended`,
+`subscription/billing.due`, une annulation programmée — sans en garantir l'issue : un
+`billing.due` peut aboutir à un `past_due` si le numéro de test refuse.
+
+## En un appel : `simulate`
+
+```bash
+POST /v1/test-helpers/test-clocks/simulate
+{ "subscriptionId": "sub_...", "advanceTo": "2026-10-18T10:00:00Z", "startFrom": "...", "name": "..." }
+```
+
+Crée une horloge à `startFrom` (par défaut le `currentPeriodStart` de l'abonnement), rattache
+l'abonnement et avance jusqu'à `advanceTo`. `advanceTo` doit être postérieur à `startFrom`.
+
+## Autres routes
+
+| Appel | Rôle |
+|---|---|
+| `GET /v1/test-helpers/test-clocks` | Vos horloges, avec leurs abonnements et clients rattachés. |
+| `GET /v1/test-helpers/test-clocks/{id}` | Une horloge. |
+| `DELETE /v1/test-helpers/test-clocks/{id}` | Supprimer. Les abonnements rattachés reviennent à l'heure réelle. |
+
+Les erreurs de ces routes ont la forme `{ "error": "…", "code": "…" }` : `TEST_CLOCK_NOT_AVAILABLE`
+(403, mode live), `TEST_CLOCK_COMPLETED` (400), `SUBSCRIPTION_NOT_FOUND` / `CUSTOMER_NOT_FOUND`
+(404 — inconnu, ou pas à vous).
+
+## Sandbox Mobile Money
+
+Les demandes de paiement du sandbox suivent les règles générales de test de Yabetoo : voir
+[Tester votre intégration](/fr/developer-tools/test/overview). Deux points propres aux
+abonnements :
+
+- Le premier paiement d'un abonnement créé par l'API **attend** la réponse du numéro de test
+  dans l'appel lui-même. Un numéro qui ne répond pas rend `paymentStatus.status: "processing"`
+  et un abonnement `unpaid`.
+- Un renouvellement déclenché par une horloge fait la même demande, hors de votre appel : son
+  issue se lit sur l'abonnement (`active` ou `past_due`) et dans vos webhooks.

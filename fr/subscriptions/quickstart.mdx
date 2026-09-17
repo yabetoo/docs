@@ -1,0 +1,114 @@
+---
+title: "Démarrage rapide"
+description: "Un prix récurrent, un abonnement, un premier paiement — en trois appels."
+icon: "rocket"
+---
+
+<Info>
+Utilisez une clé `sk_test_` sur `https://buy.sandbox.yabetoopay.com`. Le mode de l'abonnement
+est celui de la clé : un abonnement créé en test reste en test pour toute sa vie.
+</Info>
+
+<Steps>
+  <Step title="Créez un produit et son prix récurrent">
+    Un abonnement se construit sur un prix de `type: "recurring"`. La cadence est portée par
+    `billingInterval` et `billingIntervalCount`.
+
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/prices \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "productId": "prod_...",
+        "amount": 5000,
+        "currency": "xaf",
+        "type": "recurring",
+        "billingInterval": "month",
+        "billingIntervalCount": 1
+      }'
+    ```
+
+    <Warning>
+    `billingInterval` et `billingIntervalCount` ne sont pas rendus obligatoires par l'API sur un
+    prix `recurring`. **Posez-les toujours** : un prix récurrent sans cadence crée un abonnement
+    qui ne se renouvellera jamais, sans erreur.
+    </Warning>
+
+    Détail des champs : [Prix](/fr/products/prices).
+  </Step>
+
+  <Step title="Créez l'abonnement avec le numéro Mobile Money du client">
+    Le client est trouvé ou créé par son e-mail. Sa méthode de paiement devient sa méthode
+    **par défaut** : c'est elle qui sera sollicitée à chaque renouvellement.
+
+    ```bash
+    curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions \
+      -H "Authorization: Bearer sk_test_..." \
+      -H "Content-Type: application/json" \
+      -d '{
+        "customerEmail": "ada@example.com",
+        "firstName": "Ada",
+        "items": [{ "priceId": "price_...", "quantity": 1 }],
+        "paymentMethodData": {
+          "type": "momo",
+          "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" }
+        },
+        "idempotencyKey": "signup-ada-2026-09"
+      }'
+    ```
+
+    La réponse arrive **après** la demande de paiement — l'appel attend le résultat opérateur.
+
+    ```json 201
+    {
+      "subscription": {
+        "id": "sub_...",
+        "status": "active",
+        "customerEmail": "ada@example.com",
+        "currentPeriodStart": "2026-09-17T10:00:00.000Z",
+        "currentPeriodEnd": "2026-10-17T10:00:00.000Z",
+        "nextBillingDate": "2026-10-17T10:00:00.000Z",
+        "items": [{ "id": "si_...", "priceId": "price_...", "quantity": 1 }]
+      },
+      "paymentStatus": { "success": true, "status": "paid", "requiresAction": false },
+      "invoice": { "id": "inv_...", "status": "paid" }
+    }
+    ```
+
+    Si le client refuse ou ne répond pas, la réponse est **aussi un 201** : `paymentStatus.success`
+    vaut `false` et l'abonnement est `unpaid`. Voir [Créer par l'API](/fr/subscriptions/create/api).
+  </Step>
+
+  <Step title="Écoutez les webhooks">
+    Deux événements racontent la vie de l'abonnement :
+
+    | Événement | Quand |
+    |---|---|
+    | `subscription.created` | À la création — `data.status` vaut `active`, `unpaid` ou `trialing` selon l'issue du premier paiement |
+    | `invoice.paid` | À chaque cycle réglé |
+
+    La liste complète : [Webhooks](/fr/subscriptions/webhooks).
+  </Step>
+
+  <Step title="Simulez le renouvellement">
+    En test, une [horloge de test](/fr/subscriptions/testing) fait avancer l'abonnement jusqu'à
+    son échéance sans attendre un mois.
+  </Step>
+</Steps>
+
+## Et ensuite
+
+<CardGroup cols={2}>
+  <Card title="Cycle de vie" icon="diagram-project" href="/fr/subscriptions/lifecycle">
+    Les six statuts et leurs transitions.
+  </Card>
+  <Card title="Page hébergée" icon="window" href="/fr/subscriptions/create/hosted">
+    Laisser le client souscrire lui-même.
+  </Card>
+  <Card title="Cycle de facturation" icon="calendar" href="/fr/subscriptions/billing/cycle">
+    Ce qui se passe à chaque échéance, et quand.
+  </Card>
+  <Card title="Référence API" icon="book" href="/fr/api-reference/subscriptions/subscriptions">
+    L'objet et ses dix endpoints.
+  </Card>
+</CardGroup>

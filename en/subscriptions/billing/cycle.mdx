@@ -1,0 +1,102 @@
+---
+title: "Billing cycle"
+description: "What happens at each due date, in what order, and at what time."
+icon: "calendar-days"
+---
+
+An `active` subscription is billed **in advance**, at each `currentPeriodEnd`, for the period
+that starts. The mechanism fits in two daily appointments, both at **11:00 Brazzaville time**
+(UTC+1).
+
+## D-3: the invoice is issued and sent
+
+Three days before `currentPeriodEnd`, Yabetoo:
+
+1. generates the invoice for the **upcoming cycle** (`billingReason: "subscription_cycle"`,
+   period `[currentPeriodEnd, currentPeriodEnd + interval]`) and finalizes it — it gets its
+   number;
+2. emails it to the customer, with a **payment link** to the hosted page;
+3. emits `invoice.finalized`.
+
+The subscription's period itself **does not move**: day D advances it.
+
+The customer can settle that invoice from the link, any time before the due date. In that case
+you receive `invoice.paid` right away, and day D requests nothing.
+
+<Note>
+The reminder does not go out for a subscription whose cancellation is scheduled before the end
+of the period (`cancelAt ≤ currentPeriodEnd`).
+</Note>
+
+## Day D: the period advances and payment is requested
+
+The daily cron takes every `active` subscription whose `currentPeriodEnd` has passed, and for
+each, in **a single transaction**:
+
+<Steps>
+  <Step title="Advance the period">
+    `currentPeriodStart` ← old `currentPeriodEnd`, `currentPeriodEnd` ← + interval. This is done
+    **before** requesting payment, and never rolled back on failure — it is what makes the
+    cycle's invoice unique.
+  </Step>
+  <Step title="Find or create the cycle's invoice">
+    The D-3 one if it exists, a new one otherwise. The **customer balance** (credits) is
+    applied: `amountDue = total − appliedBalance`. If it is already `paid`, everything stops
+    here — nothing is requested.
+  </Step>
+  <Step title="Request the payment">
+    A payment intent is created for `amountDue`, and a **request** is pushed to the customer's
+    **default** payment method — read at that moment, not the one from creation. The call waits
+    for the operator's answer.
+  </Step>
+  <Step title="Success">
+    Invoice `paid`, `paidAt` set. Events: `invoice.paid`, `payment.completed`,
+    `subscription.updated` (with the new period boundaries).
+  </Step>
+  <Step title="Failure, or no default method">
+    Invoice `open`, `lastPaymentError` set. The subscription becomes **`past_due`**,
+    `payment.failed` and `subscription.past_due` are emitted, and the retry schedule starts. See
+    [Failed payments](/en/subscriptions/billing/failed-payments).
+  </Step>
+</Steps>
+
+<Warning>
+**There is no debit.** At each due date the customer receives a request on their phone and has
+to approve it. A customer who does not answer within the window is a nominal case: that is who
+the D-3 invoice with its link is for, and why retries exist.
+</Warning>
+
+## What you receive
+
+| Moment | Events |
+|---|---|
+| D-3 | `invoice.finalized` |
+| Customer pays through the link before D | `invoice.paid` |
+| D, success | `invoice.paid`, `payment.completed`, `subscription.updated` |
+| D, failure | `payment.failed`, `subscription.past_due` |
+
+<Note>
+`invoice.paid` and `payment.completed` may arrive **twice** for the same successful renewal
+(two internal paths emit them). Deduplicate on `data.invoiceId` / `data.orderId`.
+</Note>
+
+## Reading where a subscription stands
+
+- `currentPeriodEnd`: the boundary of what has been **invoiced**. On a `past_due`
+  subscription, it is already advanced.
+- The latest `paid` invoice (`GET /v1/subscriptions/{id}/invoices`): how far the customer has
+  **paid**.
+- `statistics.nextPaymentDate` and `statistics.nextPaymentAmount` on the detail: the next due
+  date and its amount (discount applied, before tax).
+
+## The first cycle
+
+It differs by door:
+
+| Creation | First invoice |
+|---|---|
+| API, no trial | Immediate, `billingReason: "subscription_create"`, payment request within the call. |
+| Hosted page, no trial | Immediate, settled on the page. |
+| With a trial | At the end of the trial, at the next 11:00 — see [Trials](/en/subscriptions/create/trials). |
+
+All following cycles are `subscription_cycle` and follow the mechanism above.

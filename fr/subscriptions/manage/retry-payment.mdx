@@ -1,0 +1,83 @@
+---
+title: "Relancer un paiement"
+description: "Régulariser un abonnement unpaid ou past_due à la demande."
+icon: "rotate-right"
+---
+
+Les relances automatiques ont leur calendrier ([Paiements échoués](/fr/subscriptions/billing/failed-payments)).
+Cette route sert quand vous ne voulez pas l'attendre : le client vous dit « j'ai rechargé mon
+compte, réessayez », ou vous a donné un nouveau numéro.
+
+```bash
+POST /v1/subscriptions/{id}/retry-payment
+```
+
+| Champ | Obligatoire | Description |
+|---|---|---|
+| `paymentMethodData` | Oui | `{ type, momo: { country, msisdn, operator_name } }`. Peut différer de la méthode par défaut du client — elle n'est **pas** enregistrée comme nouvelle méthode par défaut. |
+| `firstName`, `lastName` | Non | Transmis à la demande de paiement. |
+
+```bash
+curl -X POST https://buy.sandbox.yabetoopay.com/v1/subscriptions/sub_.../retry-payment \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "paymentMethodData": {
+      "type": "momo",
+      "momo": { "country": "cg", "msisdn": "242061234567", "operator_name": "mtn" }
+    }
+  }'
+```
+
+## Ce qui se passe
+
+La **dernière commande impayée** de l'abonnement est relancée sur son intention de paiement
+existante — pas de nouvelle facture, pas de nouvelle intention. Une demande de paiement est
+poussée sur le numéro fourni, et l'appel attend la réponse du client (~100 s).
+
+Si le client avait approuvé une demande précédente **après** le délai de l'appel initial, le
+paiement est reconnu tel quel : aucune seconde demande ne part.
+
+## La réponse
+
+```json 200
+{
+  "success": true,
+  "status": "paid",
+  "canRetry": false,
+  "requiresAction": false,
+  "subscription": { "id": "sub_...", "status": "past_due" },
+  "subscriptionActivationPending": true
+}
+```
+
+<Warning>
+**Sur un succès, `subscription.status` est encore `past_due` (ou `unpaid`) dans la réponse.**
+Ce n'est pas un retard de lecture : l'activation est **asynchrone**, faite par le traitement de
+l'événement de paiement quelques dizaines de millisecondes plus tard. Le champ
+`subscriptionActivationPending: true` le dit. Pour agir sur l'activation, écoutez
+`subscription.activated` — c'est le seul chemin qui l'émet.
+</Warning>
+
+Sur un échec : `success: false`, `status: "failed"` (ou `processing`), `error` porte le motif,
+`canRetry: true`. Le statut de l'abonnement ne change pas.
+
+<Note>
+Un `failed` sur une facture de **cycle** compte comme une tentative dans le calendrier des
+relances automatiques et reprogramme la suivante ; un `processing` (le client n'a pas répondu)
+ne compte pas. Sur la facture de **création** (`subscription_create`), aucune relance
+automatique n'existe : seule cette route peut la régler.
+</Note>
+
+## Erreurs
+
+Cette route rend ses refus métier en **400** avec un corps `{ "error": "…" }` — une forme
+différente des autres routes :
+
+| Statut | Corps | Cause |
+|---|---|---|
+| `400` | `{ "error": "Subscription is already active" }` | Rien à relancer. |
+| `400` | `{ "error": "Cannot retry payment for canceled subscription" }` | Abonnement `canceled`. |
+| `400` | `{ "error": "No unpaid order found for this subscription" }` | Aucune commande impayée — la dernière facture est déjà `paid`. |
+| `400` | `{ "error": "Payment method data is required" }` | `paymentMethodData` absent. |
+| `404` | `errors[].code = E_SUBSCRIPTION_NOT_FOUND` | Inconnu ou d'un autre compte. |
