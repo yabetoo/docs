@@ -5,7 +5,9 @@ description: "Create and manage your product catalog with different types, statu
 
 ## What is a Product?
 
-A **Product** represents an item or service you sell. It's the core entity of your catalog around which variants (SKUs), prices, and promotions are organized.
+A **Product** represents an item or service you sell. It's the base entity of your catalog, around which prices and promotions revolve.
+
+A price is attached to the product through `productId`. A SaaS plan or a service offering is therefore a product with one or more prices.
 
 <Info>
   **Identifier format**: `prod_` followed by 36 alphanumeric characters.
@@ -20,14 +22,16 @@ A **Product** represents an item or service you sell. It's the core entity of yo
 | Attribute | Type | Description |
 |-----------|------|-------------|
 | `id` | string | Unique product identifier |
-| `name` | string | Product name displayed to customers |
+| `name` | string | Product name shown to customers |
 | `description` | string | Detailed product description |
 | `type` | enum | Product type: `physical`, `digital`, `service` |
 | `status` | enum | Status: `active`, `archived`, `draft` |
 | `price` | number \| null | Default price (optional) |
 | `category` | number | Product category |
-| `subscriptionEligible` | boolean | Can be sold as subscription |
-| `hasSkus` | boolean | Indicates if product has variants |
+| `subscriptionEligible` | boolean | Can be sold as a subscription |
+| `hasSkus` | boolean | **Inherited.** `false` for any product created today — derived from the product's legacy variants, never a field you send |
+| `skus` | array | **Inherited.** The product's legacy variants. Empty for any product created today |
+| `prices` | array | The **active** prices attached to the product |
 
 ## Product Types
 
@@ -35,12 +39,12 @@ A **Product** represents an item or service you sell. It's the core entity of yo
   <Tab title="Physical">
     ### Physical Product (`physical`)
 
-    A tangible product that requires delivery to the customer.
+    A tangible product that requires shipping to the customer.
 
     **Characteristics:**
     - Stock management enabled
     - Shipping address required
-    - Shipment tracking possible
+    - Shipment tracking available
 
     **Examples:** Clothing, electronics, printed books, accessories
 
@@ -48,8 +52,7 @@ A **Product** represents an item or service you sell. It's the core entity of yo
     {
       "name": "Premium T-shirt",
       "type": "physical",
-      "description": "100% organic cotton T-shirt",
-      "hasSkus": true
+      "description": "100% organic cotton t-shirt"
     }
     ```
   </Tab>
@@ -63,7 +66,7 @@ A **Product** represents an item or service you sell. It's the core entity of yo
     - Instant delivery after payment
     - Secure download links
     - Download count control
-    - Link expiration possible
+    - Optional link expiration
 
     **Examples:** E-books, software, video courses, templates
 
@@ -80,14 +83,14 @@ A **Product** represents an item or service you sell. It's the core entity of yo
   <Tab title="Service">
     ### Service (`service`)
 
-    A one-time or ongoing service offering.
+    A one-off or ongoing service offering.
 
     **Characteristics:**
-    - No physical inventory
+    - No physical stock
     - Ideal for subscriptions
-    - Recurring billing possible
+    - Recurring billing available
 
-    **Examples:** Consultations, SaaS subscriptions, maintenance, coaching
+    **Examples:** Consulting, SaaS subscriptions, maintenance, coaching
 
     ```json
     {
@@ -102,149 +105,200 @@ A **Product** represents an item or service you sell. It's the core entity of yo
 
 ## Product Statuses
 
-Status determines product visibility and availability:
+The status determines the product's visibility and availability:
 
 <CardGroup cols={3}>
   <Card title="Active" icon="circle-check" color="#22c55e">
-    Product is visible and available for sale. Customers can purchase it.
+    The product is visible and available for purchase. Customers can buy it.
   </Card>
   <Card title="Draft" icon="pencil" color="#f59e0b">
-    Work in progress draft. Not visible to customers.
+    A draft being created. Not visible to customers.
   </Card>
   <Card title="Archived" icon="box-archive" color="#6b7280">
-    Archived product. Not visible but kept for history.
+    An archived product. Not visible but kept for history.
   </Card>
 </CardGroup>
 
 ```typescript
 enum ProductStatus {
-  ACTIVE = 'active',      // Available for sale
-  DRAFT = 'draft',        // Work in progress
+  ACTIVE = 'active',      // Available for purchase
+  DRAFT = 'draft',        // Being created
   ARCHIVED = 'archived'   // Archived
 }
 ```
 
 ## Create a Product
 
-<Steps>
-  <Step title="Define basic information">
-    Enter the name, description, and product type.
+Products are created on `POST /v1/products`, with their default price posed in the **same
+call**.
 
+### Request Body
+
+<ParamField body="name" type="string" required>
+  Product name, 3 to 70 characters.
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Product description, 10 to 255 characters.
+</ParamField>
+
+<ParamField body="type" type="enum" required>
+  `physical`, `digital`, or `service`.
+</ParamField>
+
+<ParamField body="category" type="number" required>
+  Product category, strictly positive.
+</ParamField>
+
+<ParamField body="subscriptionEligible" type="boolean" required>
+  Whether the product can be sold as a subscription.
+</ParamField>
+
+<ParamField body="status" type="enum" default="draft">
+  `active`, `draft`, or `archived`.
+</ParamField>
+
+<ParamField body="defaultPriceData" type="object">
+  The product's price, posed in the same call. **Optional**: a product can be created without
+  a price, then get one later through `POST /v1/prices`. Field details below.
+</ParamField>
+
+<Note>
+  `accountId` is **not** a request body field: the account that owns the product is derived
+  from the API key used for the call, not from a value the caller sends.
+</Note>
+
+<Steps>
+  <Step title="Create the product with its price">
     ```bash
     curl -X POST https://api.yabetoo.com/v1/products \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
-        "name": "JavaScript Course",
-        "description": "Master JavaScript from A to Z",
-        "type": "digital"
+        "name": "Pro Plan",
+        "description": "Monthly subscription",
+        "type": "service",
+        "category": 3,
+        "subscriptionEligible": true,
+        "defaultPriceData": {
+          "amount": 25000,
+          "currency": "xaf",
+          "type": "recurring",
+          "billingInterval": "month",
+          "billingIntervalCount": 1
+        }
       }'
     ```
   </Step>
 
-  <Step title="Configure options">
-    Define if the product can be sold as subscription and if it has variants.
-
-    ```json
-    {
-      "subscriptionEligible": true,
-      "hasSkus": false
-    }
-    ```
-  </Step>
-
-  <Step title="Add variants (optional)">
-    If `hasSkus` is `true`, create product variants.
-
-    See [SKU Documentation](/en/products/skus)
-  </Step>
-
-  <Step title="Define prices">
-    Associate one or more prices with the product or its variants.
+  <Step title="Add a second price (optional)">
+    An annual tier next to the monthly one, or a second currency: `POST /v1/prices` with
+    `productId`.
 
     See [Price Documentation](/en/products/prices)
   </Step>
 </Steps>
 
+### `defaultPriceData`
+
+<ParamField body="amount" type="number" required>
+  Amount in the currency's main unit. Strictly positive, up to `99999999.99`.
+</ParamField>
+
+<ParamField body="currency" type="string" required>
+  Currency code. **Required** — there is no default currency. Limited to `xaf` and `eur`: see
+  [Supported Currencies](/en/products/prices).
+</ParamField>
+
+<ParamField body="type" type="enum" required>
+  `one_time` or `recurring`.
+</ParamField>
+
+<ParamField body="billingInterval" type="enum">
+  `day`, `week`, `month`, or `year`. Recurring prices only.
+</ParamField>
+
+<ParamField body="billingIntervalCount" type="number">
+  Number of intervals per billing cycle. Strictly positive.
+</ParamField>
+
+<ParamField body="trialPeriodDays" type="number">
+  Free trial days, `0` or more.
+</ParamField>
+
+<Warning>
+  **`defaultPriceData` cannot be combined with the legacy batch pricing configuration of the
+  request body.** Sending both in the same call is refused with **422**
+  (`E_CONFLICTING_PRICE_INPUT`): each would create an active price, and the two would coexist
+  on the product with no way to tell which one applies. Send `defaultPriceData` alone — this
+  is the recommended path.
+</Warning>
+
 ## API Response
 
-<Tabs>
-  <Tab title="Simple product">
-    ```json
-    {
-      "id": "prod_abc123def456ghi789",
-      "object": "product",
-      "name": "JavaScript Course",
-      "description": "Master JavaScript from A to Z",
-      "type": "digital",
-      "status": "active",
-      "price": null,
-      "category": 1,
-      "subscriptionEligible": true,
-      "hasSkus": false,
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z"
-    }
-    ```
-  </Tab>
+`GET /v1/products` and `GET /v1/products/{id}` return the product with its prices, plus
+`hasSkus` and `skus` — fields **inherited** from the variant model this guide has retired.
 
-  <Tab title="Product with variants">
-    ```json
+<ResponseField name="hasSkus" type="boolean">
+  **Inherited.** `false` for any product created today.
+</ResponseField>
+
+<ResponseField name="skus" type="array">
+  **Inherited.** Empty for any product created today.
+</ResponseField>
+
+<ResponseField name="prices" type="array">
+  The prices attached to the product. **Active prices only** — deactivated prices are not
+  returned.
+</ResponseField>
+
+```json
+{
+  "id": "prod_abc123def456ghi789",
+  "object": "product",
+  "name": "JavaScript Course",
+  "description": "Master JavaScript from A to Z",
+  "type": "digital",
+  "status": "active",
+  "price": null,
+  "category": 1,
+  "subscriptionEligible": true,
+  "hasSkus": false,
+  "skus": [],
+  "prices": [
     {
-      "id": "prod_xyz789abc123def456",
-      "object": "product",
-      "name": "Premium T-shirt",
-      "description": "100% organic cotton T-shirt",
-      "type": "physical",
-      "status": "active",
-      "price": null,
-      "category": 2,
-      "subscriptionEligible": false,
-      "hasSkus": true,
-      "skus": [
-        {
-          "id": "sku_small_white",
-          "name": "T-shirt S White",
-          "skuCode": "TSHIRT-S-WHITE",
-          "attributes": {
-            "size": "S",
-            "color": "white"
-          },
-          "stockQuantity": 50,
-          "stockTracking": true
-        },
-        {
-          "id": "sku_medium_black",
-          "name": "T-shirt M Black",
-          "skuCode": "TSHIRT-M-BLACK",
-          "attributes": {
-            "size": "M",
-            "color": "black"
-          },
-          "stockQuantity": 30,
-          "stockTracking": true
-        }
-      ],
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z"
+      "id": "price_abc123def456ghi789",
+      "productId": "prod_abc123def456ghi789",
+      "amount": "25000.00",
+      "currency": "xaf",
+      "type": "one_time",
+      "billingInterval": null,
+      "billingIntervalCount": null,
+      "trialPeriodDays": null,
+      "active": true
     }
-    ```
-  </Tab>
-</Tabs>
+  ],
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
 
 ## Common Operations
 
-### Retrieve a product
+### Retrieve a Product
 
 ```bash
 curl https://api.yabetoo.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 
-### Update a product
+### Update a Product
+
+The verb is **`PUT`**, and the update is partial: only the fields present in the body are
+changed.
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -253,10 +307,16 @@ curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
   }'
 ```
 
-### Archive a product
+<Note>
+  Prices aren't updated here: they go through `POST /v1/prices` (new price) and
+  `PUT /v1/prices/{id}` (activate/deactivate). See [Price
+  Documentation](/en/products/prices).
+</Note>
+
+### Archive a Product
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -264,10 +324,10 @@ curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
   }'
 ```
 
-### Delete a product
+### Delete a Product
 
 <Warning>
-  A deleted product is no longer visible but the associated order history is preserved.
+  A deleted product is no longer visible, but the history of associated orders is kept.
 </Warning>
 
 ```bash
@@ -275,56 +335,47 @@ curl -X DELETE https://api.yabetoo.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 
-## Relationships with Other Entities
+## Relations with Other Entities
 
 ```
 Product
-├── ProductSku[] (variants)
-│   └── Price[] (prices)
+├── Price[] (prices attached to the product — productId)
 ├── Document[] (images, files)
 └── ProductLink[] (related products)
     ├── Cross-sell (complementary products)
-    ├── Upsell (upgraded products)
+    ├── Upsell (higher-tier products)
     └── Related (associated products)
 ```
 
 ## Best Practices
 
 <AccordionGroup>
-  <Accordion title="Product naming">
-    - Use clear and descriptive names
+  <Accordion title="Product Naming">
+    - Use clear, descriptive names
     - Avoid obscure abbreviations
-    - Include key characteristics in variant names
+    - Include key characteristics in the name
   </Accordion>
 
-  <Accordion title="Status management">
-    - Use `draft` for products in preparation
-    - Switch to `active` only when everything is configured (prices, images, stock)
-    - Archive rather than delete to preserve history
+  <Accordion title="Status Management">
+    - Use `draft` for products being prepared
+    - Only switch to `active` once everything is configured (pricing, images)
+    - Archive rather than delete to keep the history
   </Accordion>
 
-  <Accordion title="Catalog organization">
+  <Accordion title="Catalog Organization">
     - Group similar products by category
-    - Use variants (SKUs) for variations of the same product
     - Configure related products for cross-selling
   </Accordion>
 </AccordionGroup>
 
 ## Next Steps
 
-<CardGroup cols={2}>
+<CardGroup cols={1}>
   <Card
-    title="Manage variants"
-    icon="tags"
-    href="/en/products/skus"
-  >
-    Learn how to create SKUs for your product variations
-  </Card>
-  <Card
-    title="Define prices"
+    title="Define Prices"
     icon="money-bill"
     href="/en/products/prices"
   >
-    Configure pricing for your products
+    Configure your products' pricing
   </Card>
 </CardGroup>

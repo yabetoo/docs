@@ -1,0 +1,222 @@
+---
+title: "Soldes et versements"
+description: "Comment les fonds d'un vendeur mûrissent, et comment les lui verser."
+icon: "wallet"
+---
+
+L'argent d'un vendeur passe par trois états avant d'atteindre sa destination de versement.
+
+```
+encaissement → solde en attente → (maturation) → solde disponible → retrait → destination du vendeur
+```
+
+## Les trois soldes
+
+Chaque portefeuille porte trois montants, et leur somme est ce que le compte détient
+réellement.
+
+<ResponseField name="pending_balance" type="number">
+  **Crédité, pas encore mûr.** Tout crédit vendeur atterrit ici. Non retirable, mais
+  **saisissable par un remboursement**.
+</ResponseField>
+
+<ResponseField name="balance" type="number">
+  **Disponible.** C'est le seul montant retirable.
+</ResponseField>
+
+<ResponseField name="held_balance" type="number">
+  **Engagé dans un retrait en vol.** L'argent appartient toujours au compte, mais il est
+  réservé le temps que l'opérateur réponde.
+</ResponseField>
+
+<Warning>
+Ne confondez pas `pending_balance` et `held_balance` : « pas encore mûr » et « en cours de
+retrait » sont deux états différents. Les mêler ne produit aucune erreur. Il fausse
+simplement votre réconciliation.
+</Warning>
+
+## Le délai de disponibilité
+
+Un crédit vendeur porte une date `available_at`. À échéance, un balayage le déplace de
+`pending_balance` vers `balance`, et émet
+[`connect.funds.available`](/fr/connect/webhooks).
+
+Le délai par défaut est de **7 jours**.
+
+<Warning>
+**Le délai n'est pas qu'un garde-fou anti-fraude : c'est la source de financement des
+remboursements.** Les fonds en attente sont saisissables ; les fonds retirés ne le sont plus.
+Raccourcir le délai déplace le risque de remboursement sur votre propre solde.
+</Warning>
+
+Vous lisez l'échéance sur le compte du vendeur :
+
+```bash
+GET /v1/connect/accounts/{acct}
+```
+
+```json
+{
+  "balances": [
+    {
+      "currency": "xaf",
+      "balance": 4000,
+      "pending_balance": 8975,
+      "held_balance": 0,
+      "next_maturity_at": "2026-09-11T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+## Verser à un vendeur
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts/{acct}/withdrawals   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/accounts/{acct}/withdrawals       # Production
+```
+
+C'est **vous** qui commandez le retrait : un vendeur connecté n'a pas de tableau de bord.
+
+### En-têtes
+
+| En-tête | Obligatoire | Règle |
+|---|---|---|
+| `Authorization: Bearer sk_…` | Oui | |
+| `Idempotency-Key` | **Oui** | Chaîne non vide, 255 caractères maximum |
+
+### Corps
+
+**Vide.** Un retrait Connect transfère **la totalité du solde disponible**.
+
+<Warning>
+`amount` est **refusé en 422** : il n'existe pas de retrait partiel. Le montant est le
+`balance` du vendeur au moment du verrou.
+</Warning>
+
+<CodeGroup>
+```bash cURL
+curl -X POST \
+  https://pay.sandbox.yabetoopay.com/v1/connect/accounts/acct_01HZVENDOR0000000000000000/withdrawals \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Idempotency-Key: payout-ada-2026-09-04"
+```
+</CodeGroup>
+
+```json 201
+{
+  "id": "wd_01HZ00000000000000000000",
+  "object": "connect_withdrawal",
+  "connected_account_id": "acct_01HZVENDOR0000000000000000",
+  "amount": 4000,
+  "currency": "xaf",
+  "destination": "24****4567",
+  "status": "succeeded",
+  "created_at": "2026-09-04T12:00:00.000Z"
+}
+```
+
+<Warning>
+**L'appel est synchrone et attend l'opérateur.** Comptez plusieurs secondes. Le
+`status` rendu est l'état **final** : `succeeded` ou `failed`, jamais `processing`.
+
+Un refus de l'opérateur rend **`201` avec `status: "failed"`**, pas une erreur HTTP. Lisez
+toujours le `status`.
+</Warning>
+
+<Note>
+Le retrait d'un vendeur connecté est **gratuit** : aucune commission n'est prélevée dessus.
+La `destination` est masquée : vous n'avez pas à lire le numéro de votre vendeur.
+</Note>
+
+### Préconditions
+
+Un retrait est refusé tant que l'une de ces conditions n'est pas remplie :
+
+<AccordionGroup>
+  <Accordion title="Le KYC du vendeur est approuvé">
+    Sinon `403 E_VERIFICATION_REQUIRED`. C'est la politique du **vendeur** qui est évaluée,
+    pas la vôtre.
+  </Accordion>
+  <Accordion title="Le vendeur a une destination de versement enregistrée">
+    Sinon `422 E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE`. Elle est collectée pendant
+    l'[onboarding](/fr/connect/accounts/onboarding).
+  </Accordion>
+  <Accordion title="Son solde disponible n'est pas vide">
+    Sinon `422 E_CONNECT_VENDOR_EMPTY_BALANCE`. C'est un **état nominal** (avant la première
+    allocation, ou juste après un retrait), pas une erreur à réessayer.
+  </Accordion>
+  <Accordion title="Aucun retrait n'est déjà en vol sur ce portefeuille">
+    Sinon `422 E_PENDING_WITHDRAW`.
+  </Accordion>
+</AccordionGroup>
+
+### Rejeu
+
+<Warning>
+**Le contrat de rejeu diffère des autres routes d'argent.** Dans les 24 h, rejouer la même
+`Idempotency-Key` rend le **même `201`**. Au-delà, vous obtenez
+**`409 E_DUPLICATE_OPERATION`** : le service ne reconstruit pas la réponse d'origine.
+
+La même clé sur **deux vendeurs différents** paie bien les deux : la clé est scopée par
+endpoint et par vendeur.
+</Warning>
+
+## Cadence automatique
+
+Plutôt que d'appeler la route à la main, vous pouvez faire payer vos vendeurs
+automatiquement dès que leur solde est positif.
+
+```bash
+GET  /v1/connect/payout_schedule
+POST /v1/connect/payout_schedule
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `cadence` | `string` | Oui | `daily` ou `weekly` |
+| `enabled` | `boolean` | Non | `true` par défaut |
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/payout_schedule \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "cadence": "weekly", "enabled": true }'
+```
+</CodeGroup>
+
+```json 200
+{
+  "object": "connect_payout_schedule",
+  "account": "acct_01HZMARKETPLACE00000000000",
+  "cadence": "weekly",
+  "enabled": true
+}
+```
+
+<Note>
+La lecture rend **toujours 200**, avec `cadence: null` et `enabled: false` quand rien n'est
+configuré. L'écriture rend **200**, pas 201 : la ressource est votre compte, elle existe déjà.
+Reposter remplace simplement la configuration.
+</Note>
+
+<Tip>
+La cadence est le seul moyen de **garantir** à vos vendeurs un rythme de paiement. En mode
+manuel, ils dépendent entièrement de vous pour être payés.
+</Tip>
+
+## Erreurs du retrait
+
+| Statut | Code | Cause |
+|---|---|---|
+| `401` | n/a | Clé de test visant un vendeur `live` |
+| `403` | `E_VERIFICATION_REQUIRED` | Le KYC du vendeur n'est pas approuvé |
+| `403` | n/a | Vendeur inconnu, malformé, ou d'une autre marketplace |
+| `409` | `E_DUPLICATE_OPERATION` | Clé d'idempotence déjà consommée (hors fenêtre de cache) |
+| `409` | `E_IDEMPOTENCY_CONFLICT` | Une requête avec la même clé est en cours |
+| `422` | `rule: "unsupported"` | `amount` envoyé |
+| `422` | `E_CONNECT_VENDOR_EMPTY_BALANCE` | Solde disponible vide, état nominal |
+| `422` | `E_CONNECT_VENDOR_PAYOUT_METHOD_UNAVAILABLE` | Pas de destination de versement |
+| `422` | `E_PENDING_WITHDRAW` | Un retrait est déjà en vol |
+| `503` | `E_SERVICE_UNAVAILABLE` | Service amont indisponible |

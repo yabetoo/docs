@@ -1,0 +1,197 @@
+---
+title: "Create a connected account"
+description: "Create the account of a vendor you connect to your marketplace."
+icon: "user-plus"
+---
+
+A **connected account** represents a vendor. Creating it gives them their identity, their
+organization and their wallet at Yabetoo, but **not** yet the right to receive money: they
+must pass verification first.
+
+```bash
+POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts   # Sandbox
+POST https://pay.api.yabetoopay.com/v1/connect/accounts       # Production
+```
+
+## Headers
+
+| Header | Required | Rule |
+|---|---|---|
+| `Authorization: Bearer sk_…` | Yes | Your marketplace secret key |
+| `Idempotency-Key` | **Yes** | Non-empty string, 255 characters maximum |
+
+<Warning>
+**`Idempotency-Key` is required on this route**, unlike most Yabetoo endpoints. Creating a
+vendor is **irreversible**: without a key, a single network retry would create two permanent
+vendors, and no endpoint lets you unlink or merge them.
+</Warning>
+
+## Request body
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `country` | `string` | Yes | ISO 3166-1 alpha-2 country code, e.g. `CG` |
+| `currency` | `string` | Yes | ISO 4217 currency code, e.g. `XAF` |
+| `name` | `string` | Yes | Legal name or vendor name, 255 characters max |
+| `email` | `string` | Yes | Vendor's email address, 255 characters max |
+
+<Warning>
+**`email` is required and must be the vendor's, not yours.** It is the only channel through
+which Yabetoo reaches the vendor, notably for the confirmation code on their withdrawals.
+</Warning>
+
+<Note>
+`country` and `currency` are accepted in any case; the API returns them normalised in
+uppercase.
+</Note>
+
+<Note>
+**The country is a business choice, not a copy of yours.** It determines the compliance
+schedule of your vendor's KYC file. A Congolese marketplace can connect a vendor from another
+supported country.
+</Note>
+
+### Refused fields
+
+Three fields are **explicitly rejected with 422** (they are never silently ignored):
+
+| Field | Why |
+|---|---|
+| `phone` | The vendor registers their own payout number during KYC onboarding. Accepting it here would let you believe you registered a destination that does not exist. |
+| `type` | A connected vendor is always `business`. The type decides nothing: their file is opened with the `connected_account` schedule. |
+| `fee_payer` | Who pays the Yabetoo fees is **derived** from your `connect_mode`, set once at [activation](/en/connect/activate). |
+
+If you send several of them, they are **all named in the same response**: you do not have to
+fix them one field at a time.
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/accounts \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Idempotency-Key: vendor-ada-2026-09-04" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "country": "cg",
+    "currency": "xaf",
+    "name": "Boutique Ada",
+    "email": "ada@example.com"
+  }'
+```
+
+```javascript fetch
+const res = await fetch(
+  "https://pay.sandbox.yabetoopay.com/v1/connect/accounts",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.YABETOO_API_KEY}`,
+      "Idempotency-Key": `vendor-${localVendorId}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      country: "cg",
+      currency: "xaf",
+      name: "Boutique Ada",
+      email: "ada@example.com",
+    }),
+  }
+);
+
+const account = await res.json();
+```
+
+```python Python
+import os, requests
+
+res = requests.post(
+    "https://pay.sandbox.yabetoopay.com/v1/connect/accounts",
+    headers={
+        "Authorization": f"Bearer {os.environ['YABETOO_API_KEY']}",
+        "Idempotency-Key": f"vendor-{local_vendor_id}",
+    },
+    json={
+        "country": "cg",
+        "currency": "xaf",
+        "name": "Boutique Ada",
+        "email": "ada@example.com",
+    },
+)
+account = res.json()
+```
+</CodeGroup>
+
+## Response
+
+```json 201
+{
+  "id": "acct_01HZVENDOR0000000000000000",
+  "object": "connect_account",
+  "controller_account_id": "acct_01HZMARKETPLACE00000000000",
+  "organization_id": "org_01HZ000000000000000000000",
+  "type": "business",
+  "name": "Boutique Ada",
+  "email": "ada@example.com",
+  "status": "active",
+  "environment": "test",
+  "fee_payer": "controller",
+  "created_at": "2026-09-04T10:00:00.000Z"
+}
+```
+
+<Warning>
+**`status: "active"` does not mean "ready to collect".** At this point the vendor has **no KYC
+file, no payout destination and no wallet**. Nothing can leave their account until they have
+completed their [onboarding](/en/connect/accounts/onboarding). This field only says that the
+account exists.
+</Warning>
+
+<Note>
+The vendor's `environment` is **inherited from the key used**: an `sk_test_` can only produce
+a test vendor. It is then impossible to target a `live` vendor with a test key: the response
+is a `401`.
+</Note>
+
+## Replay
+
+Reusing the same `Idempotency-Key` returns **the same `201` with the same `id`**, within 24 h
+(response cache) as well as beyond it (uniqueness in the database). You will never create two
+vendors by accident.
+
+A key that is **already being processed** returns `409 E_IDEMPOTENCY_CONFLICT`: retry once the
+first call has finished.
+
+## Errors
+
+| Status | Code | Cause |
+|---|---|---|
+| `422` | `errors[].rule = "unsupported"` | `phone`, `type` or `fee_payer` sent |
+| `422` | `errors[].field = "Idempotency-Key"` | Header missing or too long |
+| `422` | `connect.controller_mode_unset` | **Connect is not activated on your account**, see [Activate Connect](/en/connect/activate) |
+| `422` | validation | `country`, `currency`, `name` or `email` invalid, or unknown country/currency code |
+| `409` | `E_IDEMPOTENCY_CONFLICT` | A request with the same key is in flight |
+| `429` | `E_TOO_MANY_REQUESTS` | More than **20 creations per minute** |
+| `503` | `E_SSO_UNAVAILABLE` | The identity service is unavailable |
+
+## Model constraints
+
+<AccordionGroup>
+  <Accordion title="A vendor belongs to one marketplace, forever">
+    The control link is set here and it is immutable. There is no unlinking, and no transfer
+    to another marketplace.
+  </Accordion>
+  <Accordion title="A vendor cannot connect other vendors">
+    Depth is limited to 1.
+  </Accordion>
+  <Accordion title="The currency must be your account's">
+    Multi-currency is not supported: an allocation or a split between two different currencies
+    is refused with `422 E_CURRENCY_MISMATCH`.
+  </Accordion>
+</AccordionGroup>
+
+## Next
+
+<Card title="Onboarding and verification" icon="id-card" href="/en/connect/accounts/onboarding">
+  Send the vendor their verification link.
+</Card>

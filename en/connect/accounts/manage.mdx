@@ -1,0 +1,161 @@
+---
+title: "Manage your vendors"
+description: "List your connected accounts, read their balances and their history."
+icon: "list"
+---
+
+Three reads, all scoped to **your** vendors: your marketplace identifier comes from your API
+key and cannot be supplied in the request.
+
+## List your vendors
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/connect/accounts   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/connect/accounts       # Production
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `limit` | `number` | 1 to 100. Above that, the value is clamped to 100. |
+| `cursor` | `string` | Opaque cursor returned by the previous page |
+
+<CodeGroup>
+```bash cURL
+curl "https://pay.sandbox.yabetoopay.com/v1/connect/accounts?limit=20" \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+</CodeGroup>
+
+```json 200
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "acct_01HZVENDOR0000000000000000",
+      "object": "connect_account",
+      "controller_account_id": "acct_01HZMARKETPLACE00000000000",
+      "organization_id": "org_01HZ000000000000000000000",
+      "type": "business",
+      "name": "Boutique Ada",
+      "email": "ada@example.com",
+      "status": "active",
+      "environment": "test",
+      "fee_payer": "controller",
+      "country": "CG",
+      "currency": "XAF",
+      "created_at": "2026-09-01T09:12:00.000Z"
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null
+}
+```
+
+<Note>
+The list does **not** carry balances: that would be one query per vendor. Read a vendor's
+detail for its balances.
+</Note>
+
+## Read a vendor
+
+```bash
+GET /v1/connect/accounts/{acct}
+```
+
+```json 200
+{
+  "id": "acct_01HZVENDOR0000000000000000",
+  "object": "connect_account",
+  "controller_account_id": "acct_01HZMARKETPLACE00000000000",
+  "name": "Boutique Ada",
+  "email": "ada@example.com",
+  "organization_id": "org_01HZ000000000000000000000",
+  "country": "CG",
+  "status": "active",
+  "environment": "test",
+  "fee_payer": "controller",
+  "balances": [
+    {
+      "currency": "xaf",
+      "balance": 4000,
+      "pending_balance": 8975,
+      "held_balance": 0,
+      "next_maturity_at": "2026-09-11T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+<ResponseField name="balances" type="array">
+  One entry **per currency**. A vendor that was created but never paid returns `[]`: that is a
+  nominal state, and the response stays `200`.
+</ResponseField>
+
+<ResponseField name="balance" type="number">
+  The **available** balance: this is the only amount that can be paid out.
+</ResponseField>
+
+<ResponseField name="pending_balance" type="number">
+  Funds credited but **not yet matured**. They cannot be paid out, but they can still be seized
+  by a refund.
+</ResponseField>
+
+<ResponseField name="held_balance" type="number">
+  Funds **committed to a payout in flight**. Do not confuse them with `pending_balance`: these
+  are two different states.
+</ResponseField>
+
+<ResponseField name="next_maturity_at" type="string | null">
+  The date on which the next pending credit becomes available. `null` when nothing is pending.
+</ResponseField>
+
+## Read a vendor's history
+
+```bash
+GET /v1/connect/accounts/{acct}/transactions
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `page` | `number` | Starting at 1 |
+| `limit` | `number` | 25 by default, 100 maximum |
+
+```json 200
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "wtx_01HZ00000000000000000000",
+      "object": "connect_allocation",
+      "amount": 8910,
+      "currency": "xaf",
+      "amount_fee": 90,
+      "created_at": "2026-09-01T09:20:00.000Z",
+      "available_at": "2026-09-08T09:20:00.000Z",
+      "matured_at": null
+    }
+  ],
+  "has_more": true
+}
+```
+
+<Note>
+This list is paginated **by page number**, not by cursor: it therefore returns no
+`next_cursor`.
+</Note>
+
+Read the two dates together:
+
+| `available_at` | `matured_at` | Meaning |
+|---|---|---|
+| a date | `null` | **Pending** credit: it becomes available on that date |
+| a date | a date | Credit **matured** and available |
+| `null` | `null` | Credit **immediately available**, with no delay |
+
+## Errors common to all three reads
+
+| Status | Cause |
+|---|---|
+| `401` | Missing key, or test key targeting a `live` vendor |
+| `403` | Unknown vendor, malformed identifier, or a vendor belonging to another marketplace |
+| `503` | The identity service is unavailable |

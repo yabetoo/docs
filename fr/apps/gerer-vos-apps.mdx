@@ -1,0 +1,105 @@
+---
+title: "Gérer vos Apps"
+description: "Consulter, configurer et désinstaller les Apps installées sur votre compte Yabetoo."
+icon: "sliders"
+---
+
+Une fois une App installée, vous gardez le contrôle complet depuis votre tableau de bord : vous pouvez voir ses permissions, sa date d'installation, et la désinstaller à tout moment.
+
+## Voir vos Apps installées
+
+Depuis [app.yabetoo.com](https://app.yabetoo.com), cliquez sur **Apps** dans la barre latérale. L'onglet **Installées** liste toutes les Apps actuellement actives sur votre compte.
+
+![Liste des Apps installées](/images/apps/manage-step-1.png)
+
+Chaque ligne affiche :
+
+- Le **nom et l'icône** de l'App
+- Sa **date d'installation**
+- Son **statut** : active, suspendue ou en cours de désinstallation
+- Un raccourci pour **lancer** l'App ou ouvrir son **détail**
+
+## Détail d'une App installée
+
+Cliquez sur une App pour ouvrir sa page de détail. Vous y trouverez :
+
+![Page de détail d'une App installée](/images/apps/manage-step-2.png)
+
+<AccordionGroup>
+  <Accordion title="Clé d'accès (sk_app_…)" icon="key">
+    La clé d'accès que Yabetoo a générée pour cette App lors de l'installation. Elle est **masquée par défaut** (par exemple `sk_app_****abc1`). Vous pouvez la révéler temporairement pour vérification, mais elle est gérée automatiquement par Yabetoo — vous n'avez pas à la communiquer.
+  </Accordion>
+  <Accordion title="Permissions accordées (scopes)" icon="shield-check">
+    La liste exacte des permissions que vous avez validées au moment de l'installation. Cette liste est **immuable** : si l'App a besoin de nouvelles permissions, vous devrez explicitement les approuver lors d'une mise à jour.
+  </Accordion>
+  <Accordion title="Date d'installation" icon="calendar">
+    La date et l'heure exactes auxquelles vous avez installé l'App.
+  </Accordion>
+  <Accordion title="Statut" icon="circle-info">
+    L'état de fonctionnement actuel : **active** (tout va bien), **suspendue** (par mesure de sécurité), ou **en cours de désinstallation**.
+  </Accordion>
+</AccordionGroup>
+
+## Désinstaller une App
+
+Vous pouvez désinstaller une App à tout moment depuis sa page de détail.
+
+<Steps>
+  <Step title="Ouvrir la page de détail de l'App">
+    Depuis **Apps > Installées**, cliquez sur l'App que vous souhaitez désinstaller.
+  </Step>
+  <Step title="Cliquer sur « Désinstaller »">
+    Le bouton se trouve en bas de la page de détail.
+  </Step>
+  <Step title="Confirmer votre identité">
+    Pour des raisons de sécurité, Yabetoo vous demande une **confirmation forte** (mot de passe ou second facteur). C'est une opération sensible : on s'assure que c'est bien vous.
+  </Step>
+  <Step title="Confirmer la désinstallation">
+    Lisez le récapitulatif de ce qui va se passer (tokens révoqués, fenêtre de rétention de 30 jours), puis validez.
+  </Step>
+</Steps>
+
+![Écran de confirmation de désinstallation avec step-up sécurité](/images/apps/manage-step-3.png)
+
+## Que se passe-t-il après désinstallation ?
+
+<CardGroup cols={3}>
+  <Card title="Tokens révoqués immédiatement" icon="ban">
+    L'App perd instantanément l'accès à votre compte. Aucun nouvel appel API ne sera accepté en son nom.
+  </Card>
+  <Card title="Données conservées 30 jours" icon="clock">
+    Vos données métier (menu, commandes, configuration) restent **stockées 30 jours** dans l'App, en lecture seule.
+  </Card>
+  <Card title="Purge automatique" icon="trash">
+    Passé 30 jours, vos données sont **définitivement supprimées** conformément à nos engagements RGPD.
+  </Card>
+</CardGroup>
+
+<Tip>
+  **Vous changez d'avis ?** Si vous réinstallez l'App **pendant la fenêtre de 30 jours**, vos données précédentes sont automatiquement réactivées — vous reprenez là où vous vous étiez arrêté. Passé ce délai, l'installation repart sur une base vierge.
+</Tip>
+
+<Warning>
+  La désinstallation est une action **immédiate et globale** : tous les appareils, intégrations et utilisateurs liés à cette App perdent leur accès dès la validation. Prévenez votre équipe avant de procéder.
+</Warning>
+
+## Cas particuliers
+
+### App suspendue par Yabetoo
+
+Dans de rares cas (incident de sécurité, anomalie sur l'éditeur), Yabetoo peut **suspendre temporairement** une App. Vous êtes alors notifié par email et dans le tableau de bord. Une App suspendue conserve vos données mais ne peut plus appeler nos API tant que le problème n'est pas résolu.
+
+### Suppression de votre compte Yabetoo
+
+Si vous supprimez votre compte Yabetoo, toutes vos Apps sont automatiquement désinstallées en cascade, et la fenêtre de rétention de 30 jours s'applique sur chacune.
+
+## Prochaines étapes
+
+<CardGroup cols={2}>
+  <Card title="Découvrir Takumi (Restaurant)" icon="utensils" href="/fr/apps/restaurant/introduction">
+    Le point de vente Yabetoo pour restaurateurs.
+  </Card>
+  <Card title="Installer une nouvelle App" icon="download" href="/fr/apps/installer-une-app">
+    Parcourir le catalogue et installer une App supplémentaire.
+  </Card>
+</CardGroup>

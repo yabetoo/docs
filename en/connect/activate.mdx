@@ -1,0 +1,93 @@
+---
+title: "Activate Connect"
+description: "Choose your commission mode and turn on Yabetoo Connect for your account."
+icon: "toggle-on"
+---
+
+Before you can create a vendor, you must **activate Connect** on your account. This step sets
+your `connect_mode`, the setting that decides who bears the Yabetoo fees on every collection.
+
+## Activation happens from your dashboard
+
+<Card title="Open Connect in the dashboard" icon="toggle-on" href="https://app.yabetoo.com/dashboard/connect" horizontal>
+  Yabetoo dashboard, **Connect** section.
+</Card>
+
+<Steps>
+  <Step title="Open the Connect section">
+    Sign in to the [dashboard](https://app.yabetoo.com) and go to **Connect**.
+  </Step>
+  <Step title="Choose your mode">
+    Two cards are offered, **marketplace** and **platform**. Neither is pre-selected, and the
+    button stays locked until you make a choice.
+  </Step>
+  <Step title="Confirm">
+    Connect is active immediately. You can create your first vendor.
+  </Step>
+</Steps>
+
+<Warning>
+**This choice is final.** `connect_mode` is **immutable**: there is no way to change it
+afterwards, neither in the dashboard nor through the API. Read
+[Commissions and pricing](/en/connect/pricing) before you confirm.
+</Warning>
+
+<Note>
+Activation is **per account and per environment**: activating in test does not activate in
+production. Repeat the step with your production account.
+</Note>
+
+## Choosing your mode
+
+| `connect_mode` | Derived `fee_payer` | For whom |
+|---|---|---|
+| `marketplace` | `controller` | You take a commission on the sale and pay Yabetoo **out of that commission**. The vendor sees a single deduction. |
+| `platform` | `account` | The vendor is billed by Yabetoo **like an ordinary merchant**. Your commission is added on top and comes back to you in full. |
+
+Both modes are worked through with figures in [Commissions and pricing](/en/connect/pricing).
+The same rate does not earn the same amount in each: that is the first thing to understand
+before choosing.
+
+## Checking your account state through the API
+
+Your integration can read the mode at any time, without going through the dashboard.
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/connect/activations   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/connect/activations       # Production
+```
+
+<CodeGroup>
+```bash cURL
+curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+</CodeGroup>
+
+```json 200
+{
+  "id": "acct_01HZMARKETPLACE00000000000",
+  "object": "connect_activation",
+  "connect_mode": null
+}
+```
+
+`connect_mode` is `"marketplace"`, `"platform"`, or `null` if Connect is not activated.
+
+<Note>
+This route **always returns 200**, never 404: "not activated yet" is a first-class state, not
+an error. That is what lets you render your own onboarding screen without branching on an
+error code.
+</Note>
+
+<Warning>
+**As long as Connect is not activated, every vendor creation is refused** with a `422` whose
+body carries `connect.controller_mode_unset`. This is the most common symptom on the first
+day of an integration.
+</Warning>
+
+## Next
+
+<Card title="Create your first vendor" icon="user-plus" href="/en/connect/accounts/create">
+  Once Connect is activated, create a connected account.
+</Card>

@@ -1,0 +1,158 @@
+---
+title: "Allocations et reprises"
+description: "Les objets allocation et reprise, et les endpoints du mode différé."
+---
+
+Une **allocation** transfère des fonds de votre portefeuille vers celui d'un vendeur. Une
+**reprise** en rend tout ou partie.
+
+Guide d'intégration : [Mode différé](/fr/connect/payments/allocations).
+
+## URL de base
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox (clé sk_test_)
+https://pay.api.yabetoopay.com       # Production (clé sk_live_)
+```
+
+Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les mêmes endpoints.
+
+## L'objet `connect_allocation`
+
+<ResponseField name="id" type="string">Identifiant unique, préfixé `ctr_`.</ResponseField>
+<ResponseField name="object" type="string">Vaut toujours `connect_allocation`.</ResponseField>
+<ResponseField name="destination" type="string">L'`acct_` du vendeur crédité.</ResponseField>
+
+<ResponseField name="amount" type="number">
+  **Ce que le vendeur a reçu**, net de la surcharge Connect, pas nécessairement ce que vous
+  avez demandé. C'est ce montant qui plafonne les reprises.
+</ResponseField>
+
+<ResponseField name="fee" type="number">
+  La surcharge Connect prélevée par Yabetoo sur cette allocation.
+</ResponseField>
+
+<ResponseField name="currency" type="string">Devise de l'opération.</ResponseField>
+
+<ResponseField name="available_at" type="string | null">
+  Date à laquelle les fonds deviendront disponibles pour le vendeur.
+</ResponseField>
+
+<ResponseField name="created_at" type="string | null">Horodatage ISO 8601.</ResponseField>
+
+## L'objet `connect_reversal`
+
+<ResponseField name="id" type="string">Identifiant unique, préfixé `ctrr_`.</ResponseField>
+<ResponseField name="object" type="string">Vaut toujours `connect_reversal`.</ResponseField>
+<ResponseField name="allocation" type="string">L'allocation reprise, `ctr_…`.</ResponseField>
+<ResponseField name="destination" type="string">L'`acct_` du vendeur débité.</ResponseField>
+<ResponseField name="amount" type="number">Montant repris par **cette** opération.</ResponseField>
+<ResponseField name="currency" type="string">Devise de l'opération.</ResponseField>
+<ResponseField name="reversed_total" type="number">Cumul repris sur l'allocation. Ne peut jamais dépasser son `amount`.</ResponseField>
+<ResponseField name="created_at" type="string | null">Horodatage ISO 8601.</ResponseField>
+
+---
+
+## Créer une allocation
+
+```bash
+POST /v1/connect/allocations
+```
+
+`Idempotency-Key` **optionnelle mais fortement recommandée** : sans elle, aucune déduplication
+n'est faite et un retry réseau alloue deux fois.
+
+### Paramètres
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `destination` | `string` | Oui | L'`acct_` du vendeur |
+| `amount` | `number` | Oui | Strictement positif |
+
+Il n'y a **pas** de champ `currency` : la devise est celle de votre portefeuille.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/connect/allocations \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Idempotency-Key: order-4821-payout-ada" \
+  -H "Content-Type: application/json" \
+  -d '{"destination":"acct_01HZVENDOR0000000000000000","amount":9000}'
+```
+</CodeGroup>
+
+```json 201
+{
+  "id": "ctr_01HZ00000000000000000000",
+  "object": "connect_allocation",
+  "destination": "acct_01HZVENDOR0000000000000000",
+  "amount": 8910,
+  "fee": 90,
+  "currency": "xaf",
+  "available_at": "2026-09-11T09:20:00.000Z",
+  "created_at": "2026-09-04T09:20:00.000Z"
+}
+```
+
+<Warning>
+Le montant **demandé** était 9 000 ; le vendeur reçoit 8 910. En `fee_payer = controller`,
+c'est l'inverse : vous êtes débité de 9 090 et le vendeur reçoit 9 000.
+</Warning>
+
+---
+
+## Reprendre une allocation
+
+```bash
+POST /v1/connect/allocations/{allocationId}/reversals
+```
+
+### Paramètres
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `amount` | `number` | Non | **Omis, la totalité du reliquat est reprise.** |
+
+```json 201
+{
+  "id": "ctrr_01HZ00000000000000000000",
+  "object": "connect_reversal",
+  "allocation": "ctr_01HZ00000000000000000000",
+  "destination": "acct_01HZVENDOR0000000000000000",
+  "amount": 4000,
+  "currency": "xaf",
+  "reversed_total": 4000,
+  "created_at": "2026-09-04T11:00:00.000Z"
+}
+```
+
+Les fonds sont repris sur le **solde en attente** du vendeur, puis sur son **solde
+disponible**. Votre solde n'est **jamais** sollicité : si le vendeur ne peut pas rendre les
+fonds, la reprise est refusée en `402`.
+
+---
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `400` | n/a | En-tête `Yabetoo-Account` envoyé |
+| `401` | n/a | Clé de test visant un vendeur `live` |
+| `403` | n/a | Cible inconnue, malformée, d'une autre marketplace, ou allocation vers vous-même |
+| `402` | `connect.insufficient_funds_for_reversal` | Corps : `required`, `seller_available`, `shortfall`, `currency` |
+| `409` | `E_DUPLICATE_OPERATION` · `E_IDEMPOTENCY_CONFLICT` | Idempotence |
+| `422` | `connect.fee_payer_unset` | Connect n'est pas activé |
+| `422` | `connect.vendor_net_not_positive` | La surcharge absorbe toute l'allocation |
+| `422` | `connect.country_unsupported` | Aucun opérateur pour votre pays |
+| `422` | `connect.reversal_exceeds_remaining` | Corps : `requested`, `remaining` |
+| `422` | `E_CURRENCY_MISMATCH` | Devises différentes |
+| `503` | `E_CONNECT_PRICING_UNAVAILABLE` | Surcharge non résolue : refus, jamais zéro |
+| `503` | `E_CONNECT_AVAILABILITY_DELAY_UNSET` | Délai de disponibilité non configuré |
+
+## Événements associés
+
+| Événement | Quand |
+|---|---|
+| `connect.transfer.created` | Une allocation a été créée |
+| `connect.transfer.reversed` | Une allocation a été reprise |
+| `connect.reversal.blocked_insufficient_funds` | Une reprise a été refusée faute de fonds |

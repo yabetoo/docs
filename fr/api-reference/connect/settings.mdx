@@ -1,0 +1,186 @@
+---
+title: "Activation, cadence et aperçu"
+description: "Lire l'activation Connect de votre compte, configurer la cadence de versement et consulter l'aperçu de votre activité."
+---
+
+Trois ressources **singleton**, clées par votre propre compte : il n'y a rien à identifier dans
+l'URL, la cible vient de votre clé API.
+
+## URL de base
+
+```bash
+https://pay.sandbox.yabetoopay.com   # Sandbox (clé sk_test_)
+https://pay.api.yabetoopay.com       # Production (clé sk_live_)
+```
+
+Les chemins ci-dessous sont relatifs à cette base. Les deux hôtes servent les mêmes endpoints.
+
+## L'objet `connect_activation`
+
+<ResponseField name="id" type="string">Votre compte, `acct_…`.</ResponseField>
+<ResponseField name="object" type="string">Vaut toujours `connect_activation`.</ResponseField>
+<ResponseField name="connect_mode" type="string | null">
+  `marketplace`, `platform`, ou `null` si Connect n'est pas activé. **Immuable une fois posé.**
+</ResponseField>
+
+## L'objet `connect_payout_schedule`
+
+<ResponseField name="object" type="string">Vaut toujours `connect_payout_schedule`.</ResponseField>
+<ResponseField name="account" type="string">Votre compte, `acct_…`.</ResponseField>
+<ResponseField name="cadence" type="string | null">`daily`, `weekly`, ou `null`.</ResponseField>
+<ResponseField name="enabled" type="boolean">Si la cadence automatique est active.</ResponseField>
+
+---
+
+## Lire votre activation
+
+```bash
+GET /v1/connect/activations
+```
+
+Rend **toujours 200**, jamais 404 : « pas encore activé » est un état de première classe.
+
+```json 200
+{
+  "id": "acct_01HZMARKETPLACE00000000000",
+  "object": "connect_activation",
+  "connect_mode": null
+}
+```
+
+---
+
+## Activer Connect
+
+L'activation n'a pas de surface API : elle se fait depuis le
+[tableau de bord marchand](https://app.yabetoo.com/dashboard/connect), section **Connect**.
+
+<Warning>
+`connect_mode` est **immuable** une fois posé. Voir [Activer Connect](/fr/connect/activate).
+</Warning>
+
+---
+
+## Lire votre cadence de versement
+
+```bash
+GET /v1/connect/payout_schedule
+```
+
+Rend **toujours 200**, avec `cadence: null` et `enabled: false` quand rien n'est configuré.
+
+---
+
+## Configurer la cadence de versement
+
+```bash
+POST /v1/connect/payout_schedule
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|---|---|---|---|
+| `cadence` | `string` | Oui | `daily` ou `weekly` |
+| `enabled` | `boolean` | Non | `true` par défaut |
+
+### Renvoie
+
+L'objet `connect_payout_schedule`, en **`200`**, pas `201` : la ressource est votre compte,
+elle existe déjà. Reposter **remplace** la configuration.
+
+```json 200
+{
+  "object": "connect_payout_schedule",
+  "account": "acct_01HZMARKETPLACE00000000000",
+  "cadence": "weekly",
+  "enabled": true
+}
+```
+
+<Note>
+Cet endpoint est naturellement idempotent : il n'a ni `Idempotency-Key` ni limitation de débit.
+</Note>
+
+---
+
+## Lire l'aperçu de votre activité
+
+```bash
+GET /v1/connect/overview
+```
+
+Le volume brut encaissé pour le compte de vos vendeurs, vos nouveaux vendeurs, et les
+palmarès — sur une période, comparée à la précédente. C'est la donnée de l'écran Connect du
+tableau de bord.
+
+| Paramètre | Valeurs | Défaut | Description |
+|---|---|---|---|
+| `range` | `30d`, `6m`, `12m` | `12m` | Fenêtre courante : 30 jours civils, ou 6/12 mois civils |
+| `granularity` | `day`, `week`, `month` | `month` | Pas des séries. `day` n'est disponible que sur `30d`, `month` que sur `6m`/`12m` |
+| `comparison` | `previous_period`, `previous_year` | `previous_year` | Période de référence : la fenêtre contiguë précédente, ou la même fenêtre un an plus tôt |
+
+### Renvoie
+
+```json 200
+{
+  "object": "connect_overview",
+  "currency": "XAF",
+  "period": {
+    "range": "12m",
+    "granularity": "month",
+    "comparison": "previous_year",
+    "from": "2025-10-01T00:00:00.000Z",
+    "to": "2026-09-17T00:00:00.000Z",
+    "previous_from": "2024-10-01T00:00:00.000Z",
+    "previous_to": "2025-09-17T00:00:00.000Z"
+  },
+  "gross_volume": {
+    "total": 1250000,
+    "previous_total": 980000,
+    "points": [{ "date": "2025-10-01T00:00:00.000Z", "value": 90000, "previous": 71000 }]
+  },
+  "new_accounts": {
+    "total": 12,
+    "previous_total": 9,
+    "points": [{ "date": "2025-10-01T00:00:00.000Z", "value": 1, "previous": 0 }]
+  },
+  "top_volume": [
+    { "account": "acct_01HZVENDOR0000000000000000", "name": "Boutique Ada", "country": "CG",
+      "value": 420000, "previous_value": 310000, "delta": 35.48 }
+  ],
+  "top_growth": []
+}
+```
+
+<ResponseField name="gross_volume" type="object">
+  Montant brut des intentions **capturées ou remboursées** pour le compte d'un vendeur (brut
+  avant remboursement), dans la devise de votre compte. `points` porte une entrée par pas de
+  `granularity`, avec la valeur courante et celle de la période de référence **repliée** sur le
+  même pas.
+</ResponseField>
+
+<ResponseField name="new_accounts" type="object">
+  Vendeurs créés sur la période, même forme que `gross_volume`. Les vendeurs supprimés sont
+  exclus.
+</ResponseField>
+
+<ResponseField name="top_volume / top_growth" type="array">
+  Jusqu'à **4** vendeurs, classés par volume ou par croissance. `delta` est en pourcentage ;
+  **`null`** quand la période de référence est vide — jamais un `+100 %` inventé.
+</ResponseField>
+
+<Note>
+Un couple `range × granularity` incompatible (par exemple `30d` × `month`) rend **422** avec
+`errors[0].rule = "compatible_with_range"`. Les dates sont en UTC.
+</Note>
+
+---
+
+## Erreurs
+
+| Statut | Code | Cause |
+|---|---|---|
+| `400` | n/a | En-tête `Yabetoo-Account` envoyé |
+| `401` | `E_UNAUTHORIZED` | Clé absente ou invalide |
+| `422` | n/a | `connect_mode` ou `cadence` absent ou hors énumération. Le corps porte `meta.choices`. |
+| `422` | `rule: "compatible_with_range"` | `granularity` indisponible pour ce `range` (aperçu) |
+| `503` | `E_SSO_UNAVAILABLE` | Service d'identité indisponible |

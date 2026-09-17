@@ -1,0 +1,93 @@
+---
+title: "Activer Connect"
+description: "Choisissez votre mode de commission et activez Yabetoo Connect sur votre compte."
+icon: "toggle-on"
+---
+
+Avant de pouvoir créer un vendeur, vous devez **activer Connect** sur votre compte. Cette étape
+pose votre `connect_mode`, le réglage qui décide qui supporte les frais Yabetoo sur chaque
+encaissement.
+
+## L'activation se fait depuis votre tableau de bord
+
+<Card title="Ouvrir Connect dans le tableau de bord" icon="toggle-on" href="https://app.yabetoo.com/dashboard/connect" horizontal>
+  Tableau de bord Yabetoo, section **Connect**.
+</Card>
+
+<Steps>
+  <Step title="Ouvrez la section Connect">
+    Connectez-vous au [tableau de bord](https://app.yabetoo.com) et allez dans **Connect**.
+  </Step>
+  <Step title="Choisissez votre mode">
+    Deux cartes vous sont proposées, **marketplace** et **plateforme**. Aucune n'est
+    pré-sélectionnée, et le bouton reste verrouillé tant que vous n'avez pas choisi.
+  </Step>
+  <Step title="Confirmez">
+    Connect est actif immédiatement. Vous pouvez créer votre premier vendeur.
+  </Step>
+</Steps>
+
+<Warning>
+**Ce choix est définitif.** `connect_mode` est **immuable** : il n'existe aucun moyen de le
+modifier après coup, ni dans le tableau de bord ni par l'API. Lisez
+[Commissions et tarification](/fr/connect/pricing) avant de confirmer.
+</Warning>
+
+<Note>
+L'activation est **par compte et par environnement** : activer en test n'active pas en
+production. Refaites l'étape avec votre compte de production.
+</Note>
+
+## Choisir votre mode
+
+| `connect_mode` | `fee_payer` dérivé | Pour qui |
+|---|---|---|
+| `marketplace` | `controller` | Vous prélevez une commission sur la vente et payez Yabetoo **sur cette commission**. Le vendeur ne subit qu'un seul prélèvement. |
+| `platform` | `account` | Le vendeur est facturé par Yabetoo **comme un marchand ordinaire**. Votre commission s'y ajoute et vous revient en entier. |
+
+Les deux modes sont chiffrés dans [Commissions et tarification](/fr/connect/pricing). Le même
+taux n'y rapporte pas la même chose : c'est la première chose à comprendre avant de choisir.
+
+## Vérifier l'état de votre compte par l'API
+
+Votre intégration peut lire le mode à tout moment, sans passer par le tableau de bord.
+
+```bash
+GET https://pay.sandbox.yabetoopay.com/v1/connect/activations   # Sandbox
+GET https://pay.api.yabetoopay.com/v1/connect/activations       # Production
+```
+
+<CodeGroup>
+```bash cURL
+curl https://pay.sandbox.yabetoopay.com/v1/connect/activations \
+  -H "Authorization: Bearer YOUR_SECRET_KEY"
+```
+</CodeGroup>
+
+```json 200
+{
+  "id": "acct_01HZMARKETPLACE00000000000",
+  "object": "connect_activation",
+  "connect_mode": null
+}
+```
+
+`connect_mode` vaut `"marketplace"`, `"platform"`, ou `null` si Connect n'est pas activé.
+
+<Note>
+Cette route rend **toujours 200**, jamais 404 : « pas encore activé » est un état de première
+classe, pas une erreur. C'est ce qui vous permet d'afficher votre propre écran d'onboarding
+sans brancher sur un code d'erreur.
+</Note>
+
+<Warning>
+**Tant que Connect n'est pas activé, toute création de vendeur est refusée** en `422` avec un
+corps portant `connect.controller_mode_unset`. C'est le symptôme le plus fréquent au premier
+jour d'intégration.
+</Warning>
+
+## Ensuite
+
+<Card title="Créer votre premier vendeur" icon="user-plus" href="/fr/connect/accounts/create">
+  Une fois Connect activé, créez un compte connecté.
+</Card>

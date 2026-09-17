@@ -39,7 +39,6 @@
                 "pages": [
                   "fr/products/overview",
                   "fr/products/products",
-                  "fr/products/skus",
                   "fr/products/prices",
                   "fr/products/coupons"
                 ],
@@ -101,6 +100,55 @@
                   "fr/payments/payment-link/create",
                   "fr/payments/payment-link/share"
                 ]
+              }
+            ]
+          },
+          {
+            "tab": "Connect",
+            "groups": [
+              {
+                "group": "Pour commencer",
+                "pages": [
+                  "fr/connect/overview",
+                  "fr/connect/quickstart",
+                  "fr/connect/activate"
+                ],
+                "icon": "share-nodes"
+              },
+              {
+                "group": "Comptes connectés",
+                "pages": [
+                  "fr/connect/accounts/create",
+                  "fr/connect/accounts/onboarding",
+                  "fr/connect/accounts/manage"
+                ],
+                "icon": "users"
+              },
+              {
+                "group": "Encaisser",
+                "pages": [
+                  "fr/connect/payments/charges",
+                  "fr/connect/payments/allocations",
+                  "fr/connect/pricing"
+                ],
+                "icon": "money-bill-transfer"
+              },
+              {
+                "group": "Reverser",
+                "pages": [
+                  "fr/connect/payouts",
+                  "fr/connect/refunds"
+                ],
+                "icon": "wallet"
+              },
+              {
+                "group": "Ressources",
+                "pages": [
+                  "fr/connect/webhooks",
+                  "fr/connect/errors",
+                  "fr/connect/testing"
+                ],
+                "icon": "life-ring"
               }
             ]
           },
@@ -218,6 +266,14 @@
                 ]
               },
               {
+                "group": "Connect",
+                "pages": [
+                  "fr/api-reference/connect/accounts",
+                  "fr/api-reference/connect/allocations",
+                  "fr/api-reference/connect/settings"
+                ]
+              },
+              {
                 "group": "Webhook",
                 "pages": [
                   "fr/api-reference/webhook/create",
@@ -258,7 +314,6 @@
                 "pages": [
                   "en/products/overview",
                   "en/products/products",
-                  "en/products/skus",
                   "en/products/prices",
                   "en/products/coupons"
                 ],
@@ -324,6 +379,55 @@
             ]
           },
 
+          {
+            "tab": "Connect",
+            "groups": [
+              {
+                "group": "Get started",
+                "pages": [
+                  "en/connect/overview",
+                  "en/connect/quickstart",
+                  "en/connect/activate"
+                ],
+                "icon": "share-nodes"
+              },
+              {
+                "group": "Connected accounts",
+                "pages": [
+                  "en/connect/accounts/create",
+                  "en/connect/accounts/onboarding",
+                  "en/connect/accounts/manage"
+                ],
+                "icon": "users"
+              },
+              {
+                "group": "Accept payments",
+                "pages": [
+                  "en/connect/payments/charges",
+                  "en/connect/payments/allocations",
+                  "en/connect/pricing"
+                ],
+                "icon": "money-bill-transfer"
+              },
+              {
+                "group": "Pay out",
+                "pages": [
+                  "en/connect/payouts",
+                  "en/connect/refunds"
+                ],
+                "icon": "wallet"
+              },
+              {
+                "group": "Resources",
+                "pages": [
+                  "en/connect/webhooks",
+                  "en/connect/errors",
+                  "en/connect/testing"
+                ],
+                "icon": "life-ring"
+              }
+            ]
+          },
           {
             "tab": "Developer tools",
             "groups": [
@@ -438,6 +542,14 @@
                 ]
               },
               {
+                "group": "Connect",
+                "pages": [
+                  "en/api-reference/connect/accounts",
+                  "en/api-reference/connect/allocations",
+                  "en/api-reference/connect/settings"
+                ]
+              },
+              {
                 "group": "Webhook",
                 "pages": [
                   "en/api-reference/webhook/create",
@@ -454,6 +566,16 @@
       "anchors": []
     }
   },
+  "redirects": [
+    {
+      "source": "/fr/products/skus",
+      "destination": "/fr/products/prices"
+    },
+    {
+      "source": "/en/products/skus",
+      "destination": "/en/products/prices"
+    }
+  ],
   "logo": {
     "light": "/logo/yb_light.svg",
     "dark": "/logo/yb_dark.svg"

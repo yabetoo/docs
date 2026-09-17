@@ -1,6 +1,6 @@
 ---
 title: "Catalogue Produits"
-description: "Comprendre les concepts fondamentaux du catalogue produits Yabetoo : produits, variantes, prix et promotions"
+description: "Comprendre les concepts fondamentaux du catalogue produits Yabetoo : produits, prix et promotions"
 ---
 
 ## Vue d'ensemble
@@ -10,9 +10,6 @@ Le catalogue produits de Yabetoo vous permet de gérer l'ensemble de votre offre
 <CardGroup cols={2}>
   <Card title="Produits" icon="box" href="/fr/products/products">
     Créez et gérez votre catalogue de produits avec différents types et statuts
-  </Card>
-  <Card title="Variantes (SKUs)" icon="tags" href="/fr/products/skus">
-    Gérez les déclinaisons de vos produits : tailles, couleurs, options
   </Card>
   <Card title="Tarification" icon="money-bill" href="/fr/products/prices">
     Définissez vos prix : paiement unique ou abonnement récurrent
@@ -24,28 +21,24 @@ Le catalogue produits de Yabetoo vous permet de gérer l'ensemble de votre offre
 
 ## Architecture du catalogue
 
-Le catalogue Yabetoo suit une hiérarchie claire et flexible :
+Le **produit** est au centre du catalogue. Le prix lui est directement rattaché :
 
 ```
-Produit (Product)
-├── Variante 1 (SKU)
-│   ├── Prix EUR mensuel
-│   ├── Prix EUR annuel
-│   └── Prix XOF mensuel
-├── Variante 2 (SKU)
-│   └── Prix unique EUR
-└── Documents (images, fichiers)
+Produit "Formation Pro"
+├── Price[]                       prix rattachés au produit
+│   ├── Price 25 000 XAF one-time
+│   └── Price 5 000 XAF/mois
+└── Document[] (images, fichiers)
 ```
 
 <Steps>
   <Step title="Créer un Produit">
-    Définissez les informations de base : nom, description, type (physique, numérique, service)
-  </Step>
-  <Step title="Ajouter des Variantes (SKUs)">
-    Créez des déclinaisons avec leurs attributs (taille, couleur, etc.) et stock
+    Définissez les informations de base — nom, description, type (physique, numérique,
+    service) — et son prix par défaut dans le même appel avec `defaultPriceData`.
   </Step>
   <Step title="Définir les Prix">
-    Associez un ou plusieurs prix à chaque variante : paiement unique ou récurrent
+    Rattachez un second prix au produit avec `POST /v1/prices` — un tarif annuel à côté du
+    mensuel, ou une seconde devise.
   </Step>
   <Step title="Configurer les Promotions">
     Créez des coupons et codes promo pour offrir des réductions
@@ -80,7 +73,6 @@ Chaque entité possède un identifiant unique avec un préfixe distinctif :
 | Entité | Préfixe | Exemple |
 |--------|---------|---------|
 | Produit | `prod_` | `prod_abc123def456...` |
-| Variante (SKU) | `sku_` | `sku_xyz789ghi012...` |
 | Prix | `price_` | `price_eur_monthly_001...` |
 | Coupon | `coupon_` | `coupon_summer_2024...` |
 | Code promo | `promo_` | `promo_SUMMER20...` |

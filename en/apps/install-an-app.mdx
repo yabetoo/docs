@@ -1,0 +1,93 @@
+---
+title: "Install an App"
+description: "Step-by-step guide to install a Yabetoo App on your merchant account in under 2 minutes."
+icon: "download"
+---
+
+Installing a Yabetoo App takes about two minutes. You stay in control of the process: no permission is granted without your explicit approval, and you can uninstall at any time.
+
+## Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="An active Yabetoo account" icon="user-check">
+    Your account must be verified and activated to install business Apps.
+  </Card>
+  <Card title="Administrator rights" icon="shield">
+    Only members with the administrator role can install or uninstall an App.
+  </Card>
+</CardGroup>
+
+## Step 1: Access the App catalogue
+
+Log in to your dashboard at [app.yabetoo.com](https://app.yabetoo.com), then click **Apps** in the sidebar.
+
+![Available Apps catalogue in the dashboard](/images/apps/install-step-1.png)
+
+You'll see all available Apps with their status:
+
+- **Available** — ready to install
+- **Installed** — already active on your account
+- **Coming soon** — in preparation
+
+## Step 2: Click "Install"
+
+Click the card of the App you want to install your detailed App profile, then click the **Install** button.
+
+![Install button on an App's profile](/images/apps/install-step-2.png)
+
+<Note>
+  An App's profile shows its publisher, main features, pricing (if different from your subscription) and the list of requested permissions.
+</Note>
+
+## Step 3: Review the requested permissions
+
+Before finalising installation, Yabetoo shows you the **consent screen**: the precise list of data and actions the App will have access to.
+
+![Consent screen listing requested scopes](/images/apps/install-step-3.png)
+
+Each permission (called a *scope*) is explained in plain language. For example:
+
+- **Read payments** — view your account's transaction history
+- **Create payments** — issue payment intents on your behalf
+- **Read product catalogue** — access your Yabetoo product list
+
+<Warning>
+  Read the list of permissions carefully. If a permission seems disproportionate to the App's function, do not install and contact our support at [support@yabetoopay.com](mailto:support@yabetoopay.com).
+</Warning>
+
+## Step 4: Approve and get redirected to the App
+
+Click **Authorise installation**. Yabetoo then generates a dedicated access key for this App (in the form `sk_app_…`) and automatically redirects you to the App.
+
+![Automatic redirection to the App after approval](/images/apps/install-step-4.png)
+
+For Takumi (Restaurant App), you land directly on the first establishment setup screen.
+
+<Tip>
+  The `sk_app_…` key is managed automatically by Yabetoo. You don't need to **copy and paste anything**: the App authenticates itself through the OAuth 2.0 protocol.
+</Tip>
+
+## Step 5: Your App is active
+
+That's it. The App now appears in the **Installed Apps** section of your dashboard, with its installation date, its scopes, and a shortcut to launch it.
+
+<Check>
+  Congratulations! Your App is installed and ready to use. You can launch it at any time from your dashboard.
+</Check>
+
+## Good to know
+
+<Note>
+  **You stay the owner of your data.** The App acts on your behalf, but all the data it generates (payments, customers, products) remains attached to your Yabetoo account. You can uninstall the App at any time — see [Manage your Apps](/en/apps/manage-your-apps).
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Manage your Apps" icon="gear" href="/en/apps/manage-your-apps">
+    View, configure and uninstall your installed Apps.
+  </Card>
+  <Card title="Getting started with Takumi" icon="utensils" href="/en/apps/restaurant/getting-started">
+    Configure your restaurant establishment after installation.
+  </Card>
+</CardGroup>

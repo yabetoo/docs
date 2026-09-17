@@ -5,7 +5,9 @@ description: "Créez et gérez votre catalogue de produits avec différents type
 
 ## Qu'est-ce qu'un Produit ?
 
-Un **Produit** représente un article ou service que vous vendez. C'est l'entité de base de votre catalogue autour de laquelle s'articulent les variantes (SKUs), les prix et les promotions.
+Un **Produit** représente un article ou service que vous vendez. C'est l'entité de base de votre catalogue, autour de laquelle s'articulent les prix et les promotions.
+
+Un prix est rattaché au produit via `productId`. Un plan SaaS ou une prestation de service est donc un produit avec un ou plusieurs prix.
 
 <Info>
   **Format de l'identifiant** : `prod_` suivi de 36 caractères alphanumériques.
@@ -27,7 +29,9 @@ Un **Produit** représente un article ou service que vous vendez. C'est l'entit�
 | `price` | number \| null | Prix par défaut (optionnel) |
 | `category` | number | Catégorie du produit |
 | `subscriptionEligible` | boolean | Peut être vendu en abonnement |
-| `hasSkus` | boolean | Indique si le produit a des variantes |
+| `hasSkus` | boolean | **Hérité.** `false` pour tout produit créé aujourd'hui — dérivé des variantes historiques du produit, jamais un champ que vous envoyez |
+| `skus` | array | **Hérité.** Les variantes historiques du produit. Vide pour tout produit créé aujourd'hui |
+| `prices` | array | Les prix **actifs** rattachés au produit |
 
 ## Types de produits
 
@@ -48,8 +52,7 @@ Un **Produit** représente un article ou service que vous vendez. C'est l'entit�
     {
       "name": "T-shirt Premium",
       "type": "physical",
-      "description": "T-shirt 100% coton biologique",
-      "hasSkus": true
+      "description": "T-shirt 100% coton biologique"
     }
     ```
   </Tab>
@@ -126,111 +129,161 @@ enum ProductStatus {
 
 ## Créer un produit
 
-<Steps>
-  <Step title="Définir les informations de base">
-    Renseignez le nom, la description et le type de produit.
+Les produits se créent sur `POST /v1/products`, avec leur prix par défaut posé dans le **même
+appel**.
 
+### Corps de la requête
+
+<ParamField body="name" type="string" required>
+  Nom du produit, de 3 à 70 caractères.
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Description du produit, de 10 à 255 caractères.
+</ParamField>
+
+<ParamField body="type" type="enum" required>
+  `physical`, `digital` ou `service`.
+</ParamField>
+
+<ParamField body="category" type="number" required>
+  Catégorie du produit, strictement positive.
+</ParamField>
+
+<ParamField body="subscriptionEligible" type="boolean" required>
+  Indique si le produit peut être vendu en abonnement.
+</ParamField>
+
+<ParamField body="status" type="enum" default="draft">
+  `active`, `draft` ou `archived`.
+</ParamField>
+
+<ParamField body="defaultPriceData" type="object">
+  Le prix du produit, posé dans le même appel. **Optionnel** : un produit peut naître sans
+  prix, et en recevoir un ensuite via `POST /v1/prices`. Détail de ses champs ci-dessous.
+</ParamField>
+
+<Note>
+  `accountId` n'est **pas** un champ du corps de la requête : le compte propriétaire du
+  produit est dérivé de la clé API utilisée pour l'appel, pas d'une valeur envoyée par
+  l'appelant.
+</Note>
+
+<Steps>
+  <Step title="Créer le produit avec son prix">
     ```bash
     curl -X POST https://api.yabetoo.com/v1/products \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
-        "name": "Formation JavaScript",
-        "description": "Maîtrisez JavaScript de A à Z",
-        "type": "digital"
+        "name": "Plan Pro",
+        "description": "Abonnement mensuel",
+        "type": "service",
+        "category": 3,
+        "subscriptionEligible": true,
+        "defaultPriceData": {
+          "amount": 25000,
+          "currency": "xaf",
+          "type": "recurring",
+          "billingInterval": "month",
+          "billingIntervalCount": 1
+        }
       }'
     ```
   </Step>
 
-  <Step title="Configurer les options">
-    Définissez si le produit peut être vendu en abonnement et s'il possède des variantes.
-
-    ```json
-    {
-      "subscriptionEligible": true,
-      "hasSkus": false
-    }
-    ```
-  </Step>
-
-  <Step title="Ajouter les variantes (optionnel)">
-    Si `hasSkus` est `true`, créez les variantes du produit.
-
-    Voir [Documentation des SKUs](/fr/products/skus)
-  </Step>
-
-  <Step title="Définir les prix">
-    Associez un ou plusieurs prix au produit ou à ses variantes.
+  <Step title="Ajouter un second prix (optionnel)">
+    Un tarif annuel à côté du mensuel, ou une seconde devise : `POST /v1/prices` avec
+    `productId`.
 
     Voir [Documentation des Prix](/fr/products/prices)
   </Step>
 </Steps>
 
+### `defaultPriceData`
+
+<ParamField body="amount" type="number" required>
+  Montant dans l'unité principale de la devise. Strictement positif et au maximum
+  `99999999.99`.
+</ParamField>
+
+<ParamField body="currency" type="string" required>
+  Code devise. **Obligatoire** — il n'y a pas de devise par défaut. Limité à `xaf` et `eur` :
+  voir [Devises supportées](/fr/products/prices).
+</ParamField>
+
+<ParamField body="type" type="enum" required>
+  `one_time` ou `recurring`.
+</ParamField>
+
+<ParamField body="billingInterval" type="enum">
+  `day`, `week`, `month` ou `year`. Prix récurrents uniquement.
+</ParamField>
+
+<ParamField body="billingIntervalCount" type="number">
+  Nombre d'intervalles par cycle de facturation. Strictement positif.
+</ParamField>
+
+<ParamField body="trialPeriodDays" type="number">
+  Jours d'essai gratuit, `0` ou plus.
+</ParamField>
+
+<Warning>
+  **`defaultPriceData` ne se cumule pas avec la configuration historique de prix par lot du
+  corps de la requête.** Envoyer les deux dans le même appel est refusé en **422**
+  (`E_CONFLICTING_PRICE_INPUT`) : chacun créerait un prix actif, et les deux coexisteraient
+  sur le produit sans qu'on sache lequel s'applique. Envoyez `defaultPriceData` seul —
+  c'est la voie recommandée.
+</Warning>
+
 ## Réponse API
 
-<Tabs>
-  <Tab title="Produit simple">
-    ```json
-    {
-      "id": "prod_abc123def456ghi789",
-      "object": "product",
-      "name": "Formation JavaScript",
-      "description": "Maîtrisez JavaScript de A à Z",
-      "type": "digital",
-      "status": "active",
-      "price": null,
-      "category": 1,
-      "subscriptionEligible": true,
-      "hasSkus": false,
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z"
-    }
-    ```
-  </Tab>
+`GET /v1/products` et `GET /v1/products/{id}` renvoient le produit avec ses prix, ainsi que
+`hasSkus` et `skus` — des champs **hérités** du modèle par variantes retiré de ce guide.
 
-  <Tab title="Produit avec variantes">
-    ```json
+<ResponseField name="hasSkus" type="boolean">
+  **Hérité.** `false` pour tout produit créé aujourd'hui.
+</ResponseField>
+
+<ResponseField name="skus" type="array">
+  **Hérité.** Vide pour tout produit créé aujourd'hui.
+</ResponseField>
+
+<ResponseField name="prices" type="array">
+  Les prix rattachés au produit. **Prix actifs uniquement** — les prix désactivés ne sont pas
+  renvoyés.
+</ResponseField>
+
+```json
+{
+  "id": "prod_abc123def456ghi789",
+  "object": "product",
+  "name": "Formation JavaScript",
+  "description": "Maîtrisez JavaScript de A à Z",
+  "type": "digital",
+  "status": "active",
+  "price": null,
+  "category": 1,
+  "subscriptionEligible": true,
+  "hasSkus": false,
+  "skus": [],
+  "prices": [
     {
-      "id": "prod_xyz789abc123def456",
-      "object": "product",
-      "name": "T-shirt Premium",
-      "description": "T-shirt 100% coton biologique",
-      "type": "physical",
-      "status": "active",
-      "price": null,
-      "category": 2,
-      "subscriptionEligible": false,
-      "hasSkus": true,
-      "skus": [
-        {
-          "id": "sku_small_white",
-          "name": "T-shirt S Blanc",
-          "skuCode": "TSHIRT-S-WHITE",
-          "attributes": {
-            "size": "S",
-            "color": "white"
-          },
-          "stockQuantity": 50,
-          "stockTracking": true
-        },
-        {
-          "id": "sku_medium_black",
-          "name": "T-shirt M Noir",
-          "skuCode": "TSHIRT-M-BLACK",
-          "attributes": {
-            "size": "M",
-            "color": "black"
-          },
-          "stockQuantity": 30,
-          "stockTracking": true
-        }
-      ],
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z"
+      "id": "price_abc123def456ghi789",
+      "productId": "prod_abc123def456ghi789",
+      "amount": "25000.00",
+      "currency": "xaf",
+      "type": "one_time",
+      "billingInterval": null,
+      "billingIntervalCount": null,
+      "trialPeriodDays": null,
+      "active": true
     }
-    ```
-  </Tab>
-</Tabs>
+  ],
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z"
+}
+```
 
 ## Opérations courantes
 
@@ -243,8 +296,11 @@ curl https://api.yabetoo.com/v1/products/prod_abc123 \
 
 ### Mettre à jour un produit
 
+Le verbe est **`PUT`**, et la mise à jour est partielle : seuls les champs présents dans le
+corps sont modifiés.
+
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -253,10 +309,16 @@ curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
   }'
 ```
 
+<Note>
+  Les prix ne se modifient pas ici : ils passent par `POST /v1/prices` (nouveau prix) et
+  `PUT /v1/prices/{id}` (activer/désactiver). Voir [Documentation des
+  Prix](/fr/products/prices).
+</Note>
+
 ### Archiver un produit
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/products/prod_abc123 \
+curl -X PUT https://api.yabetoo.com/v1/products/prod_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -279,8 +341,7 @@ curl -X DELETE https://api.yabetoo.com/v1/products/prod_abc123 \
 
 ```
 Product
-├── ProductSku[] (variantes)
-│   └── Price[] (prix)
+├── Price[] (prix rattachés au produit — productId)
 ├── Document[] (images, fichiers)
 └── ProductLink[] (produits liés)
     ├── Cross-sell (produits complémentaires)
@@ -294,32 +355,24 @@ Product
   <Accordion title="Nommage des produits">
     - Utilisez des noms clairs et descriptifs
     - Évitez les abréviations obscures
-    - Incluez les caractéristiques clés dans le nom pour les variantes
+    - Incluez les caractéristiques clés dans le nom
   </Accordion>
 
   <Accordion title="Gestion des statuts">
     - Utilisez `draft` pour les produits en préparation
-    - Passez en `active` uniquement quand tout est configuré (prix, images, stock)
+    - Passez en `active` uniquement quand tout est configuré (prix, images)
     - Archivez plutôt que supprimer pour conserver l'historique
   </Accordion>
 
   <Accordion title="Organisation du catalogue">
     - Groupez les produits similaires par catégorie
-    - Utilisez les variantes (SKUs) pour les déclinaisons d'un même produit
     - Configurez les produits liés pour le cross-selling
   </Accordion>
 </AccordionGroup>
 
 ## Prochaines étapes
 
-<CardGroup cols={2}>
-  <Card
-    title="Gérer les variantes"
-    icon="tags"
-    href="/fr/products/skus"
-  >
-    Apprenez à créer des SKUs pour les déclinaisons de vos produits
-  </Card>
+<CardGroup cols={1}>
   <Card
     title="Définir les prix"
     icon="money-bill"

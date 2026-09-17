@@ -51,7 +51,7 @@ Un **Coupon** définit le type et le montant de la réduction. Il peut être ré
 | `maxRedemptions` | number \| null | Nombre max d'utilisations |
 | `timesRedeemed` | number | Utilisations actuelles |
 | `redeemBy` | DateTime \| null | Date d'expiration |
-| `appliesToSkus` | string[] | SKUs éligibles (optionnel) |
+| `appliesToProducts` | string[] | Identifiants de **produit** auxquels le coupon est limité (optionnel) |
 | `valid` | boolean | Coupon actif |
 
 ### Types de réduction
@@ -157,26 +157,39 @@ Un **Coupon** définit le type et le montant de la réduction. Il peut être ré
 }
 ```
 
-### Restrictions par SKU
+### Restrictions par produit
 
-Limitez un coupon à certains produits/SKUs :
+Limitez un coupon à certains produits :
 
 ```json
 {
   "name": "Promo Formations",
   "percentOff": 30,
   "duration": "once",
-  "appliesToSkus": [
-    "sku_formation_js",
-    "sku_formation_react",
-    "sku_formation_node"
+  "appliesToProducts": [
+    "prod_formation_js",
+    "prod_formation_react",
+    "prod_formation_node"
   ]
 }
 ```
 
 <Warning>
-  Si `appliesToSkus` est défini, la réduction ne s'applique qu'aux SKUs listés. Les autres articles du panier ne bénéficient pas de la réduction.
+  **`appliesToProducts` attend des identifiants de PRODUIT (`prod_…`).** L'éligibilité
+  s'évalue en résolvant chaque article du panier vers son produit parent, puis en testant
+  **ce produit-là** contre la liste.
+
+  Rien n'attrape l'erreur — le validateur accepte n'importe quel tableau de chaînes, sans
+  vérifier que les identifiants existent ni ce qu'ils désignent. Un identifiant mal formé ne
+  provoque jamais d'erreur : la comparaison n'est simplement jamais vraie et **le coupon ne
+  s'applique jamais**, sans le moindre message expliquant pourquoi.
 </Warning>
+
+<Note>
+  Si `appliesToProducts` est défini, la réduction ne s'applique qu'aux produits listés — les
+  autres articles du panier n'en bénéficient pas. Chaque article du panier est résolu vers son
+  produit avant d'être comparé à la liste.
+</Note>
 
 ---
 
@@ -320,8 +333,9 @@ Lors de l'utilisation d'un code promo, le système effectue plusieurs vérificat
   <Step title="Client autorisé">
     Si `customerIds` défini, vérifier que le client est dans la liste
   </Step>
-  <Step title="SKUs éligibles">
-    Si le coupon a `appliesToSkus`, vérifier que le panier contient ces SKUs
+  <Step title="Produits éligibles">
+    Si le coupon a `appliesToProducts`, vérifier que le panier contient au moins un article
+    appartenant à ces **produits**
   </Step>
   <Step title="Devise supportée">
     La devise de la commande doit être supportée par le coupon
@@ -337,7 +351,7 @@ Lors de l'utilisation d'un code promo, le système effectue plusieurs vérificat
 | `MAX_REDEMPTIONS` | Limite d'utilisations atteinte |
 | `MINIMUM_NOT_MET` | Montant minimum non atteint |
 | `NOT_FIRST_PURCHASE` | Réservé aux premiers achats |
-| `SKUS_NOT_ELIGIBLE` | Aucun SKU éligible dans le panier |
+| `SKUS_NOT_ELIGIBLE` | Aucun article du panier n'appartient à un produit listé dans `appliesToProducts` — le nom du code, hérité, ne reflète plus ce qu'il vérifie |
 | `CURRENCY_MISMATCH` | Devise non supportée |
 | `CUSTOMER_NOT_ALLOWED` | Client non autorisé |
 | `COUPON_INVALID` | Coupon désactivé |
@@ -415,7 +429,7 @@ Calcul:
       "maxRedemptions": 1000,
       "timesRedeemed": 156,
       "redeemBy": "2024-08-31T23:59:59.000Z",
-      "appliesToSkus": null,
+      "appliesToProducts": null,
       "valid": true,
       "createdAt": "2024-06-01T00:00:00.000Z",
       "updatedAt": "2024-07-15T14:30:00.000Z"
