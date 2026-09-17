@@ -63,7 +63,7 @@ Un **Coupon** définit le type et le montant de la réduction. Il peut être ré
     Applique un pourcentage de réduction sur le montant total.
 
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/coupons \
+    curl -X POST https://buy.api.yabetoopay.com/v1/coupons \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -82,7 +82,7 @@ Un **Coupon** définit le type et le montant de la réduction. Il peut être ré
     Soustrait un montant fixe du total.
 
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/coupons \
+    curl -X POST https://buy.api.yabetoopay.com/v1/coupons \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -102,7 +102,7 @@ Un **Coupon** définit le type et le montant de la réduction. Il peut être ré
     Définissez des montants fixes différents par devise.
 
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/coupons \
+    curl -X POST https://buy.api.yabetoopay.com/v1/coupons \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -224,7 +224,7 @@ Un **Code Promo** (PromotionCode) est le code que les clients utilisent. Il est 
 ### Créer un Code Promo
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/promotion-codes \
+curl -X POST https://buy.api.yabetoopay.com/v1/promotion-codes \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -471,7 +471,7 @@ Calcul:
 ### Créer un coupon
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/coupons \
+curl -X POST https://buy.api.yabetoopay.com/v1/coupons \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -486,7 +486,7 @@ curl -X POST https://api.yabetoo.com/v1/coupons \
 ### Créer un code promo
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/promotion-codes \
+curl -X POST https://buy.api.yabetoopay.com/v1/promotion-codes \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -498,7 +498,7 @@ curl -X POST https://api.yabetoo.com/v1/promotion-codes \
 ### Valider un code promo
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/promotion-codes/validate \
+curl -X POST https://buy.api.yabetoopay.com/v1/promotion-codes/validate \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -512,7 +512,7 @@ curl -X POST https://api.yabetoo.com/v1/promotion-codes/validate \
 ### Désactiver un code promo
 
 ```bash
-curl -X PATCH https://api.yabetoo.com/v1/promotion-codes/promo_xxx \
+curl -X PATCH https://buy.api.yabetoopay.com/v1/promotion-codes/promo_xxx \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{

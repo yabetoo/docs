@@ -120,7 +120,7 @@ product it attaches to.
     - Lifetime access
 
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/prices \
+    curl -X POST https://buy.api.yabetoopay.com/v1/prices \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -144,7 +144,7 @@ product it attaches to.
     - Maintenance
 
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/prices \
+    curl -X POST https://buy.api.yabetoopay.com/v1/prices \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -227,7 +227,7 @@ Create one price per currency for the same product. Each price corresponds to a 
 `POST /v1/prices` call:
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/prices \
+curl -X POST https://buy.api.yabetoopay.com/v1/prices \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -322,7 +322,7 @@ curl -X POST https://api.yabetoo.com/v1/prices \
 ### Create a Price
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/prices \
+curl -X POST https://buy.api.yabetoopay.com/v1/prices \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -338,14 +338,14 @@ curl -X POST https://api.yabetoo.com/v1/prices \
 ### Retrieve a Price
 
 ```bash
-curl https://api.yabetoo.com/v1/prices/price_abc123 \
+curl https://buy.api.yabetoopay.com/v1/prices/price_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 
 ### List a Product's Prices
 
 ```bash
-curl "https://api.yabetoo.com/v1/prices?productId=prod_abc123" \
+curl "https://buy.api.yabetoopay.com/v1/prices?productId=prod_abc123" \
   -H "Authorization: Bearer sk_live_..."
 ```
 
@@ -370,7 +370,7 @@ curl "https://api.yabetoo.com/v1/prices?productId=prod_abc123" \
 </Note>
 
 ```bash
-curl -X PUT https://api.yabetoo.com/v1/prices/price_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/prices/price_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{

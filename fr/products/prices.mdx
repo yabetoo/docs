@@ -120,7 +120,7 @@ auquel il se rattache.
     - Accès à vie
 
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/prices \
+    curl -X POST https://buy.api.yabetoopay.com/v1/prices \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -144,7 +144,7 @@ auquel il se rattache.
     - Maintenance
 
     ```bash
-    curl -X POST https://api.yabetoo.com/v1/prices \
+    curl -X POST https://buy.api.yabetoopay.com/v1/prices \
       -H "Authorization: Bearer sk_live_..." \
       -H "Content-Type: application/json" \
       -d '{
@@ -227,7 +227,7 @@ Créez un prix par devise pour le même produit. Chaque prix correspond à un ap
 `POST /v1/prices` distinct :
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/prices \
+curl -X POST https://buy.api.yabetoopay.com/v1/prices \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -322,7 +322,7 @@ curl -X POST https://api.yabetoo.com/v1/prices \
 ### Créer un prix
 
 ```bash
-curl -X POST https://api.yabetoo.com/v1/prices \
+curl -X POST https://buy.api.yabetoopay.com/v1/prices \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -338,14 +338,14 @@ curl -X POST https://api.yabetoo.com/v1/prices \
 ### Récupérer un prix
 
 ```bash
-curl https://api.yabetoo.com/v1/prices/price_abc123 \
+curl https://buy.api.yabetoopay.com/v1/prices/price_abc123 \
   -H "Authorization: Bearer sk_live_..."
 ```
 
 ### Lister les prix d'un produit
 
 ```bash
-curl "https://api.yabetoo.com/v1/prices?productId=prod_abc123" \
+curl "https://buy.api.yabetoopay.com/v1/prices?productId=prod_abc123" \
   -H "Authorization: Bearer sk_live_..."
 ```
 
@@ -370,7 +370,7 @@ curl "https://api.yabetoo.com/v1/prices?productId=prod_abc123" \
 </Note>
 
 ```bash
-curl -X PUT https://api.yabetoo.com/v1/prices/price_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/prices/price_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
