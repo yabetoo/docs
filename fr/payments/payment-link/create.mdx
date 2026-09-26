@@ -42,6 +42,8 @@ curl -X POST https://buy.api.yabetoopay.com/v1/payment-links \
 | `collectBillingAddress` | boolean | Collecter l'adresse de facturation |
 | `collectShippingAddress` | boolean | Collecter l'adresse de livraison |
 | `allowPromotionCodes` | boolean | Autoriser les codes promo |
+| `submitType` | string | Texte du bouton de paiement : `auto` (défaut), `pay`, `book` ou `donate` |
+| `submitMessage` | string | Message affiché sous le bouton, texte brut de 1 à 500 caractères |
 | `successUrl` | string | URL de redirection après paiement |
 | `cancelUrl` | string | URL de redirection si annulation |
 | `brandingId` | string | ID du branding personnalisé |
@@ -193,6 +195,24 @@ Pour les types `product` et `subscription`, vous pouvez définir des articles :
   "allowPromotionCodes": true
 }
 ```
+
+### Personnaliser le bouton de paiement
+
+```json
+{
+  "submitType": "book",
+  "submitMessage": "Annulation gratuite jusqu'à 48 h avant la date."
+}
+```
+
+| `submitType` | Bouton affiché |
+|--------------|----------------|
+| `auto` (ou absent) | Payer |
+| `pay` | Payer |
+| `book` | Réserver |
+| `donate` | Faire un don |
+
+`submitMessage` est affiché sous le bouton en texte brut (aucun HTML, retours à la ligne conservés). Les espaces en bord sont retirés ; une chaîne vide équivaut à `null`, une chaîne faite uniquement d'espaces est refusée en `422`. Une session de paiement ouverte depuis le lien hérite de son `submitType`.
 
 ### URL de redirection personnalisées
 
@@ -366,6 +386,8 @@ echo $paymentLink["url"];
   "collectBillingAddress": true,
   "collectShippingAddress": false,
   "allowPromotionCodes": true,
+  "submitType": "pay",
+  "submitMessage": null,
   "successUrl": "https://votre-site.com/success",
   "cancelUrl": "https://votre-site.com/cancel",
   "items": [
@@ -436,7 +458,7 @@ curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
 Seules les clés envoyées sont modifiées :
 
 - une clé **absente** laisse le champ inchangé ;
-- `null` **efface** le champ : `description`, `amount`, `minAmount`, `maxAmount`, `suggestedAmounts`, `expiresAt`, `maxRedemptions`, `successUrl`, `cancelUrl`, `brandingId`, `metadata`. `name` et `slug` ne s'effacent pas (`422`).
+- `null` **efface** le champ : `description`, `amount`, `minAmount`, `maxAmount`, `suggestedAmounts`, `expiresAt`, `maxRedemptions`, `successUrl`, `cancelUrl`, `brandingId`, `metadata`, `submitType`, `submitMessage`. `name` et `slug` ne s'effacent pas (`422`).
 
 <Warning>
 Le `slug` est modifiable, sous les mêmes règles qu'à la création. L'ancienne URL `https://pay.yabetoo.com/p/<ancien-slug>` cesse alors de fonctionner : tout lien déjà partagé ou encodé dans un QR code est cassé. Un slug reste pris même après la suppression de son lien.
