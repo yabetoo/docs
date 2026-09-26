@@ -511,27 +511,41 @@ Recevez des notifications lorsqu'un paiement est effectué via un lien :
 
 ```json
 {
-  "type": "payment_link.payment.completed",
+  "id": "evt_abc123",
+  "type": "payment_link.checkout.completed",
   "data": {
-    "object": {
-      "paymentLinkId": "plink_abc123",
-      "sessionId": "plsession_xyz789",
-      "amount": 25000,
-      "currency": "XOF",
-      "customerEmail": "client@example.com",
-      "status": "completed"
-    }
-  }
+    "paymentLinkId": "plink_abc123",
+    "checkoutSessionId": "cs_xyz789",
+    "orderId": "ord_def456",
+    "amount": 25000,
+    "currency": "xaf",
+    "customerEmail": "client@example.com",
+    "completedAt": "2026-09-26T10:15:00.000Z"
+  },
+  "created_at": "2026-09-26T10:15:00.000Z"
 }
 ```
+
+Les champs sont directement sous `data` (il n'y a pas de `data.object`). `amount` est en unité
+majeure de la devise (`25000` = 25 000 XAF).
 
 ### Événements disponibles
 
 | Événement | Description |
 |-----------|-------------|
 | `payment_link.created` | Lien créé |
-| `payment_link.payment.completed` | Paiement réussi via le lien |
-| `payment_link.payment.failed` | Paiement échoué |
+| `payment_link.checkout.completed` | Paiement réussi via un lien `product` ou `amount` |
+| `payment_link.checkout.failed` | Paiement échoué via un lien `product` ou `amount` (`data.error` porte le motif, pas d'`amount`) |
+
+<Warning>
+  - Un paiement par lien émet `payment_link.checkout.completed`, **pas**
+    `checkout.session.completed` : abonnez-vous à la famille `payment_link.*`.
+  - La mise à jour d'un lien n'émet aucun événement.
+  - Les liens `subscription` passent par le flux d'abonnement et n'émettent aucun événement
+    `payment_link.*` : écoutez les [événements d'abonnement](/fr/subscriptions/webhooks).
+</Warning>
+
+Voir la [documentation Webhooks](/fr/developer-tools/webhook/overview) pour la signature et la livraison.
 
 ## Bonnes pratiques
 
