@@ -42,6 +42,8 @@ curl -X POST https://buy.api.yabetoopay.com/v1/payment-links \
 | `collectBillingAddress` | boolean | Collect billing address |
 | `collectShippingAddress` | boolean | Collect shipping address |
 | `allowPromotionCodes` | boolean | Allow promo codes |
+| `submitType` | string | Payment button label: `auto` (default), `pay`, `book` or `donate` |
+| `submitMessage` | string | Message shown below the button, plain text of 1 to 500 characters |
 | `successUrl` | string | Redirect URL after payment |
 | `cancelUrl` | string | Redirect URL if cancelled |
 | `brandingId` | string | Custom branding ID |
@@ -193,6 +195,24 @@ For `product` and `subscription` types, you can define items:
   "allowPromotionCodes": true
 }
 ```
+
+### Customize the Payment Button
+
+```json
+{
+  "submitType": "book",
+  "submitMessage": "Free cancellation up to 48 hours before the date."
+}
+```
+
+| `submitType` | Button shown |
+|--------------|--------------|
+| `auto` (or absent) | Pay |
+| `pay` | Pay |
+| `book` | Book |
+| `donate` | Donate |
+
+`submitMessage` is shown below the button as plain text (no HTML, line breaks kept). Surrounding whitespace is trimmed; an empty string is treated as `null`, a whitespace-only string is rejected with `422`. A checkout session opened from the link inherits its `submitType`.
 
 ### Custom Redirect URLs
 
@@ -366,6 +386,8 @@ echo $paymentLink["url"];
   "collectBillingAddress": true,
   "collectShippingAddress": false,
   "allowPromotionCodes": true,
+  "submitType": "pay",
+  "submitMessage": null,
   "successUrl": "https://your-site.com/success",
   "cancelUrl": "https://your-site.com/cancel",
   "items": [
@@ -436,7 +458,7 @@ curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
 Only the keys you send are changed:
 
 - an **absent** key leaves the field unchanged;
-- `null` **clears** the field: `description`, `amount`, `minAmount`, `maxAmount`, `suggestedAmounts`, `expiresAt`, `maxRedemptions`, `successUrl`, `cancelUrl`, `brandingId`, `metadata`. `name` and `slug` cannot be cleared (`422`).
+- `null` **clears** the field: `description`, `amount`, `minAmount`, `maxAmount`, `suggestedAmounts`, `expiresAt`, `maxRedemptions`, `successUrl`, `cancelUrl`, `brandingId`, `metadata`, `submitType`, `submitMessage`. `name` and `slug` cannot be cleared (`422`).
 
 <Warning>
 The `slug` can be changed, under the same rules as at creation. The old URL `https://pay.yabetoo.com/p/<old-slug>` then stops working: any link already shared or encoded in a QR code is broken. A slug stays taken even after its link is deleted.
