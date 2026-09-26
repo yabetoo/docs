@@ -424,19 +424,44 @@ curl https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
 ### Update a Link
 
 ```bash
-curl -X PATCH https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
     "name": "New Name",
-    "isActive": false
+    "description": null
+  }'
+```
+
+Only the keys you send are changed:
+
+- an **absent** key leaves the field unchanged;
+- `null` **clears** the field: `description`, `amount`, `minAmount`, `maxAmount`, `suggestedAmounts`, `expiresAt`, `maxRedemptions`, `successUrl`, `cancelUrl`, `brandingId`, `metadata`. `name` and `slug` cannot be cleared (`422`).
+
+<Warning>
+The `slug` can be changed, under the same rules as at creation. The old URL `https://pay.yabetoo.com/p/<old-slug>` then stops working: any link already shared or encoded in a QR code is broken. A slug stays taken even after its link is deleted.
+</Warning>
+
+`minAmount` greater than `maxAmount` is refused with `422`, at creation as on update.
+
+**Items** (`product` and `subscription` links): when `items` is sent, it is the full new list. An item carrying its `id` is updated, an item without `id` is created, an existing item left out is removed. An `id` that is unknown, repeated, or sent with a different `productId` is refused with `422`.
+
+```bash
+curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      { "id": "plitem_keep", "quantity": 2 },
+      { "productId": "prod_new", "priceId": "price_new" }
+    ]
   }'
 ```
 
 ### Deactivate a Link
 
 ```bash
-curl -X PATCH https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -483,7 +508,6 @@ Receive notifications when a payment is made via a link:
 | Event | Description |
 |-------|-------------|
 | `payment_link.created` | Link created |
-| `payment_link.updated` | Link updated |
 | `payment_link.payment.completed` | Successful payment via link |
 | `payment_link.payment.failed` | Failed payment |
 

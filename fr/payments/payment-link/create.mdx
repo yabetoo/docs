@@ -424,19 +424,44 @@ curl https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
 ### Mettre à jour un lien
 
 ```bash
-curl -X PATCH https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Nouveau nom",
-    "isActive": false
+    "description": null
+  }'
+```
+
+Seules les clés envoyées sont modifiées :
+
+- une clé **absente** laisse le champ inchangé ;
+- `null` **efface** le champ : `description`, `amount`, `minAmount`, `maxAmount`, `suggestedAmounts`, `expiresAt`, `maxRedemptions`, `successUrl`, `cancelUrl`, `brandingId`, `metadata`. `name` et `slug` ne s'effacent pas (`422`).
+
+<Warning>
+Le `slug` est modifiable, sous les mêmes règles qu'à la création. L'ancienne URL `https://pay.yabetoo.com/p/<ancien-slug>` cesse alors de fonctionner : tout lien déjà partagé ou encodé dans un QR code est cassé. Un slug reste pris même après la suppression de son lien.
+</Warning>
+
+Un `minAmount` supérieur à `maxAmount` est refusé en `422`, à la création comme à la mise à jour.
+
+**Articles** (liens `product` et `subscription`) : quand `items` est envoyé, c'est la nouvelle liste complète. Un article portant son `id` est modifié, un article sans `id` est créé, un article existant absent de la liste est supprimé. Un `id` inconnu, répété ou envoyé avec un autre `productId` est refusé en `422`.
+
+```bash
+curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      { "id": "plitem_keep", "quantity": 2 },
+      { "productId": "prod_new", "priceId": "price_new" }
+    ]
   }'
 ```
 
 ### Désactiver un lien
 
 ```bash
-curl -X PATCH https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -483,7 +508,6 @@ Recevez des notifications lorsqu'un paiement est effectué via un lien :
 | Événement | Description |
 |-----------|-------------|
 | `payment_link.created` | Lien créé |
-| `payment_link.updated` | Lien mis à jour |
 | `payment_link.payment.completed` | Paiement réussi via le lien |
 | `payment_link.payment.failed` | Paiement échoué |
 
