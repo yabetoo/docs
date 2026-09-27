@@ -511,27 +511,41 @@ Receive notifications when a payment is made via a link:
 
 ```json
 {
-  "type": "payment_link.payment.completed",
+  "id": "evt_abc123",
+  "type": "payment_link.checkout.completed",
   "data": {
-    "object": {
-      "paymentLinkId": "plink_abc123",
-      "sessionId": "plsession_xyz789",
-      "amount": 25000,
-      "currency": "XOF",
-      "customerEmail": "customer@example.com",
-      "status": "completed"
-    }
-  }
+    "paymentLinkId": "plink_abc123",
+    "checkoutSessionId": "cs_xyz789",
+    "orderId": "ord_def456",
+    "amount": 25000,
+    "currency": "xaf",
+    "customerEmail": "customer@example.com",
+    "completedAt": "2026-09-26T10:15:00.000Z"
+  },
+  "created_at": "2026-09-26T10:15:00.000Z"
 }
 ```
+
+Fields sit directly under `data` (there is no `data.object`). `amount` is in the currency's
+major unit (`25000` = 25,000 XAF).
 
 ### Available Events
 
 | Event | Description |
 |-------|-------------|
 | `payment_link.created` | Link created |
-| `payment_link.payment.completed` | Successful payment via link |
-| `payment_link.payment.failed` | Failed payment |
+| `payment_link.checkout.completed` | Successful payment via a `product` or `amount` link |
+| `payment_link.checkout.failed` | Failed payment via a `product` or `amount` link (`data.error` carries the reason, no `amount`) |
+
+<Warning>
+  - A payment via a link emits `payment_link.checkout.completed`, **not**
+    `checkout.session.completed`: subscribe to the `payment_link.*` family.
+  - Updating a link emits no event.
+  - `subscription` links go through the subscription flow and emit no `payment_link.*`
+    event: listen to the [subscription events](/en/subscriptions/webhooks) instead.
+</Warning>
+
+See [Webhooks Documentation](/en/developer-tools/webhook/overview) for signature and delivery details.
 
 ## Best Practices
 
