@@ -26,3 +26,26 @@ Déclenché lorsqu'un décaissement (retrait) a été traité avec succès depui
   - Notifier le destinataire
   - Enregistrer la transaction dans votre système financier
   - Mettre à jour le statut du paiement dans votre tableau de bord administrateur
+
+### `checkout.session.completed`
+
+Déclenché lorsqu'une [session de paiement](/fr/payments/checkout-page/create) est payée avec succès.
+
+- **Identifiant à utiliser :** `data.checkoutSessionId` (ne vous appuyez pas sur `data.orderId`).
+- **Actions typiques :**
+  - Marquer la commande liée à la session comme payée
+  - Livrer le bien ou le service
+
+### `checkout.session.payment_failed`
+
+Déclenché lorsqu'une tentative de paiement d'une session échoue.
+
+- **Non terminal :** la session reste ouverte, le client peut réessayer.
+- Émis quand l'échec est connu à la réponse de confirmation ; un dépassement de délai est porté par `intent.expired`.
+- `data.error` est une chaîne opaque, à journaliser, pas à interpréter.
+
+<Note>
+  Un paiement par [lien de paiement](/fr/payments/payment-link/create) émet
+  `payment_link.checkout.completed` / `payment_link.checkout.failed` à la place de
+  `checkout.session.*`. `checkout.session.expired` n'est pas émis aujourd'hui.
+</Note>

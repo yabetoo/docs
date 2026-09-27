@@ -26,3 +26,26 @@ Triggered when a disbursement (cash-out) has been successfully processed from yo
   - Notify the recipient
   - Log the transaction in your financial system
   - Update payout status in your admin dashboard
+
+### `checkout.session.completed`
+
+Triggered when a [checkout session](/en/payments/checkout-page/create) is paid successfully.
+
+- **Identifier to use:** `data.checkoutSessionId` (do not rely on `data.orderId`).
+- **Typical Actions:**
+  - Mark the order tied to the session as paid
+  - Deliver the good or service
+
+### `checkout.session.payment_failed`
+
+Triggered when a payment attempt on a session fails.
+
+- **Not final:** the session stays open and the customer can retry.
+- Emitted when the failure is known from the confirmation response; a timeout is carried by `intent.expired`.
+- `data.error` is an opaque string, to be logged, not parsed.
+
+<Note>
+  A payment through a [payment link](/en/payments/payment-link/create) emits
+  `payment_link.checkout.completed` / `payment_link.checkout.failed` instead of
+  `checkout.session.*`. `checkout.session.expired` is not emitted today.
+</Note>

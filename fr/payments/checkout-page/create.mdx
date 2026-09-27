@@ -532,24 +532,64 @@ if (session.status === "complete" && session.payment_status === "paid") {
 
 ### Webhooks
 
-Pour une intégration robuste, utilisez les webhooks pour recevoir les notifications de paiement :
+Pour une intégration robuste, ne vous fiez pas à la seule redirection vers `success_url` :
+abonnez-vous aux événements de la session (famille `checkout.*`).
+
+**Paiement réussi** — `checkout.session.completed` :
 
 ```json
 {
+  "id": "evt_abc123",
   "type": "checkout.session.completed",
   "data": {
-    "object": {
-      "id": "cs_abc123def456",
-      "status": "complete",
-      "payment_status": "paid",
-      "amount_total": 35000,
-      "currency": "XOF"
-    }
-  }
+    "checkoutSessionId": "cs_abc123def456",
+    "amount": 35000,
+    "currency": "xaf",
+    "customerEmail": "client@example.com",
+    "completedAt": "2026-09-26T10:15:00.000Z"
+  },
+  "created_at": "2026-09-26T10:15:00.000Z"
 }
 ```
 
-Voir [Documentation Webhooks](/fr/developer-tools/webhook/overview) pour plus de détails.
+**Tentative échouée** — `checkout.session.payment_failed` :
+
+```json
+{
+  "id": "evt_def456",
+  "type": "checkout.session.payment_failed",
+  "data": {
+    "checkoutSessionId": "cs_abc123def456",
+    "paymentIntentId": "pi_xyz789",
+    "source": "api",
+    "amount": 35000,
+    "currency": "xaf",
+    "error": "Payment status: failed",
+    "customerEmail": "client@example.com",
+    "failedAt": "2026-09-26T10:14:00.000Z"
+  },
+  "created_at": "2026-09-26T10:14:00.000Z"
+}
+```
+
+- Les champs sont directement sous `data` (il n'y a pas de `data.object`). `amount` est en
+  unité majeure de la devise (`35000` = 35 000 XAF).
+- Identifiez le paiement par `data.checkoutSessionId`. `data.orderId` peut apparaître sur
+  `completed` : ne vous appuyez pas dessus.
+- Pour une session créée depuis une facture, `data.invoiceId` est ajouté.
+- `error` est une chaîne opaque, à journaliser, pas à interpréter.
+
+<Warning>
+  - `checkout.session.payment_failed` n'est **pas** terminal : la session reste ouverte et le
+    client peut réessayer. Il est émis quand l'échec est connu à la réponse de confirmation ;
+    un dépassement de délai est porté par `intent.expired`.
+  - `checkout.session.expired` n'est pas émis aujourd'hui.
+  - Un paiement par [lien de paiement](/fr/payments/payment-link/create) émet
+    `payment_link.checkout.*`, et une session d'abonnement émet les
+    [événements d'abonnement](/fr/subscriptions/webhooks), jamais `checkout.session.*`.
+</Warning>
+
+Voir la [documentation Webhooks](/fr/developer-tools/webhook/overview) pour la signature et la livraison.
 
 ## Statuts de la session
 
