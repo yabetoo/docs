@@ -8,6 +8,48 @@ Un remboursement sur un encaissement Connect se demande par la **route de rembou
 habituelle** : il n'y a pas d'endpoint Connect dédié. Ce qui change est la façon dont les fonds
 sont repris.
 
+## Rembourser une intention multi-vendeurs
+
+Pour un remboursement **total**, omettez `amount` et `splits`. Yabetoo dérive automatiquement
+toutes les parts encore remboursables, puis reprend le reliquat à votre plateforme. Il n'est
+pas nécessaire de recopier le plan de capture.
+
+```bash
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/refunds \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "chargeId": "ch_..." }'
+```
+
+Pour un remboursement **partiel**, `splits` est obligatoire. Nommez explicitement la part de
+chaque vendeur avec la `reference` figée sur l'intention. Le reste du montant remboursé est
+supporté par votre plateforme.
+
+```bash
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/refunds \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chargeId": "ch_...",
+    "amount": 2000,
+    "splits": [
+      { "reference": "seller-a", "amount": 500 }
+    ]
+  }'
+```
+
+Dans cet exemple, 500 XAF sont attribués à la responsabilité de `seller-a` et les 1 500 XAF
+restants à celle de la plateforme. Chaque montant doit être positif, la somme des lignes ne
+peut pas dépasser `amount`, et une ligne ne peut pas dépasser son propre reliquat remboursable.
+Les références dupliquées ou inconnues sont refusées avant toute écriture. La liste accepte de
+1 à 20 lignes.
+
+<Warning>
+Un remboursement partiel multi-vendeurs sans `splits` est refusé. Ne répartissez pas vous-même
+un remboursement total : l'omission laisse le service dériver exactement tous les reliquats et
+évite une divergence avec les remboursements déjà effectués.
+</Warning>
+
 ## La politique : Yabetoo n'avance jamais de fonds
 
 On ne peut pas débiter a posteriori le portefeuille d'un vendeur. Un solde négatif serait
