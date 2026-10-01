@@ -12,7 +12,7 @@ Préférez ce mode dès que vous connaissez le vendeur au moment de la vente. Il
 meilleure traçabilité : chaque encaissement porte l'identité de son vendeur et sa commission.
 </Tip>
 
-## Créer l'intention
+## Créer l'intention pour un vendeur
 
 Ajoutez **deux champs** à votre appel habituel de création d'intention de paiement.
 
@@ -85,6 +85,60 @@ soit l'échelle.
 `destination` est l'ancien nom de `on_behalf_of`. Il est **refusé en 422**, jamais ignoré.
 </Warning>
 
+## Créer l'intention pour plusieurs vendeurs
+
+Si tous les vendeurs sont connus au moment de créer l'intention, envoyez `splits`. Chaque ligne
+porte un **montant exact** du brut, et non un pourcentage de panier.
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `splits` | `array` | De **1 à 20** lignes. Optionnel sur une intention ordinaire. |
+| `splits[].account` | `string` | Compte `acct_…` unique dans la liste. |
+| `splits[].amount` | `number` | Part brute exacte, strictement positive. |
+| `splits[].reference` | `string` | Votre référence de ligne, unique, de 1 à 128 caractères. Conservez-la pour les remboursements partiels. |
+| `splits[].application_fee_rate` | `number` | Taux propre à la ligne, entre `0` et `100`. S'il est omis, le taux global est utilisé. |
+| `application_fee_rate` | `number` | Taux par défaut de toutes les lignes qui n'ont pas de surcharge locale. |
+
+```bash
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 10000,
+    "currency": "xaf",
+    "application_fee_rate": 10,
+    "splits": [
+      {
+        "account": "acct_01HZVENDOR0000000000000001",
+        "amount": 4000,
+        "reference": "seller-a"
+      },
+      {
+        "account": "acct_01HZVENDOR0000000000000002",
+        "amount": 3000,
+        "application_fee_rate": 5,
+        "reference": "seller-b"
+      }
+    ]
+  }'
+```
+
+Ici, `seller-a` hérite de `10 %`, tandis que `seller-b` utilise son taux local de `5 %`.
+La somme des lignes, 7 000 XAF, peut être inférieure au montant de l'intention : les 3 000 XAF
+restants appartiennent à votre plateforme. Elle ne peut jamais dépasser les 10 000 XAF capturés.
+
+<Warning>
+`splits` et `on_behalf_of` sont **deux modes exclusifs**. Les fournir ensemble rend
+`422 connect.ambiguous_split_mode`. Si une ligne n'a ni taux local ni
+`application_fee_rate` global, la création rend
+`422 connect.application_fee_rate_required` et désigne précisément la ligne concernée.
+</Warning>
+
+Les vendeurs sont résolus et contrôlés à la création. Si vous ne savez pas encore à qui
+attribuer une part, ne fabriquez pas une ligne provisoire : créez une intention ordinaire,
+puis utilisez une [allocation différée](/fr/connect/payments/allocations) quand le vendeur est
+connu.
+
 ## Ce qui se passe à la capture
 
 Sur 10 000 XAF, avec `application_fee_rate: 10`, en mode `controller` et au barème standard
@@ -150,6 +204,51 @@ GET https://pay.api.yabetoopay.com/v1/payment-intents/pi_...
 Ces montants décrivent la capture : un remboursement ou une reprise ultérieurs ne les modifient
 pas. Le bloc est présent sur la **lecture unitaire** seulement, pas sur la liste des intentions.
 
+Pour une intention multi-vendeurs, la même lecture expose une ligne par référence. Avant la
+capture, les montants calculés et `available_at` valent `null`. Après la capture, ils sont lus
+depuis les écritures historiques : ils ne sont jamais recalculés avec le tarif courant.
+
+```json 200
+{
+  "id": "pi_...",
+  "status": "succeeded",
+  "amount": 10000,
+  "connect": {
+    "mode": "multiple",
+    "captureState": "captured",
+    "splits": [
+      {
+        "reference": "seller-a",
+        "account": "acct_01HZVENDOR0000000000000001",
+        "gross_amount": 4000,
+        "application_fee_rate": 10,
+        "vendor_amount": 3590,
+        "controller_amount": 200,
+        "application_fee_amount": 410,
+        "yabetoo_fee_amount": 210,
+        "refunded_amount": 0,
+        "available_at": "2026-10-08T10:00:00.000Z"
+      },
+      {
+        "reference": "seller-b",
+        "account": "acct_01HZVENDOR0000000000000002",
+        "gross_amount": 3000,
+        "application_fee_rate": 5,
+        "vendor_amount": 2692.5,
+        "controller_amount": 150,
+        "application_fee_amount": 150,
+        "yabetoo_fee_amount": 157.5,
+        "refunded_amount": 0,
+        "available_at": "2026-10-08T10:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+`captureState: "inconsistent"` signifie qu'une partie seulement des liens de grand livre est
+présente : contactez le support et ne tentez pas de reconstruire les montants côté client.
+
 ## Vérifications faites à la création
 
 Yabetoo refuse **à la création de l'intention**, pas au moment où le client paie. C'est
@@ -181,6 +280,10 @@ délibéré : un refus de contrat doit atteindre votre développeur, pas votre a
 | `401` | n/a | Clé de test visant un vendeur `live` |
 | `403` | n/a | Vendeur inconnu, malformé, ou d'une autre marketplace |
 | `422` | `connect.incomplete_request` | `on_behalf_of` et `application_fee_rate` non fournis ensemble |
+| `422` | `connect.ambiguous_split_mode` | `on_behalf_of` et `splits` fournis ensemble |
+| `422` | `connect.application_fee_rate_required` | Une ligne de `splits` n'a ni taux local ni taux global |
+| `422` | `connect.multi_vendor_disabled` | Le partage multi-vendeurs n'est pas activé dans cet environnement |
+| `422` | validation | Liste vide ou de plus de 20 lignes, compte/référence dupliqué, montant non positif, ou somme supérieure au montant de l'intention |
 | `422` | `connect.fee_payer_unset` | Connect n'est pas activé sur votre compte |
 | `422` | `connect.vendor_net_not_positive` | Le vendeur ne recevrait rien |
 | `422` | `rule: "unsupported"` | `destination` envoyé au lieu de `on_behalf_of` |

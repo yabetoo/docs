@@ -4,9 +4,14 @@ description: "Encaissez sur votre compte, puis répartissez aux vendeurs quand v
 icon: "arrows-split-up-and-left"
 ---
 
-Quand vous ne connaissez pas le vendeur au moment de la vente (panier multi-vendeurs,
-répartition calculée après coup, commission variable), encaissez normalement sur votre propre
-compte, puis **allouez** au vendeur.
+Quand vous ne connaissez pas encore le vendeur au moment de créer l'intention (répartition
+calculée après coup, commission variable), encaissez normalement sur votre propre compte, puis
+**allouez** au vendeur une fois qu'il est connu.
+
+Si les vendeurs et leurs montants exacts sont déjà connus à la création, utilisez plutôt
+[`PaymentIntent.splits`](/fr/connect/payments/charges) : le partage sera enregistré avant le
+paiement et exécuté atomiquement à la capture. Les allocations de cette page sont le mode
+**différé** ; elles ne complètent pas les `splits` d'une intention existante.
 
 Une allocation transfère des fonds de votre portefeuille vers celui d'un vendeur.
 
