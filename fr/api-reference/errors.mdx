@@ -38,6 +38,35 @@ Lorsqu'un paiement échoue, l'API renvoie des codes d'erreur spécifiques pour v
 }
 ```
 
+## Adresse IP non autorisée
+
+Une clé secrète de production restreinte à une [liste d'IP autorisées](/fr/payments/api-keys) refuse tout appel venant d'une autre adresse :
+
+```json
+{
+  "status": 403,
+  "code": "E_IP_NOT_ALLOWED",
+  "message": "Forbidden",
+  "detail": "This API key cannot be used from this IP address."
+}
+```
+
+La réponse ne détaille ni la liste de la clé ni l'adresse vue. Appelez depuis une adresse autorisée, ou ajoutez la vôtre dans le tableau de bord (la modification s'applique sous 5 minutes).
+
+## Décaissement refusé
+
+`POST /v1/disbursements` peut répondre `403` avec `code: "E_RISK_BLOCKED"` et `failure_code: "risk_blocked"` : le décaissement est refusé avant toute écriture (rien n'est créé, aucun fonds n'est réservé). Ne rejouez pas la requête ; contactez le support. Voir [Créer un décaissement](/fr/api-reference/disbursement/create).
+
+## Codes d'échec d'un décaissement
+
+Un décaissement `failed` porte un `failure_code`. Trois d'entre eux viennent de la vérification des décaissements :
+
+| `failure_code` | Description |
+|----------------|-------------|
+| `risk_blocked` | Décaissement refusé avant toute écriture (réponse `403 E_RISK_BLOCKED`) ; aucun décaissement n'existe |
+| `risk_review_rejected` | La vérification a refusé le décaissement retenu en revue ; les fonds sont libérés |
+| `risk_review_expired` | Aucune décision sous 48 h : le décaissement est annulé et les fonds sont libérés |
+
 ## Bonnes pratiques
 
 1. **Gérez toujours les erreurs gracieusement** - N'exposez jamais les messages d'erreur bruts aux utilisateurs finaux

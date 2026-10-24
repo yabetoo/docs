@@ -105,6 +105,31 @@ Disbursement disbursement = yabetoo.disbursements().retrieve("wt_RMqehxy8NNi1ocJ
 | `failed` | Décaissement échoué |
 | `canceled` | Décaissement annulé |
 
+### Champ `review`
+
+`review` vaut `null` pour un décaissement qui n'a pas été retenu pour vérification (cas général). Lorsqu'il l'a été, `review` indique où en est cette vérification pendant que le `status` reste `processing` :
+
+```json
+{
+  "id": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "status": "processing",
+  "review": {
+    "status": "open",
+    "opened_at": "2025-03-17T09:24:57.559Z",
+    "closed_at": null
+  }
+}
+```
+
+| `review.status` | Signification |
+|-----------------|---------------|
+| `open` | Vérification en cours, rien n'a été envoyé à l'opérateur |
+| `approved` | Vérification validée, le décaissement suit le cycle habituel |
+| `rejected` | Vérification refusée : `status: "failed"`, `failure_code: "risk_review_rejected"` |
+| `expired` | Aucune décision sous 48 h : `status: "failed"`, `failure_code: "risk_review_expired"` |
+
+`closed_at` est renseigné dès que la revue n'est plus `open`. Voir [Créer un décaissement](/fr/api-reference/disbursement/create).
+
 ### 404 Not Found
 
 ```json

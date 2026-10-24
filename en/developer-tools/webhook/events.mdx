@@ -17,15 +17,34 @@ Triggered when a payment has been successfully received on your account.
   - Send a confirmation email or SMS
   - Update the payment status in your database
 
-### `disbursement.completed`
+### `disbursement.succeeded`
 
-Triggered when a disbursement (cash-out) has been successfully processed from your account to a recipient.
+Triggered when a disbursement has been successfully processed from your account to a recipient.
 
 - **Use Case:** Track outbound payments or automate accounting tasks.
 - **Typical Actions:**
   - Notify the recipient
   - Log the transaction in your financial system
   - Update payout status in your admin dashboard
+
+### `disbursement.failed`
+
+Triggered when a disbursement fails, including when a review rejects it or expires (`failure_code`: `risk_review_rejected`, `risk_review_expired`, see [Error Handling](/en/api-reference/errors#disbursement-failure-codes)). The reserved funds are released.
+
+### `disbursement.review_opened`
+
+Triggered when a production disbursement is held for verification before being sent to the operator. It follows `disbursement.created`; the payload carries `review` (`status: "open"`).
+
+- **Not final:** the disbursement stays `processing`. The outcome arrives as `disbursement.succeeded` or `disbursement.failed`.
+- **Typical Actions:**
+  - Show "under verification" rather than "being sent" to your user
+  - Do not retry the disbursement: it will be processed or canceled within 48 h
+
+### `deposit_disbursement.review_opened`
+
+The same event for a disbursement funded from the deposit wallet. Its outcomes are `deposit_disbursement.succeeded` and `deposit_disbursement.failed`.
+
+The other disbursement lifecycle events are `disbursement.created` and `disbursement.processing`.
 
 ### `checkout.session.completed`
 

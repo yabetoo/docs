@@ -105,6 +105,31 @@ Disbursement disbursement = yabetoo.disbursements().retrieve("wt_RMqehxy8NNi1ocJ
 | `failed` | Disbursement failed |
 | `canceled` | Disbursement was canceled |
 
+### `review` field
+
+`review` is `null` for a disbursement that was not held for verification (the general case). When it was, `review` tells you where the verification stands while `status` stays `processing`:
+
+```json
+{
+  "id": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "status": "processing",
+  "review": {
+    "status": "open",
+    "opened_at": "2025-03-17T09:24:57.559Z",
+    "closed_at": null
+  }
+}
+```
+
+| `review.status` | Meaning |
+|-----------------|---------|
+| `open` | Verification in progress, nothing has been sent to the operator |
+| `approved` | Verification passed, the disbursement follows the usual lifecycle |
+| `rejected` | Verification refused: `status: "failed"`, `failure_code: "risk_review_rejected"` |
+| `expired` | No decision within 48 h: `status: "failed"`, `failure_code: "risk_review_expired"` |
+
+`closed_at` is set as soon as the review is no longer `open`. See [Create a disbursement](/en/api-reference/disbursement/create#200-ok-disbursement-under-review).
+
 ### 404 Not Found
 
 ```json

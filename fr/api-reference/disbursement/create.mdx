@@ -206,6 +206,38 @@ Le statut du décaissement est `processing` car le paiement est toujours en cour
 }
 ```
 
+### 200 OK : décaissement en revue
+
+Certains décaissements en production sont retenus pour vérification avant tout envoi à l'opérateur. L'API répond alors `200 OK` comme d'habitude : le `status` reste `processing`, mais le champ `review` est renseigné. Les fonds sont réservés sur votre portefeuille, aucun envoi n'a lieu tant que la revue est ouverte.
+
+```json
+{
+  "id": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "status": "processing",
+  "review": {
+    "status": "open",
+    "opened_at": "2025-03-17T09:24:57.559Z",
+    "closed_at": null
+  }
+}
+```
+
+`review` vaut `null` pour un décaissement qui n'est pas en revue (cas général), et toujours en Sandbox.
+
+| `review.status` | Signification | Suite |
+|-----------------|---------------|-------|
+| `open` | Vérification en cours | Le décaissement reste `processing` |
+| `approved` | Vérification validée | Le décaissement part chez l'opérateur et suit le cycle habituel (`succeeded` ou `failed`) |
+| `rejected` | Vérification refusée | Le décaissement passe en `failed` avec `failure_code: "risk_review_rejected"` ; les fonds sont libérés |
+| `expired` | Aucune décision sous 48 h | Le décaissement passe en `failed` avec `failure_code: "risk_review_expired"` ; les fonds sont libérés |
+
+<Note>
+  Un décaissement en revue n'est jamais autorisé d'office : sans décision sous 48 h, il est annulé.
+  Vous êtes prévenu à l'ouverture par le webhook [`disbursement.review_opened`](/fr/developer-tools/webhook/events),
+  puis à l'issue par `disbursement.succeeded` ou `disbursement.failed`. Une revue peut aussi s'ouvrir
+  lorsque l'évaluation n'a pas pu être réalisée : le comportement est identique.
+</Note>
+
 ### Statuts du décaissement
 
 | Statut | Description |
@@ -236,6 +268,23 @@ Le statut du décaissement est `processing` car le paiement est toujours en cour
   "message": "Unauthorized"
 }
 ```
+
+### 403 Décaissement refusé
+
+```json
+{
+  "status": 403,
+  "path": "/v1/disbursements",
+  "timestamp": "2025-03-17T10:24:57.559+01:00",
+  "code": "E_RISK_BLOCKED",
+  "failure_code": "risk_blocked",
+  "message": "Disbursement refused by risk assessment"
+}
+```
+
+Le décaissement est refusé avant toute écriture : aucun décaissement n'est créé, aucun fonds n'est réservé, aucun webhook n'est émis. Ne rejouez pas la même requête ; contactez le support si ce refus vous paraît injustifié.
+
+Une clé de production restreinte à une liste d'IP renvoie aussi un `403` (`E_IP_NOT_ALLOWED`) lorsque l'appel vient d'une adresse hors liste. Voir [Gestion des erreurs](/fr/api-reference/errors).
 
 <Note>
   Les décaissements sont traités de manière asynchrone. Utilisez les webhooks
