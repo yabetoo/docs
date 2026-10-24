@@ -45,6 +45,8 @@ A live secret key restricted to an [IP allowlist](/en/payments/api-keys#restrict
 ```json
 {
   "status": 403,
+  "path": "/v1/disbursements",
+  "timestamp": "2025-03-17T10:24:57.559+01:00",
   "code": "E_IP_NOT_ALLOWED",
   "message": "Forbidden",
   "detail": "This API key cannot be used from this IP address."
@@ -59,11 +61,11 @@ The response gives neither the key's list nor the address seen. Call from an all
 
 ## Disbursement Failure Codes
 
-A `failed` disbursement carries a `failure_code`. Three of them come from disbursement verification:
+A `failed` disbursement carries a `failureCode`. Three of them come from disbursement verification. The field is named `failure_code` in the 403 error and `failureCode` on the disbursement object.
 
-| `failure_code` | Description |
+| `failureCode` | Description |
 |----------------|-------------|
-| `risk_blocked` | Disbursement refused before anything is written (`403 E_RISK_BLOCKED` response); no disbursement exists |
+| `risk_blocked` | Disbursement refused by verification. At creation, `403 E_RISK_BLOCKED` response: no disbursement exists. On a disbursement already held for review and then refused after the fact: `failed`, `review.status: "rejected"`, funds returned |
 | `risk_review_rejected` | Verification refused the disbursement held for review; the funds are released |
 | `risk_review_expired` | No decision within 48 h: the disbursement is canceled and the funds are released |
 

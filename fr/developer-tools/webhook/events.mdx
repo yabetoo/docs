@@ -29,7 +29,7 @@ Déclenché lorsqu'un décaissement a été traité avec succès depuis votre co
 
 ### `disbursement.failed`
 
-Déclenché lorsqu'un décaissement échoue, y compris lorsqu'une revue le rejette ou expire (`failure_code` : `risk_review_rejected`, `risk_review_expired`, voir [Gestion des erreurs](/fr/api-reference/errors)). Les fonds réservés sont libérés.
+Déclenché lorsqu'un décaissement échoue, y compris lorsqu'une revue le rejette ou expire (`failureCode` : `risk_review_rejected`, `risk_review_expired`, ou `risk_blocked` pour un décaissement retenu puis refusé après coup, voir [Gestion des erreurs](/fr/api-reference/errors)). Les fonds réservés sont libérés.
 
 ### `disbursement.review_opened`
 
@@ -44,7 +44,7 @@ Déclenché lorsqu'un décaissement en production est retenu pour vérification 
 
 Même événement pour un décaissement financé par le portefeuille de dépôt. Ses issues sont `deposit_disbursement.succeeded` et `deposit_disbursement.failed`.
 
-Les autres événements du cycle de vie d'un décaissement sont `disbursement.created` et `disbursement.processing`.
+Le seul autre événement du cycle de vie d'un décaissement est `disbursement.created`.
 
 ### `checkout.session.completed`
 

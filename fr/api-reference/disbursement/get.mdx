@@ -125,8 +125,8 @@ Disbursement disbursement = yabetoo.disbursements().retrieve("wt_RMqehxy8NNi1ocJ
 |-----------------|---------------|
 | `open` | Vérification en cours, rien n'a été envoyé à l'opérateur |
 | `approved` | Vérification validée, le décaissement suit le cycle habituel |
-| `rejected` | Vérification refusée : `status: "failed"`, `failure_code: "risk_review_rejected"` |
-| `expired` | Aucune décision sous 48 h : `status: "failed"`, `failure_code: "risk_review_expired"` |
+| `rejected` | Vérification refusée : `status: "failed"`, `failureCode: "risk_review_rejected"` ou `"risk_blocked"` (refusé après coup) ; les fonds sont rendus |
+| `expired` | Aucune décision sous 48 h : `status: "failed"`, `failureCode: "risk_review_expired"` |
 
 `closed_at` est renseigné dès que la revue n'est plus `open`. Voir [Créer un décaissement](/fr/api-reference/disbursement/create).
 

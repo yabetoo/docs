@@ -228,8 +228,8 @@ Some production disbursements are held for verification before anything is sent 
 |-----------------|---------|-------------------|
 | `open` | Verification in progress | The disbursement stays `processing` |
 | `approved` | Verification passed | The disbursement is sent to the operator and follows the usual lifecycle (`succeeded` or `failed`) |
-| `rejected` | Verification refused | The disbursement becomes `failed` with `failure_code: "risk_review_rejected"`; the funds are released |
-| `expired` | No decision within 48 h | The disbursement becomes `failed` with `failure_code: "risk_review_expired"`; the funds are released |
+| `rejected` | Verification refused | The disbursement becomes `failed` with `failureCode: "risk_review_rejected"` (or `"risk_blocked"` if it was refused after the fact); the funds are released |
+| `expired` | No decision within 48 h | The disbursement becomes `failed` with `failureCode: "risk_review_expired"`; the funds are released |
 
 <Note>
   A disbursement under review is never authorized by default: with no decision within 48 h, it is canceled.

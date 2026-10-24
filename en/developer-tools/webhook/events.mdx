@@ -29,7 +29,7 @@ Triggered when a disbursement has been successfully processed from your account 
 
 ### `disbursement.failed`
 
-Triggered when a disbursement fails, including when a review rejects it or expires (`failure_code`: `risk_review_rejected`, `risk_review_expired`, see [Error Handling](/en/api-reference/errors#disbursement-failure-codes)). The reserved funds are released.
+Triggered when a disbursement fails, including when a review rejects it or expires (`failureCode`: `risk_review_rejected`, `risk_review_expired`, or `risk_blocked` for a disbursement held and then refused after the fact, see [Error Handling](/en/api-reference/errors#disbursement-failure-codes)). The reserved funds are released.
 
 ### `disbursement.review_opened`
 
@@ -44,7 +44,7 @@ Triggered when a production disbursement is held for verification before being s
 
 The same event for a disbursement funded from the deposit wallet. Its outcomes are `deposit_disbursement.succeeded` and `deposit_disbursement.failed`.
 
-The other disbursement lifecycle events are `disbursement.created` and `disbursement.processing`.
+The only other disbursement lifecycle event is `disbursement.created`.
 
 ### `checkout.session.completed`
 

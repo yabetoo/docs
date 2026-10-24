@@ -228,8 +228,8 @@ Certains décaissements en production sont retenus pour vérification avant tout
 |-----------------|---------------|-------|
 | `open` | Vérification en cours | Le décaissement reste `processing` |
 | `approved` | Vérification validée | Le décaissement part chez l'opérateur et suit le cycle habituel (`succeeded` ou `failed`) |
-| `rejected` | Vérification refusée | Le décaissement passe en `failed` avec `failure_code: "risk_review_rejected"` ; les fonds sont libérés |
-| `expired` | Aucune décision sous 48 h | Le décaissement passe en `failed` avec `failure_code: "risk_review_expired"` ; les fonds sont libérés |
+| `rejected` | Vérification refusée | Le décaissement passe en `failed` avec `failureCode: "risk_review_rejected"` (ou `"risk_blocked"` s'il a été refusé après coup) ; les fonds sont libérés |
+| `expired` | Aucune décision sous 48 h | Le décaissement passe en `failed` avec `failureCode: "risk_review_expired"` ; les fonds sont libérés |
 
 <Note>
   Un décaissement en revue n'est jamais autorisé d'office : sans décision sous 48 h, il est annulé.

@@ -125,8 +125,8 @@ Disbursement disbursement = yabetoo.disbursements().retrieve("wt_RMqehxy8NNi1ocJ
 |-----------------|---------|
 | `open` | Verification in progress, nothing has been sent to the operator |
 | `approved` | Verification passed, the disbursement follows the usual lifecycle |
-| `rejected` | Verification refused: `status: "failed"`, `failure_code: "risk_review_rejected"` |
-| `expired` | No decision within 48 h: `status: "failed"`, `failure_code: "risk_review_expired"` |
+| `rejected` | Verification refused: `status: "failed"`, `failureCode: "risk_review_rejected"` or `"risk_blocked"` (refused after the fact); the funds are returned |
+| `expired` | No decision within 48 h: `status: "failed"`, `failureCode: "risk_review_expired"` |
 
 `closed_at` is set as soon as the review is no longer `open`. See [Create a disbursement](/en/api-reference/disbursement/create#200-ok-disbursement-under-review).
 

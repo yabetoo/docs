@@ -45,6 +45,8 @@ Une clé secrète de production restreinte à une [liste d'IP autorisées](/fr/p
 ```json
 {
   "status": 403,
+  "path": "/v1/disbursements",
+  "timestamp": "2025-03-17T10:24:57.559+01:00",
   "code": "E_IP_NOT_ALLOWED",
   "message": "Forbidden",
   "detail": "This API key cannot be used from this IP address."
@@ -59,11 +61,11 @@ La réponse ne détaille ni la liste de la clé ni l'adresse vue. Appelez depuis
 
 ## Codes d'échec d'un décaissement
 
-Un décaissement `failed` porte un `failure_code`. Trois d'entre eux viennent de la vérification des décaissements :
+Un décaissement `failed` porte un `failureCode`. Trois d'entre eux viennent de la vérification des décaissements. Le champ s'appelle `failure_code` dans l'erreur 403 et `failureCode` sur l'objet décaissement.
 
-| `failure_code` | Description |
+| `failureCode` | Description |
 |----------------|-------------|
-| `risk_blocked` | Décaissement refusé avant toute écriture (réponse `403 E_RISK_BLOCKED`) ; aucun décaissement n'existe |
+| `risk_blocked` | Décaissement refusé par la vérification. À la création, réponse `403 E_RISK_BLOCKED` : aucun décaissement n'existe. Sur un décaissement déjà retenu en revue puis refusé après coup : `failed`, `review.status: "rejected"`, fonds rendus |
 | `risk_review_rejected` | La vérification a refusé le décaissement retenu en revue ; les fonds sont libérés |
 | `risk_review_expired` | Aucune décision sous 48 h : le décaissement est annulé et les fonds sont libérés |
 
