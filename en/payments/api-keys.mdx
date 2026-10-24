@@ -42,6 +42,23 @@ Your secret key allows you to interact with Yabetoo APIs.
 - **Transactions**: Real money processed
 - **Prefix**: Usually starts with `live_`
 
+## Restrict a Key to IP Addresses
+
+A live secret key (`sk_live_`) can be limited to a list of IP addresses. A call coming from any other address is refused with `403` and the code `E_IP_NOT_ALLOWED`.
+
+1. Open the developer tab of the dashboard, the key's menu, **Allowed IPs**.
+2. Enter one IP address or CIDR per line (IPv4 or IPv6, 20 entries at most).
+3. Confirm the operation (security verification).
+
+- An empty list allows every address.
+- Test keys and publishable keys are not affected.
+- The change applies within 5 minutes at most: until then the previous list may still apply.
+- Check your servers' outbound address before saving, an incorrect list blocks your disbursements.
+
+<Warning>
+  If you change host or outbound address, add the new address before switching over.
+</Warning>
+
 ## Security Best Practices
 
 <Warning>

@@ -206,6 +206,38 @@ The status of the disbursement is `processing` because the payment is still bein
 }
 ```
 
+### 200 OK: disbursement under review
+
+Some production disbursements are held for verification before anything is sent to the operator. The API still answers `200 OK`: `status` stays `processing`, but the `review` field is set. The funds are reserved on your wallet and nothing is sent while the review is open.
+
+```json
+{
+  "id": "wt_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+  "status": "processing",
+  "review": {
+    "status": "open",
+    "opened_at": "2025-03-17T09:24:57.559Z",
+    "closed_at": null
+  }
+}
+```
+
+`review` is `null` for a disbursement that is not under review (the general case), and always in Sandbox.
+
+| `review.status` | Meaning | What happens next |
+|-----------------|---------|-------------------|
+| `open` | Verification in progress | The disbursement stays `processing` |
+| `approved` | Verification passed | The disbursement is sent to the operator and follows the usual lifecycle (`succeeded` or `failed`) |
+| `rejected` | Verification refused | The disbursement becomes `failed` with `failureCode: "risk_review_rejected"` (or `"risk_blocked"` if it was refused after the fact); the funds are released |
+| `expired` | No decision within 48 h | The disbursement becomes `failed` with `failureCode: "risk_review_expired"`; the funds are released |
+
+<Note>
+  A disbursement under review is never authorized by default: with no decision within 48 h, it is canceled.
+  You are notified when the review opens by the [`disbursement.review_opened`](/en/developer-tools/webhook/events) webhook,
+  then of the outcome by `disbursement.succeeded` or `disbursement.failed`. A review can also open
+  when the assessment could not be carried out: the behavior is the same.
+</Note>
+
 ### Disbursement Status
 
 | Status | Description |
@@ -236,6 +268,23 @@ The status of the disbursement is `processing` because the payment is still bein
   "message": "Unauthorized"
 }
 ```
+
+### 403 Disbursement refused
+
+```json
+{
+  "status": 403,
+  "path": "/v1/disbursements",
+  "timestamp": "2025-03-17T10:24:57.559+01:00",
+  "code": "E_RISK_BLOCKED",
+  "failure_code": "risk_blocked",
+  "message": "Disbursement refused by risk assessment"
+}
+```
+
+The disbursement is refused before anything is written: no disbursement is created, no funds are reserved, no webhook is emitted. Do not replay the same request; contact support if you believe the refusal is unjustified.
+
+A live key restricted to an IP allowlist also returns a `403` (`E_IP_NOT_ALLOWED`) when the call comes from an address outside the list. See [Error Handling](/en/api-reference/errors#ip-address-not-allowed).
 
 <Note>
   Disbursements are processed asynchronously. Use webhooks

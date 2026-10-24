@@ -42,6 +42,23 @@ Votre clé secrète vous permet d'interagir avec les APIs Yabetoo.
 - **Transactions** : Argent réel traité
 - **Préfixe** : Commence généralement par `live_`
 
+## Restreindre une clé à des adresses IP
+
+Une clé secrète de production (`sk_live_`) peut être limitée à une liste d'adresses IP. Un appel venant d'une autre adresse est refusé avec `403` et le code `E_IP_NOT_ALLOWED`.
+
+1. Ouvrez l'onglet développeur du tableau de bord, menu de la clé, **IP autorisées**.
+2. Saisissez une adresse IP ou un CIDR par ligne (IPv4 ou IPv6, 20 entrées au maximum).
+3. Confirmez l'opération (vérification de sécurité).
+
+- Une liste vide autorise toutes les adresses.
+- Les clés de test et les clés publiques ne sont pas concernées.
+- La modification s'applique sous 5 minutes au plus : jusque-là, l'ancienne liste peut encore s'appliquer.
+- Vérifiez l'adresse de sortie de vos serveurs avant d'enregistrer, une liste incorrecte bloque vos décaissements.
+
+<Warning>
+  Si vous changez d'hébergeur ou d'adresse de sortie, ajoutez la nouvelle adresse avant de basculer.
+</Warning>
+
 ## Bonnes pratiques de sécurité
 
 <Warning>

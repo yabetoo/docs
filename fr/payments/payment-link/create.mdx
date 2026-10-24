@@ -42,6 +42,8 @@ curl -X POST https://buy.api.yabetoopay.com/v1/payment-links \
 | `collectBillingAddress` | boolean | Collecter l'adresse de facturation |
 | `collectShippingAddress` | boolean | Collecter l'adresse de livraison |
 | `allowPromotionCodes` | boolean | Autoriser les codes promo |
+| `submitType` | string | Texte du bouton de paiement : `auto` (défaut), `pay`, `book` ou `donate` |
+| `submitMessage` | string | Message affiché sous le bouton, texte brut de 1 à 500 caractères |
 | `successUrl` | string | URL de redirection après paiement |
 | `cancelUrl` | string | URL de redirection si annulation |
 | `brandingId` | string | ID du branding personnalisé |
@@ -193,6 +195,24 @@ Pour les types `product` et `subscription`, vous pouvez définir des articles :
   "allowPromotionCodes": true
 }
 ```
+
+### Personnaliser le bouton de paiement
+
+```json
+{
+  "submitType": "book",
+  "submitMessage": "Annulation gratuite jusqu'à 48 h avant la date."
+}
+```
+
+| `submitType` | Bouton affiché |
+|--------------|----------------|
+| `auto` (ou absent) | Payer |
+| `pay` | Payer |
+| `book` | Réserver |
+| `donate` | Faire un don |
+
+`submitMessage` est affiché sous le bouton en texte brut (aucun HTML, retours à la ligne conservés). Les espaces en bord sont retirés ; une chaîne vide équivaut à `null`, une chaîne faite uniquement d'espaces est refusée en `422`. Une session de paiement ouverte depuis le lien hérite de son `submitType`.
 
 ### URL de redirection personnalisées
 
@@ -366,6 +386,8 @@ echo $paymentLink["url"];
   "collectBillingAddress": true,
   "collectShippingAddress": false,
   "allowPromotionCodes": true,
+  "submitType": "pay",
+  "submitMessage": null,
   "successUrl": "https://votre-site.com/success",
   "cancelUrl": "https://votre-site.com/cancel",
   "items": [
@@ -424,19 +446,44 @@ curl https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
 ### Mettre à jour un lien
 
 ```bash
-curl -X PATCH https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Nouveau nom",
-    "isActive": false
+    "description": null
+  }'
+```
+
+Seules les clés envoyées sont modifiées :
+
+- une clé **absente** laisse le champ inchangé ;
+- `null` **efface** le champ : `description`, `amount`, `minAmount`, `maxAmount`, `suggestedAmounts`, `expiresAt`, `maxRedemptions`, `successUrl`, `cancelUrl`, `brandingId`, `metadata`, `submitType`, `submitMessage`. `name` et `slug` ne s'effacent pas (`422`).
+
+<Warning>
+Le `slug` est modifiable, sous les mêmes règles qu'à la création. L'ancienne URL `https://pay.yabetoo.com/p/<ancien-slug>` cesse alors de fonctionner : tout lien déjà partagé ou encodé dans un QR code est cassé. Un slug reste pris même après la suppression de son lien.
+</Warning>
+
+Un `minAmount` supérieur à `maxAmount` est refusé en `422`, à la création comme à la mise à jour.
+
+**Articles** (liens `product` et `subscription`) : quand `items` est envoyé, c'est la nouvelle liste complète. Un article portant son `id` est modifié, un article sans `id` est créé, un article existant absent de la liste est supprimé. Un `id` inconnu, répété ou envoyé avec un autre `productId` est refusé en `422`.
+
+```bash
+curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
+  -H "Authorization: Bearer sk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      { "id": "plitem_keep", "quantity": 2 },
+      { "productId": "prod_new", "priceId": "price_new" }
+    ]
   }'
 ```
 
 ### Désactiver un lien
 
 ```bash
-curl -X PATCH https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
+curl -X PUT https://buy.api.yabetoopay.com/v1/payment-links/plink_abc123 \
   -H "Authorization: Bearer sk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
