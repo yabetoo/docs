@@ -30,13 +30,33 @@ Les numéros de test suivants sont fournis pour l'environnement sandbox. Chaque 
   des transactions réelles.
 </Note>
 
+### Airtel Money
+
+En sandbox, un paiement Airtel Money (`operatorName: "airtel"`) n'atteint pas l'opérateur : son résultat dépend du **dernier chiffre** du numéro de téléphone. Le message nomme le chiffre simulé ; en cas d'échec, c'est le motif du refus.
+
+| Dernier chiffre | Statut       | Message                                                             |
+| --------------- | ------------ | ------------------------------------------------------------------- |
+| `1`             | `succeeded`  | `Transaction successful (simulated: test number ending in 1)`       |
+| `2`             | `processing` | `Transaction in progress (simulated: test number ending in 2)`      |
+| `3`             | `processing` | `Waiting for user confirmation (simulated: test number ending in 3)` |
+| `4`             | `failed`     | `Insufficient balance (simulated: test number ending in 4)`         |
+| `5`             | `failed`     | `Transaction declined by user (simulated: test number ending in 5)` |
+| `6`             | `failed`     | `Invalid phone number (simulated: test number ending in 6)`         |
+| `7`             | `failed`     | `Account blocked (simulated: test number ending in 7)`              |
+| `8`             | `failed`     | `Daily limit exceeded (simulated: test number ending in 8)`         |
+| `9`             | `expired`    | `Transaction expired (simulated: test number ending in 9)`          |
+| Tout autre (`0` compris) | `succeeded` | `Transaction successful`                               |
+
+Par exemple, `242050000004` simule un solde insuffisant.
+
+Les tableaux suivants concernent MTN MoMo.
+
 ### Transactions réussies
 
 Ces numéros simulent un flux de paiement réussi où la transaction est complétée et confirmée.
 
 | Numéro         | Opérateur    | Pays              | Statut     | Message d'erreur |
 | -------------- | ------------ | ----------------- | ---------- | ---------------- |
-| `242066000001` | Airtel Money | Congo-Brazzaville | `succeeded` | `NULL`           |
 | `Tout autre`   | MTN MoMo     | Congo-Brazzaville | `succeeded` | `NULL`           |
 | `46733123454`  | MTN MoMo     | Congo-Brazzaville | `succeeded` | `PAYER_DELAYED`  |
 
@@ -48,7 +68,6 @@ Ces numéros simulent différents types d'échecs de transaction. Utilisez-les p
 
 | Numéro         | Opérateur    | Pays              | Statut   | Message d'erreur                 |
 | -------------- | ------------ | ----------------- | -------- | ------------------------------- |
-| `242050017890` | Airtel Money | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`     |
 | `46733123450`  | MTN MoMo     | Congo-Brazzaville | `failed` | `INTERNAL_PROCESSING_ERROR`     |
 | `46733123451`  | MTN MoMo     | Congo-Brazzaville | `failed` | `APPROVAL_REJECTED`             |
 | `46733123455`  | MTN MoMo     | Congo-Brazzaville | `failed` | `PAYEE_NOT_FOUND`               |

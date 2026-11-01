@@ -118,16 +118,13 @@ Mobile Money transactions can take longer than card payments because:
 
 ## Testing Mobile Money
 
-In the sandbox environment, use these test numbers:
+In the sandbox environment, use these test numbers.
 
-### Successful Payments
-- `242066000001` (Airtel Money) - Always succeeds
-- Any other number (MTN MoMo) - Always succeeds
+**Airtel Money** — the outcome depends on the last digit of the number: `1` succeeds, `4` insufficient balance, `5` declined, `9` expired, any other digit (`0` included) succeeds.
 
-### Failed Payments
-- `242050017890` (Airtel) - Internal error
-- `46733123451` (MTN) - Rejected
-- `46733123455` (MTN) - Payer not found
+**MTN MoMo** — any number succeeds, except for example:
+- `46733123451` - Rejected
+- `46733123455` - Payer not found
 
 <Note>
   See the [Testing guide](/en/developer-tools/test/overview) for the complete list of test numbers.
