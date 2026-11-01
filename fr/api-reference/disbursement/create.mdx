@@ -185,7 +185,7 @@ Disbursement disbursement = yabetoo.disbursements().create(request);
 
 Lorsque le décaissement a été créé avec succès, l'API renverra une réponse 200 OK.
 
-Le statut du décaissement est `processing` car le paiement est toujours en cours de traitement et n'a pas encore été exécuté.
+Le statut du décaissement est `processing` car l'opérateur n'a pas encore confirmé le paiement : la demande lui a déjà été envoyée.
 
 ```json
 {
