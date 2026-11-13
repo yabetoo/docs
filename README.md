@@ -74,7 +74,7 @@ Les changements sont automatiquement déployés en production après un push sur
 - [Documentation en ligne](https://docs.yabetoopay.com)
 - [Dashboard Yabetoo](https://app.yabetoo.com)
 - [API Sandbox](https://pay.sandbox.yabetoopay.com)
-- [Site web](https://yabetoopay.com)
+- [Site web](https://yabetoo.com/)
 - [Support](mailto:support@yabetoopay.com)
 
 ## Réseaux sociaux
