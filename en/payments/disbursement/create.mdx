@@ -86,7 +86,7 @@ The endpoint to use is `POST https://pay.sandbox.yabetoopay.com/v1/disbursements
 
 When the disbursement was successfully created, the API will return a 200 OK response with the following body:
 
-The status of the disbursement is `processing` because the payment is still being processed and has not been executed yet.
+The status of the disbursement is `processing` because the operator has not confirmed the payment yet: the request has already been sent to it.
 
 ```json
 {

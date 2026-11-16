@@ -10,9 +10,9 @@ Disbursements are payments from your account to a customer's account. This is a 
   accounts. To obtain access to this functionality, please send us a request.
 </Note>
 
-## Disbursement: Asynchronous processing
+## Disbursement: immediate execution
 
-A disbursement is processed asynchronously, meaning that the API will return a response immediately, but the actual payment may take some time to complete generally D+1 after the request has been created. This is due to the need to verify the customer's account and process the payment.
+A disbursement is executed immediately: the operator is called while the API request is being processed, with no deferred schedule. The operator may still take a moment to confirm, so the final status reaches you by webhook. A production disbursement held for verification is not sent until the review is decided (see [Create a disbursement](/en/api-reference/disbursement/create)).
 
 ## Notification via Webhook
 

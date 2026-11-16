@@ -215,16 +215,13 @@ Les transactions Mobile Money peuvent prendre plus de temps que les paiements pa
 
 ## Tester le Mobile Money
 
-Dans l'environnement sandbox, utilisez ces numéros de test :
+Dans l'environnement sandbox, utilisez ces numéros de test.
 
-### Paiements réussis
-- `242066000001` (Airtel Money) - Réussit toujours
-- Tout autre numéro (MTN MoMo) - Réussit toujours
+**Airtel Money** — le résultat dépend du dernier chiffre du numéro : `1` réussi, `4` solde insuffisant, `5` refusé, `9` expiré, tout autre chiffre (`0` compris) réussi.
 
-### Paiements échoués
-- `242050017890` (Airtel) - Erreur interne
-- `46733123451` (MTN) - Rejeté
-- `46733123455` (MTN) - Payeur non trouvé
+**MTN MoMo** — tout numéro réussit, sauf par exemple :
+- `46733123451` - Rejeté
+- `46733123455` - Payeur non trouvé
 
 <Note>
   Consultez le [guide de test](/fr/developer-tools/test/overview) pour la liste complète des numéros de test.
