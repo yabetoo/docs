@@ -7,6 +7,66 @@ icon: "rotate-left"
 A refund on a Connect charge is requested through the **usual refund route**: there is no
 dedicated Connect endpoint. What changes is the way the funds are taken back.
 
+## Refunding a multi-vendor intent
+
+An intent created with [`splits`](/en/connect/payments/charges) is refunded through the same
+`POST /v1/refunds` route.
+
+A refund is **full** when its amount equals the charge's remaining refundable amount, which is the
+case when `amount` is omitted. Yabetoo then derives each vendor's remaining refundable share
+itself and takes the remainder back from your platform. Any `splits` sent are **ignored**: there
+is no need to copy the capture plan.
+
+```bash
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/refunds \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "chargeId": "ch_..." }'
+```
+
+For a **partial** refund, `splits` is mandatory. Name each vendor's share explicitly using the
+`reference` frozen on the intent. The rest of the refunded amount is borne by your platform.
+
+```bash
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/refunds \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chargeId": "ch_...",
+    "amount": 2000,
+    "splits": [
+      { "reference": "seller-a", "amount": 500 }
+    ]
+  }'
+```
+
+In this example, 500 XAF are charged to `seller-a` and the remaining 1,500 XAF to the platform.
+
+| Parameter | Rule |
+|---|---|
+| `splits` | 1 to 20 lines. Mandatory on a partial multi-vendor refund. |
+| `splits[].reference` | Reference frozen when the intent was created, non-empty. |
+| `splits[].amount` | Strictly positive. |
+
+The sum of the lines cannot exceed `amount`, a line cannot exceed its remaining refundable amount,
+and the platform's share cannot exceed its own liability (the gross not attributed to the lines,
+minus what it has already refunded). A duplicate or unknown reference is refused. These
+business-rule refusals return `400` with a `message`, and the transaction is rolled back: nothing
+is written. An invalid shape (empty list, more than 20 lines, non-positive amount) returns `422`.
+
+<Warning>
+A partial multi-vendor refund without `splits` is refused. Do not split a full refund yourself:
+omitting them lets the service derive every remainder exactly and avoids a mismatch with refunds
+already made.
+</Warning>
+
+### Idempotent replay
+
+Send an `Idempotency-Key` header to be able to replay the request without refunding twice. A
+replay returns `200` with the original refund. A different `chargeId`, a different `amount` (when
+provided) or different `splits` (references or amounts, when provided) return
+`409 E_IDEMPOTENCY_KEY_REUSED`. The `splits` comparison ignores line order.
+
 ## The policy: Yabetoo never advances funds
 
 A vendor's wallet cannot be debited after the fact. A negative balance would be a permanently

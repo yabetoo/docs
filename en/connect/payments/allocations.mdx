@@ -4,9 +4,14 @@ description: "Charge on your own account, then split to your vendors when you de
 icon: "arrows-split-up-and-left"
 ---
 
-When you do not know the vendor at the time of the sale (multi-vendor cart, split computed after
-the fact, variable commission), charge normally on your own account, then **allocate** to the
-vendor.
+When you do not yet know the vendor at the time you create the intent (split computed after the
+fact, variable commission), charge normally on your own account, then **allocate** to the vendor
+once it is known.
+
+If the vendors and their exact amounts are already known at creation, use
+[`PaymentIntent.splits`](/en/connect/payments/charges) instead: the split is recorded before
+payment and executed atomically at capture. The allocations on this page are the **deferred**
+mode; they do not complete the `splits` of an existing intent.
 
 An allocation transfers funds from your wallet to a vendor's wallet.
 
