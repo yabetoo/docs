@@ -10,9 +10,13 @@ sont repris.
 
 ## Rembourser une intention multi-vendeurs
 
-Pour un remboursement **total**, omettez `amount` et `splits`. Yabetoo dérive automatiquement
-toutes les parts encore remboursables, puis reprend le reliquat à votre plateforme. Il n'est
-pas nécessaire de recopier le plan de capture.
+Une intention créée avec [`splits`](/fr/connect/payments/charges) se rembourse par la même route
+`POST /v1/refunds`.
+
+Un remboursement est **total** quand son montant égale le reliquat remboursable de la charge, ce
+qui est le cas quand `amount` est omis. Yabetoo dérive alors lui-même la part encore remboursable
+de chaque vendeur, puis reprend le reliquat à votre plateforme. Les `splits` éventuellement
+envoyés sont **ignorés** : il n'est pas nécessaire de recopier le plan de capture.
 
 ```bash
 curl -X POST https://pay.sandbox.yabetoopay.com/v1/refunds \
@@ -39,16 +43,34 @@ curl -X POST https://pay.sandbox.yabetoopay.com/v1/refunds \
 ```
 
 Dans cet exemple, 500 XAF sont attribués à la responsabilité de `seller-a` et les 1 500 XAF
-restants à celle de la plateforme. Chaque montant doit être positif, la somme des lignes ne
-peut pas dépasser `amount`, et une ligne ne peut pas dépasser son propre reliquat remboursable.
-Les références dupliquées ou inconnues sont refusées avant toute écriture. La liste accepte de
-1 à 20 lignes.
+restants à celle de la plateforme.
+
+| Paramètre | Règle |
+|---|---|
+| `splits` | De 1 à 20 lignes. Obligatoire sur un remboursement partiel multi-vendeurs. |
+| `splits[].reference` | Référence figée à la création de l'intention, non vide. |
+| `splits[].amount` | Strictement positif. |
+
+La somme des lignes ne peut pas dépasser `amount`, une ligne ne peut pas dépasser son reliquat
+remboursable, et la part de la plateforme ne peut pas dépasser sa propre responsabilité (le
+brut non attribué aux lignes, diminué de ce qu'elle a déjà remboursé). Une référence dupliquée ou
+inconnue est refusée. Ces refus de règle métier rendent `400` avec un `message`, et la
+transaction est annulée : rien n'est écrit. Une forme invalide (liste vide, plus de 20 lignes,
+montant non positif) rend `422`.
 
 <Warning>
 Un remboursement partiel multi-vendeurs sans `splits` est refusé. Ne répartissez pas vous-même
 un remboursement total : l'omission laisse le service dériver exactement tous les reliquats et
 évite une divergence avec les remboursements déjà effectués.
 </Warning>
+
+### Rejeu idempotent
+
+Envoyez un en-tête `Idempotency-Key` pour pouvoir rejouer la demande sans rembourser deux fois.
+Un rejeu rend `200` avec le remboursement d'origine. Un `chargeId` différent, un `amount`
+différent (quand il est fourni) ou des `splits` différents (références ou montants, quand ils sont
+fournis) rendent `409 E_IDEMPOTENCY_KEY_REUSED`. La comparaison des `splits` ne tient pas compte
+de l'ordre des lignes.
 
 ## La politique : Yabetoo n'avance jamais de fonds
 

@@ -12,7 +12,7 @@ Prefer this mode whenever you know the vendor at the time of the sale. It gives 
 traceability: every charge carries the identity of its vendor and its commission.
 </Tip>
 
-## Create the intent
+## Create the intent for one vendor
 
 Add **two fields** to your usual payment intent creation call.
 
@@ -84,6 +84,67 @@ a fixed amount of 20 would stay 20. A rate stays correct at any scale.
 `destination` is the old name of `on_behalf_of`. It is **refused with a 422**, never ignored.
 </Warning>
 
+## Create the intent for several vendors
+
+If every vendor is known when you create the intent, send `splits`. Each line carries an **exact
+amount** of the gross, not a percentage of the cart.
+
+<Note>
+This mode is **off by default** and is enabled per environment (server setting
+`CONNECT_MULTI_VENDOR_ENABLED`), not per account. Until it is enabled, any creation with `splits`
+returns `422 connect.multi_vendor_disabled`. Do not present it as available without checking it in
+your environment.
+</Note>
+
+| Parameter | Type | Description |
+|---|---|---|
+| `splits` | `array` | **1 to 20** lines. Optional on an ordinary intent. |
+| `splits[].account` | `string` | Vendor account `acct_…`, unique in the list. |
+| `splits[].amount` | `number` | Exact gross share, strictly positive, in the intent's currency. |
+| `splits[].reference` | `string` | Your line reference, unique, 1 to 128 characters. Keep it for partial refunds. |
+| `splits[].application_fee_rate` | `number` | Rate specific to the line, between `0` and `100`. If omitted, the global rate is used. |
+| `application_fee_rate` | `number` | Default rate for every line without a local override. |
+
+```bash
+curl -X POST https://pay.sandbox.yabetoopay.com/v1/payment-intents \
+  -H "Authorization: Bearer YOUR_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 10000,
+    "currency": "xaf",
+    "application_fee_rate": 10,
+    "splits": [
+      {
+        "account": "acct_01HZVENDOR0000000000000001",
+        "amount": 4000,
+        "reference": "seller-a"
+      },
+      {
+        "account": "acct_01HZVENDOR0000000000000002",
+        "amount": 3000,
+        "application_fee_rate": 5,
+        "reference": "seller-b"
+      }
+    ]
+  }'
+```
+
+Here `seller-a` inherits `10%`, while `seller-b` uses its local rate of `5%`. The sum of the
+lines, 7,000 XAF, may be lower than the intent amount: the remaining 3,000 XAF belong to your
+platform. It can never exceed the 10,000 XAF captured.
+
+<Warning>
+`splits` and `on_behalf_of` are **two mutually exclusive modes**. Sending both returns
+`422 connect.ambiguous_split_mode` (checked after activation: when the feature is off,
+`connect.multi_vendor_disabled` is returned instead). If a line has neither a local rate nor a
+global `application_fee_rate`, creation returns `422 connect.application_fee_rate_required`, with
+one `errors` entry per offending line (`field: "splits.<index>.application_fee_rate"`).
+</Warning>
+
+Vendors are resolved and checked at creation. If you do not yet know who a share belongs to, do
+not invent a placeholder line: create an ordinary intent, then use a
+[deferred allocation](/en/connect/payments/allocations) once the vendor is known.
+
 ## What happens at capture
 
 On 10,000 XAF, with `application_fee_rate: 10`, in `controller` mode and on the standard rate
@@ -110,7 +171,7 @@ the availability delay. See [Balances and payouts](/en/connect/payouts).
 ## Reading the shares after capture
 
 `GET /v1/payment-intents/{id}` carries a `connect` block on any intent created with
-`on_behalf_of`. It is `null` on an ordinary intent.
+`on_behalf_of` or `splits`. It is `null` on an ordinary intent.
 
 ```bash
 GET https://pay.api.yabetoopay.com/v1/payment-intents/pi_...
@@ -149,6 +210,53 @@ GET https://pay.api.yabetoopay.com/v1/payment-intents/pi_...
 These amounts describe the capture: a later refund or reversal does not change them. The block
 is present on the **single read** only, not on the intent list.
 
+For a multi-vendor intent, the same read exposes one line per reference. Before capture, the
+computed amounts and `available_at` are `null`.
+
+```json 200
+{
+  "id": "pi_...",
+  "amount": 10000,
+  "connect": {
+    "mode": "multiple",
+    "captureState": "pending",
+    "splits": [
+      {
+        "reference": "seller-a",
+        "account": "acct_01HZVENDOR0000000000000001",
+        "gross_amount": 4000,
+        "application_fee_rate": 10,
+        "vendor_amount": null,
+        "controller_amount": null,
+        "application_fee_amount": null,
+        "yabetoo_fee_amount": null,
+        "refunded_amount": 0,
+        "available_at": null
+      }
+    ]
+  }
+}
+```
+
+After capture (`captureState: "captured"`), each line carries the amounts frozen at capture. They
+are read from the stored line, never recomputed with the current rate card. They depend on
+Yabetoo's fees and each vendor's Connect rate: read them, do not recompute them client-side.
+
+| Field | Content |
+|---|---|
+| `gross_amount` | Gross share requested for the line. |
+| `application_fee_rate` | Effective rate of the line (local, otherwise global). |
+| `vendor_amount` | Net credited to the vendor. |
+| `application_fee_amount` | Your platform's commission on the line. |
+| `yabetoo_fee_amount` | Yabetoo fees charged to the line. |
+| `controller_amount` | `gross_amount − vendor_amount − yabetoo_fee_amount`. |
+| `refunded_amount` | Cumulative amount refunded on the line. |
+| `available_at` | ISO date (UTC) when the vendor's funds become available. |
+
+`captureState` is `pending` (no line captured), `captured` (all of them) or `inconsistent` (mixed
+or incomplete state): in that last case, contact support and do not rebuild the amounts
+client-side.
+
 ## Checks performed at creation
 
 Yabetoo refuses **when the intent is created**, not when the customer pays. This is deliberate:
@@ -179,6 +287,12 @@ a contract refusal must reach your developer, not your buyer.
 | `400` | `connect.application_fee_too_high` | Your commission exceeds the amount charged |
 | `401` | n/a | Test key targeting a `live` vendor |
 | `403` | n/a | Unknown or malformed vendor, or a vendor from another marketplace |
+| `422` | `connect.multi_vendor_disabled` | Multi-vendor splitting is not enabled in this environment (off by default) |
+| `422` | `connect.ambiguous_split_mode` | `on_behalf_of` and `splits` sent together |
+| `422` | `connect.application_fee_rate_required` | A `splits` line has neither a local nor a global rate |
+| `422` | validation | Empty list or more than 20 lines, non-positive amount, rate outside 0 to 100, empty or over-128-character reference |
+| `422` | `rule: "distinct"` | Duplicate `account` or `reference` in the list (`field: splits.<index>.…`) |
+| `422` | `rule: "sumOverIntent"` | Sum of the lines exceeds the intent amount (`field: splits`) |
 | `422` | `connect.incomplete_request` | `on_behalf_of` and `application_fee_rate` not supplied together |
 | `422` | `connect.fee_payer_unset` | Connect is not activated on your account |
 | `422` | `connect.vendor_net_not_positive` | The vendor would receive nothing |
