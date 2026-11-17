@@ -100,6 +100,13 @@
                   "fr/payments/payment-link/create",
                   "fr/payments/payment-link/share"
                 ]
+              },
+              {
+                "group": "Encaisser en boutique",
+                "pages": [
+                  "fr/payments/in-store/counter-qr",
+                  "fr/payments/in-store/pos"
+                ]
               }
             ]
           },
@@ -433,6 +440,13 @@
                   "en/payments/payment-link/intro",
                   "en/payments/payment-link/create",
                   "en/payments/payment-link/share"
+                ]
+              },
+              {
+                "group": "Accept in-store payments",
+                "pages": [
+                  "en/payments/in-store/counter-qr",
+                  "en/payments/in-store/pos"
                 ]
               }
             ]
