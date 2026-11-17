@@ -10,9 +10,9 @@ Les décaissements sont des paiements de votre compte vers le compte d'un client
   partenaires. Pour obtenir l'accès à cette fonctionnalité, veuillez nous envoyer une demande.
 </Note>
 
-## Décaissement : Traitement asynchrone
+## Décaissement : exécution immédiate
 
-Un décaissement est traité de manière asynchrone, ce qui signifie que l'API renverra une réponse immédiatement, mais le paiement effectif peut prendre un certain temps pour être complété, généralement J+1 après la création de la demande. Cela est dû à la nécessité de vérifier le compte du client et de traiter le paiement.
+Un décaissement est exécuté immédiatement : l'opérateur est appelé pendant le traitement de la requête API, sans différé. L'opérateur peut encore mettre un moment à confirmer, le statut final vous parvient donc par webhook. Un décaissement de production retenu pour vérification n'est envoyé qu'une fois la revue tranchée (voir [Créer un décaissement](/fr/api-reference/disbursement/create)).
 
 ## Notification via Webhook
 
