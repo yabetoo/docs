@@ -1,0 +1,54 @@
+---
+title: "Avec un assistant IA"
+description: "Faire écrire votre récepteur de webhooks par Claude, ChatGPT, Cursor ou Copilot, à partir de la vraie documentation"
+---
+
+Cette documentation est lisible par les assistants IA. Donnez-leur la bonne source et un cahier des charges précis : ils écrivent un récepteur de webhooks correct du premier coup.
+
+## Donner la documentation à l'assistant
+
+| Source | Usage |
+|--------|-------|
+| [`/llms.txt`](https://docs.yabetoopay.com/llms.txt) | L'index de toutes les pages, à coller ou à donner en lien. |
+| [`/llms-full.txt`](https://docs.yabetoopay.com/llms-full.txt) | Toute la documentation en un seul fichier texte. |
+| Une page + `.md` | La version Markdown d'une page, par exemple [`/fr/developer-tools/webhook/events.md`](https://docs.yabetoopay.com/fr/developer-tools/webhook/events.md). |
+| [`/mcp`](https://docs.yabetoopay.com/mcp) | Serveur MCP de recherche dans la documentation, pour Claude, Cursor ou VS Code. |
+
+Le menu en haut de chaque page copie la page, l'ouvre dans ChatGPT, Claude ou Perplexity, ou connecte le serveur MCP à Cursor et VS Code.
+
+## Prompt à copier
+
+Remplacez ce qui est entre crochets, puis collez le prompt dans votre assistant avec la page [Liste des événements](/fr/developer-tools/webhook/events) (en `.md`) ou le serveur MCP.
+
+```text
+Écris un endpoint de webhooks Yabetoo Pay en [Node.js / Express | PHP / Laravel | Python / FastAPI].
+
+Contrat (docs.yabetoopay.com, pages « Webhooks » et « Liste des événements ») :
+- Requête POST, corps JSON { id, type, data, created_at }.
+- En-têtes : X-Yabetoo-Webhook-Signature, X-Yabetoo-Webhook-Timestamp,
+  X-Yabetoo-Webhook-Event, X-Yabetoo-Webhook-Id.
+- Signature = HMAC-SHA256 en hexadécimal de "{timestamp}.{corps brut}",
+  clé = le secret webhook (variable d'environnement YABETOO_WEBHOOK_SECRET).
+
+Exigences :
+1. Lire le corps BRUT avant tout parsing JSON ; vérifier la signature avec une
+   comparaison à temps constant ; refuser (400) si elle est fausse.
+2. Refuser un horodatage de plus de 5 minutes (rejeu).
+3. Ignorer un événement déjà traité, d'après X-Yabetoo-Webhook-Id (= id du corps) :
+   les réessais renvoient le même événement.
+4. Répondre 2xx en moins de 30 secondes : accuser réception d'abord, traiter
+   ensuite (file, job). Un 408, 429 ou 5xx déclenche un réessai.
+5. Ne traiter que ces événements, avec les champs de `data` documentés :
+   [intent.succeeded, intent.failed, checkout.session.completed, ...].
+   Ignorer les autres types sans erreur.
+6. Tests : signature valide, signature fausse, horodatage trop ancien, doublon.
+
+N'invente aucun champ : si un champ n'est pas dans la documentation, demande-moi.
+```
+
+## Vérifier ce que l'assistant a produit
+
+- La signature est calculée sur le corps **brut**, pas sur un JSON re-sérialisé.
+- La comparaison est à temps constant (`crypto.timingSafeEqual`, `hash_equals`, `hmac.compare_digest`).
+- Les champs lus dans `data` figurent bien dans la [liste des événements](/fr/developer-tools/webhook/events).
+- Un même `id` reçu deux fois n'est traité qu'une fois.

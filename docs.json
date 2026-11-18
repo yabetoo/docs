@@ -225,7 +225,8 @@
                 "group": "Webhook",
                 "pages": [
                   "fr/developer-tools/webhook/overview",
-                  "fr/developer-tools/webhook/events"
+                  "fr/developer-tools/webhook/events",
+                  "fr/developer-tools/webhook/ai-assistant"
                 ]
               },
               {
@@ -570,7 +571,8 @@
                 "group": "Webhook",
                 "pages": [
                   "en/developer-tools/webhook/overview",
-                  "en/developer-tools/webhook/events"
+                  "en/developer-tools/webhook/events",
+                  "en/developer-tools/webhook/ai-assistant"
                 ]
               },
               {
