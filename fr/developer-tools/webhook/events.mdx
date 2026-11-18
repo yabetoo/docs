@@ -495,3 +495,44 @@ Tous les événements `subscription.*` portent `data.subscriptionId` (`sub_…`)
 <Warning>
   `downloadUrl` donne accès au fichier acheté : ne le journalisez pas et ne l'exposez qu'au client.
 </Warning>
+
+## Yabetoo Connect
+
+Dans tous les événements `connect.*`, `data.account` est le compte connecté concerné.
+
+| Événement | `data` |
+|-----------|--------|
+| `connect.transfer.created` | L'objet transfert (`ctr_…`) : `controllerAccountId`, `connectedAccountId`, `sourceWalletId`, `destinationWalletId`, `amount`, `fee`, `feePayer`, `reversedAmount`, `currency`, `availableAt`, `createdAt` |
+| `connect.transfer.reversed` | L'objet annulation (`ctrr_…`) : `connectTransferId`, `controllerAccountId`, `amount`, `currency`, `createdAt` |
+| `connect.application_fee.created` | L'objet commission (`afee_…`) : `controllerAccountId`, `connectedAccountId`, `chargeId`, `intentId`, `transferId`, `amount`, `refundedAmount`, `currency`, `feePayer`, `createdAt` |
+| `connect.application_fee.refunded` | `application_fee`, `refund`, `amount` (montant repris), `refunded_amount` (cumul), `currency` |
+| `connect.funds.available` | `wallet`, `amount`, `currency`, `source_transaction` : des fonds en attente deviennent disponibles |
+| `connect.refund.blocked_insufficient_funds` | `charge`, `refund_amount`, `required`, `seller_available`, `marketplace_balance`, `shortfall`, `currency` |
+| `connect.reversal.blocked_insufficient_funds` | `allocation`, `required`, `seller_available`, `shortfall`, `currency` |
+
+Pour un paiement réparti entre plusieurs vendeurs, `transfer.created`, `application_fee.created` et `application_fee.refunded` ajoutent `payment_intent` et `split_reference` (la référence du vendeur dans votre requête).
+
+```json
+{
+  "id": "evt_1qW4rT7yUz0pLm3xVb6cYd9g",
+  "type": "connect.transfer.created",
+  "data": {
+    "id": "ctr_8Kq3LmZx9RtYb4VnWs1KdP0eA3cF6gJ8kM5n",
+    "controllerAccountId": "acct_7Hq2LmZx9RtYb4VnWs1KdP0e",
+    "connectedAccountId": "acct_3Pz8NqWx1RtYb4VnWs1KdQ2f",
+    "sourceWalletId": "wa_5Gh1KmZx9RtYb4VnWs1KdP0e",
+    "destinationWalletId": "wa_9Lp4QmZx9RtYb4VnWs1KdP0e",
+    "amount": 9000,
+    "fee": 0,
+    "feePayer": null,
+    "reversedAmount": 0,
+    "currency": "xaf",
+    "availableAt": "2026-02-18T15:34:20.000+00:00",
+    "createdAt": "2026-02-16T15:34:20.000+00:00",
+    "account": "acct_3Pz8NqWx1RtYb4VnWs1KdQ2f",
+    "payment_intent": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+    "split_reference": "vendeur-42"
+  },
+  "created_at": "2026-02-16T15:34:20.311+00:00"
+}
+```
