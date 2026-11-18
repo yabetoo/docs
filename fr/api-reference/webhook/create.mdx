@@ -1,191 +1,107 @@
 ---
-title: "Créer un webhook"
-description: "Créez un nouvel endpoint webhook pour recevoir des notifications."
+title: "Créer un endpoint webhook"
+description: "Enregistrez une URL qui recevra les événements de votre compte."
 ---
 
 ## Endpoint
 
 ```bash
-POST https://pay.sandbox.yabetoopay.com/v1/account/{accountId}/webhooks   # Sandbox
-POST https://pay.api.yabetoopay.com/v1/account/{accountId}/webhooks       # Production
+POST https://webhook.yabetoopay.com/v1/webhooks/endpoints
 ```
 
 ## Authentification
 
-Utilisez votre clé secrète dans l'en-tête `Authorization` :
+Ces routes sont celles qu'utilise votre tableau de bord (**Développeurs > Webhooks**). Elles demandent :
 
-```bash
-Authorization: Bearer YOUR_SECRET_KEY
-```
+- l'en-tête `Authorization: Bearer <jeton>`, avec le **jeton de session** de votre utilisateur Yabetoo ;
+- l'en-tête `X-Account-Id`, l'identifiant du compte marchand concerné.
 
-## Paramètres de chemin
+<Warning>
+  Votre clé secrète (`sk_test_…`, `sk_live_…`) n'est **pas** acceptée sur ces routes. Pour la plupart des
+  intégrations, créez et gérez vos endpoints depuis le tableau de bord.
+</Warning>
 
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `accountId` | `string` | Votre ID de compte |
+| Environnement | URL de base |
+|---------------|-------------|
+| Production | `https://webhook.yabetoopay.com` |
 
 ## Corps de la requête
 
-| Paramètre | Type | Obligatoire | Description |
-|-----------|------|-------------|-------------|
-| `url` | `string` | Oui | URL de l'endpoint webhook |
-| `description` | `string` | Non | Description du webhook |
-| `enabled_events` | `array` | Oui | Liste des événements à recevoir |
-| `metadata` | `object` | Non | Données personnalisées |
+| Paramètre | Type | Requis | Description |
+|-----------|------|--------|-------------|
+| `url` | `string` | Oui | URL qui recevra les événements (2 048 caractères max.) |
+| `events` | `string[]` | Oui | Au moins un événement, par exemple `intent.succeeded`. Voir [Événements supportés](/fr/developer-tools/webhook/events) |
+| `description` | `string` | Non | 255 caractères max. |
+| `metadata` | `object` | Non | Données libres |
+| `enabled` | `boolean` | Non | `true` par défaut |
+| `sandboxId` | `string` | Non | Limiter l'endpoint à un bac à sable (`sbx_…`) |
+
+<Warning>
+  Les noms d'événements ne sont pas vérifiés : un nom mal orthographié est accepté, mais ne recevra rien.
+</Warning>
 
 ## Exemple de requête
 
 <CodeGroup>
 ```bash cURL
-curl -X POST https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks \
+curl -X POST https://webhook.yabetoopay.com/v1/webhooks/endpoints \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
+  -H "X-Account-Id: YOUR_ACCOUNT_ID" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_SECRET_KEY" \
   -d '{
-    "url": "https://example.com/webhooks",
+    "url": "https://example.com/webhooks/yabetoo",
+    "events": ["intent.succeeded", "intent.failed", "intent.expired"],
     "description": "Webhook de production",
-    "enabled_events": [
-      "intent.completed",
-      "disbursement.completed"
-    ],
-    "metadata": {
-      "environment": "production"
-    }
+    "metadata": { "environment": "production" }
   }'
-```
-
-```javascript JavaScript
-import Yabetoo from "@yabetoo/sdk-js";
-
-const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
-
-const webhook = await yabetoo.webhooks.create({
-  url: "https://example.com/webhooks",
-  description: "Webhook de production",
-  enabledEvents: [
-    "intent.completed",
-    "disbursement.completed"
-  ],
-  metadata: {
-    environment: "production",
-  },
-});
-```
-
-```python Python
-from yabetoo import Yabetoo
-
-yabetoo = Yabetoo("YOUR_SECRET_KEY")
-
-webhook = yabetoo.webhooks.create(
-    url="https://example.com/webhooks",
-    description="Webhook de production",
-    enabled_events=[
-        "intent.completed",
-        "disbursement.completed"
-    ],
-    metadata={
-        "environment": "production",
-    }
-)
-```
-
-```php PHP
-<?php
-require 'vendor/autoload.php';
-
-use Yabetoo\Yabetoo;
-
-$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
-
-$webhook = $yabetoo->webhooks->create([
-    "url" => "https://example.com/webhooks",
-    "description" => "Webhook de production",
-    "enabled_events" => [
-        "intent.completed",
-        "disbursement.completed"
-    ],
-    "metadata" => [
-        "environment" => "production",
-    ],
-]);
-```
-
-```java Java
-import com.yabetoo.Yabetoo;
-import com.yabetoo.YabetooConfig;
-import com.yabetoo.model.Webhook;
-import com.yabetoo.request.WebhookCreateRequest;
-
-YabetooConfig config = new YabetooConfig()
-    .setApiKey("YOUR_SECRET_KEY");
-
-Yabetoo yabetoo = new Yabetoo(config);
-
-WebhookCreateRequest request = WebhookCreateRequest.builder()
-    .setUrl("https://example.com/webhooks")
-    .setDescription("Webhook de production")
-    .addEnabledEvent("intent.completed")
-    .addEnabledEvent("disbursement.completed")
-    .putMetadata("environment", "production")
-    .build();
-
-Webhook webhook = yabetoo.webhooks().create(request);
 ```
 </CodeGroup>
 
 ## Réponse
 
-### 200 OK
+### 201 Created
+
+Le secret de signature n'est renvoyé qu'ici, à la création. Conservez-le : il sert à [vérifier les signatures](/fr/developer-tools/webhook/overview).
 
 ```json
 {
-  "id": "whk_123456789",
-  "object": "webhook",
-  "url": "https://example.com/webhooks",
-  "description": "Webhook de production",
-  "status": "active",
-  "secret": "whsec_XXXXXXXXXXXXXXXXXXXXXXXX",
-  "enabled_events": [
-    "intent.completed",
-    "disbursement.completed"
-  ],
-  "metadata": {
-    "environment": "production"
+  "data": {
+    "id": "we_mi3k8q2xa91f0c4d7e2b",
+    "accountId": "acct_xsd",
+    "sandboxId": null,
+    "url": "https://example.com/webhooks/yabetoo",
+    "events": ["intent.succeeded", "intent.failed", "intent.expired"],
+    "enabled": true,
+    "description": "Webhook de production",
+    "metadata": { "environment": "production" },
+    "createdAt": "2026-11-18T10:12:32.000+00:00",
+    "updatedAt": "2026-11-18T10:12:32.000+00:00"
   },
-  "created_at": "2023-05-12T10:12:32Z"
+  "secret": "whsec_3f9a…"
 }
 ```
 
-### Événements disponibles
+## L'objet endpoint
 
-| Événement | Description |
-|-----------|-------------|
-| `intent.completed` | Paiement reçu avec succès |
-| `disbursement.completed` | Décaissement traité avec succès |
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Identifiant de l'endpoint (`we_…`) |
+| `accountId` | `string` | Le compte marchand |
+| `sandboxId` | `string \| null` | Bac à sable ciblé (`sbx_…`). `null` : l'endpoint reçoit tous les événements du compte |
+| `url` | `string` | L'URL qui reçoit les événements |
+| `events` | `string[]` | Les événements reçus. Le joker `*` est accepté (`intent.*`) |
+| `enabled` | `boolean` | `false` : plus aucune livraison |
+| `description` | `string \| null` | Votre description |
+| `metadata` | `object \| null` | Vos données libres |
+| `createdAt`, `updatedAt` | `string` | Dates ISO 8601 |
 
-### 400 Mauvaise requête
+Le secret de signature (`whsec_…`) ne fait jamais partie de l'objet : il est renvoyé à part, à la création, à la lecture du secret et à sa rotation.
 
-```json
-{
-  "errors": [
-    {
-      "rule": "required",
-      "field": "url",
-      "message": "required validation failed"
-    }
-  ]
-}
-```
+## Erreurs
 
-### 401 Non autorisé
-
-```json
-{
-  "message": "Unauthorized"
-}
-```
-
-<Note>
-  Conservez précieusement le `secret` du webhook. Il est nécessaire pour
-  vérifier l'authenticité des notifications reçues.
-</Note>
+| Statut | Corps | Cause |
+|--------|-------|-------|
+| `400` | `{ "error": "X-Account-Id header is required" }` | En-tête `X-Account-Id` absent |
+| `401` | `{ "error": "Missing bearer token" }` ou `{ "error": "Invalid or expired token" }` | Jeton absent, invalide ou expiré |
+| `403` | `{ "error": "Account not accessible with this token" }` | Le compte n'appartient pas à cet utilisateur |
+| `422` | `{ "errors": [{ "field": "url", "rule": "required", "message": "…" }] }` | Corps invalide |

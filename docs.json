@@ -344,7 +344,10 @@
                 "pages": [
                   "fr/api-reference/webhook/create",
                   "fr/api-reference/webhook/get",
-                  "fr/api-reference/webhook/all"
+                  "fr/api-reference/webhook/all",
+                  "fr/api-reference/webhook/update",
+                  "fr/api-reference/webhook/delete",
+                  "fr/api-reference/webhook/secret"
                 ]
               }
             ]
@@ -686,7 +689,10 @@
                 "pages": [
                   "en/api-reference/webhook/create",
                   "en/api-reference/webhook/get",
-                  "en/api-reference/webhook/all"
+                  "en/api-reference/webhook/all",
+                  "en/api-reference/webhook/update",
+                  "en/api-reference/webhook/delete",
+                  "en/api-reference/webhook/secret"
                 ]
               }
             ]

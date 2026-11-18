@@ -1,96 +1,37 @@
 ---
-title: "Get All Webhooks"
-description: "Retrieve a list of all your webhooks."
+title: "List webhook endpoints"
+description: "List every endpoint of your account."
 ---
 
 ## Endpoint
 
 ```bash
-GET https://pay.sandbox.yabetoopay.com/v1/account/{accountId}/webhooks   # Sandbox
-GET https://pay.api.yabetoopay.com/v1/account/{accountId}/webhooks       # Production
+GET https://webhook.yabetoopay.com/v1/webhooks/endpoints
 ```
 
 ## Authentication
 
-Use your secret key in the `Authorization` header:
+These are the routes your dashboard uses (**Developers > Webhooks**). They require:
 
-```bash
-Authorization: Bearer YOUR_SECRET_KEY
-```
+- the `Authorization: Bearer <token>` header, with your Yabetoo user's **session token**;
+- the `X-Account-Id` header, the identifier of the merchant account concerned.
 
-## Path Parameters
+<Warning>
+  Your secret key (`sk_test_…`, `sk_live_…`) is **not** accepted on these routes. For most integrations,
+  create and manage your endpoints from the dashboard.
+</Warning>
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `accountId` | `string` | Your account ID |
+| Environment | Base URL |
+|-------------|----------|
+| Production | `https://webhook.yabetoopay.com` |
 
-## Query Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `limit` | `integer` | Number of items per page (default: 10, max: 100) |
-| `page` | `integer` | Page number (starts at 1) |
-| `status` | `string` | Filter by status |
-
-## Example Request
+## Example request
 
 <CodeGroup>
 ```bash cURL
-curl "https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks?limit=10&page=1" \
-  -H "Authorization: Bearer YOUR_SECRET_KEY"
-```
-
-```javascript JavaScript
-import Yabetoo from "@yabetoo/sdk-js";
-
-const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
-
-const webhooks = await yabetoo.webhooks.list({
-  limit: 10,
-  page: 1,
-});
-```
-
-```python Python
-from yabetoo import Yabetoo
-
-yabetoo = Yabetoo("YOUR_SECRET_KEY")
-
-webhooks = yabetoo.webhooks.list(limit=10, page=1)
-```
-
-```php PHP
-<?php
-require 'vendor/autoload.php';
-
-use Yabetoo\Yabetoo;
-
-$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
-
-$webhooks = $yabetoo->webhooks->all([
-    "limit" => 10,
-    "page" => 1,
-]);
-```
-
-```java Java
-import com.yabetoo.Yabetoo;
-import com.yabetoo.YabetooConfig;
-import com.yabetoo.model.Webhook;
-import com.yabetoo.model.WebhookCollection;
-import com.yabetoo.request.WebhookListRequest;
-
-YabetooConfig config = new YabetooConfig()
-    .setApiKey("YOUR_SECRET_KEY");
-
-Yabetoo yabetoo = new Yabetoo(config);
-
-WebhookListRequest request = WebhookListRequest.builder()
-    .setLimit(10L)
-    .setPage(1L)
-    .build();
-
-WebhookCollection webhooks = yabetoo.webhooks().list(request);
+curl -X GET https://webhook.yabetoopay.com/v1/webhooks/endpoints \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
+  -H "X-Account-Id: YOUR_ACCOUNT_ID"
 ```
 </CodeGroup>
 
@@ -98,52 +39,47 @@ WebhookCollection webhooks = yabetoo.webhooks().list(request);
 
 ### 200 OK
 
+Every endpoint of the account, newest first, without pagination.
+
 ```json
 {
   "data": [
-    {
-      "id": "whk_123456789",
-      "object": "webhook",
-      "url": "https://example.com/webhooks",
-      "description": "Production webhook",
-      "status": "active",
-      "enabled_events": [
-        "intent.completed",
-        "disbursement.completed"
-      ],
-      "metadata": {
-        "environment": "production"
-      },
-      "created_at": "2023-05-12T10:12:32Z",
-      "last_error": null,
-      "stats": {
-        "successful_deliveries": 150,
-        "failed_deliveries": 2,
-        "average_response_time": 245
-      }
-    }
-  ],
-  "meta": {
-    "total": 25,
-    "page": 1,
-    "limit": 10,
-    "pages": 3
+  {
+    "id": "we_mi3k8q2xa91f0c4d7e2b",
+    "accountId": "acct_xsd",
+    "sandboxId": null,
+    "url": "https://example.com/webhooks/yabetoo",
+    "events": ["intent.succeeded", "intent.failed", "intent.expired"],
+    "enabled": true,
+    "description": "Production webhook",
+    "metadata": { "environment": "production" },
+    "createdAt": "2026-11-18T10:12:32.000+00:00",
+    "updatedAt": "2026-11-18T10:12:32.000+00:00"
   }
+  ]
 }
 ```
 
-### Available Status Filters
+## The endpoint object
 
-| Status | Description |
-|--------|-------------|
-| `active` | Active webhooks |
-| `disabled` | Manually disabled webhooks |
-| `failed` | Webhooks disabled after failures |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Endpoint identifier (`we_…`) |
+| `accountId` | `string` | The merchant account |
+| `sandboxId` | `string \| null` | Targeted sandbox (`sbx_…`). `null`: the endpoint receives every event of the account |
+| `url` | `string` | The URL that receives events |
+| `events` | `string[]` | The events received. The `*` wildcard is accepted (`intent.*`) |
+| `enabled` | `boolean` | `false`: no more deliveries |
+| `description` | `string \| null` | Your description |
+| `metadata` | `object \| null` | Your free-form data |
+| `createdAt`, `updatedAt` | `string` | ISO 8601 dates |
 
-### 401 Unauthorized
+The signing secret (`whsec_…`) is never part of the object: it is returned separately, on creation, when reading the secret and on rotation.
 
-```json
-{
-  "message": "Unauthorized"
-}
-```
+## Errors
+
+| Status | Body | Cause |
+|--------|------|-------|
+| `400` | `{ "error": "X-Account-Id header is required" }` | Missing `X-Account-Id` header |
+| `401` | `{ "error": "Missing bearer token" }` or `{ "error": "Invalid or expired token" }` | Missing, invalid or expired token |
+| `403` | `{ "error": "Account not accessible with this token" }` | The account does not belong to this user |

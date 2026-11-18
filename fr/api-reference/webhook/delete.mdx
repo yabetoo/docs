@@ -1,0 +1,57 @@
+---
+title: "Supprimer un endpoint webhook"
+description: "Supprimez définitivement un endpoint."
+---
+
+## Endpoint
+
+```bash
+DELETE https://webhook.yabetoopay.com/v1/webhooks/endpoints/{id}
+```
+
+## Authentification
+
+Ces routes sont celles qu'utilise votre tableau de bord (**Développeurs > Webhooks**). Elles demandent :
+
+- l'en-tête `Authorization: Bearer <jeton>`, avec le **jeton de session** de votre utilisateur Yabetoo ;
+- l'en-tête `X-Account-Id`, l'identifiant du compte marchand concerné.
+
+<Warning>
+  Votre clé secrète (`sk_test_…`, `sk_live_…`) n'est **pas** acceptée sur ces routes. Pour la plupart des
+  intégrations, créez et gérez vos endpoints depuis le tableau de bord.
+</Warning>
+
+| Environnement | URL de base |
+|---------------|-------------|
+| Production | `https://webhook.yabetoopay.com` |
+
+## Paramètres de chemin
+
+| Paramètre | Type | Description |
+|---|---|---|
+| `id` | `string` | L'identifiant de l'endpoint (`we_…`) |
+
+## Exemple de requête
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE https://webhook.yabetoopay.com/v1/webhooks/endpoints/we_mi3k8q2xa91f0c4d7e2b \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
+  -H "X-Account-Id: YOUR_ACCOUNT_ID"
+```
+</CodeGroup>
+
+## Réponse
+
+### 204 No Content
+
+Aucun corps. L'endpoint ne reçoit plus rien.
+
+## Erreurs
+
+| Statut | Corps | Cause |
+|--------|-------|-------|
+| `400` | `{ "error": "X-Account-Id header is required" }` | En-tête `X-Account-Id` absent |
+| `401` | `{ "error": "Missing bearer token" }` ou `{ "error": "Invalid or expired token" }` | Jeton absent, invalide ou expiré |
+| `403` | `{ "error": "Account not accessible with this token" }` | Le compte n'appartient pas à cet utilisateur |
+| `404` | `{ "error": "Webhook endpoint not found" }` | Aucun endpoint avec cet `id` sur ce compte |
