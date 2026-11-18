@@ -7,15 +7,95 @@ description: "Liste des événements qui peuvent être déclenchés par l'API"
 
 Yabetoo prend actuellement en charge les types d'événements webhook suivants. Chaque événement correspond à une action spécifique qui se produit sur votre compte et peut être utilisé pour déclencher une logique dans votre backend (par exemple, mettre à jour les statuts des commandes, envoyer des notifications, etc.).
 
-### `intent.completed`
+## Corps d'un événement
+
+Chaque webhook est une requête `POST` dont le corps JSON a toujours la même enveloppe :
+
+| Champ | Description |
+|-------|-------------|
+| `id` | Identifiant de l'événement (`evt_…`). Identique d'une tentative de livraison à l'autre : servez-vous-en pour ignorer un doublon. Aussi envoyé dans l'en-tête `X-Yabetoo-Webhook-Id`. |
+| `type` | Le type d'événement, par exemple `intent.succeeded`. Aussi envoyé dans l'en-tête `X-Yabetoo-Webhook-Event`. |
+| `data` | L'objet de l'événement. Son contenu dépend du `type` (voir chaque événement ci-dessous). |
+| `created_at` | Date de l'événement, au format ISO 8601. |
+
+## Paiements (intentions de paiement)
+
+Une [intention de paiement](/fr/payments/api/create) confirmée produit un de ces trois événements. Pour les trois, `data` contient :
+
+| Champ | Description |
+|-------|-------------|
+| `data.intent` | L'intention de paiement : `id`, `amount`, `currency`, `status`, `description`, `metadata`, `liveMode`, `createdAt`… |
+| `data.charge` | La tentative de paiement : `id`, `intentId`, `amount`, `currency`, `status`, `captured`, `failureCode`, `failureMessage`, `financialTransactionId`, `externalId`… |
+
+Retrouvez votre commande avec `data.intent.id`, ou avec les `data.intent.metadata` passées à la création de l'intention.
+
+### `intent.succeeded`
 
 Déclenché lorsqu'un paiement a été reçu avec succès sur votre compte.
 
 - **Cas d'utilisation :** Confirmer qu'un client a effectué son paiement.
+- **Champs en plus :** `data.amountCaptured` (montant crédité sur votre solde, frais déduits) et `data.operatorName` (`mtn` ou `airtel`).
 - **Actions typiques :**
   - Marquer une commande comme payée
   - Envoyer un email ou SMS de confirmation
   - Mettre à jour le statut du paiement dans votre base de données
+
+```json
+{
+  "id": "evt_3kQ9xV2mLp7RtY8sWb4nZc1d",
+  "type": "intent.succeeded",
+  "data": {
+    "intent": {
+      "id": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+      "amount": 5000,
+      "currency": "xaf",
+      "status": "succeeded",
+      "description": "Commande 1234",
+      "metadata": { "orderId": "1234" },
+      "liveMode": false,
+      "createdAt": "2026-02-16T15:33:55.048+00:00"
+    },
+    "charge": {
+      "id": "ch_ADdQhObdEDlz4L0kl7qNRniFjruNcrcY85xq",
+      "intentId": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+      "amount": 5000,
+      "currency": "xaf",
+      "status": "succeeded",
+      "captured": true,
+      "financialTransactionId": "7331529368",
+      "externalId": "ext_7hp8lsjCFwTemoeL"
+    },
+    "amountCaptured": 4825,
+    "operatorName": "mtn"
+  },
+  "created_at": "2026-02-16T15:34:20.112+00:00"
+}
+```
+
+<Note>
+  Le corps peut contenir d'autres champs que ceux décrits ici. Ne vous appuyez que sur les
+  champs documentés : les autres peuvent changer sans préavis.
+</Note>
+
+### `intent.failed`
+
+Déclenché lorsque le paiement est refusé : solde insuffisant, refus du client, numéro inconnu…
+
+- **Où lire la raison :** `data.charge.failureCode` et `data.charge.failureMessage`.
+- **Actions typiques :**
+  - Proposer au client de réessayer, éventuellement avec un autre numéro
+  - Libérer la commande ou le stock réservé
+
+### `intent.expired`
+
+Déclenché lorsque l'opérateur n'a pas donné de réponse à temps, le plus souvent parce que le client n'a pas validé sur son téléphone.
+
+- **Pas forcément un échec définitif :** Yabetoo continue de vérifier la transaction auprès de l'opérateur. Si l'argent a finalement été débité, vous recevez ensuite `intent.succeeded` pour la même intention.
+- **Actions typiques :**
+  - Afficher « paiement non confirmé » plutôt que « paiement refusé »
+  - Ne pas relancer tout de suite un nouveau paiement pour la même commande
+
+## Décaissements
 
 ### `disbursement.succeeded`
 
@@ -45,6 +125,8 @@ Déclenché lorsqu'un décaissement en production est retenu pour vérification 
 Même événement pour un décaissement financé par le portefeuille de dépôt. Ses issues sont `deposit_disbursement.succeeded` et `deposit_disbursement.failed`.
 
 Le seul autre événement du cycle de vie d'un décaissement est `disbursement.created`.
+
+## Sessions de paiement
 
 ### `checkout.session.completed`
 
