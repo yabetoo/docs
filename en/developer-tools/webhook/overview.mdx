@@ -96,6 +96,18 @@ X-Yabetoo-Webhook-Event: intent.succeeded
 X-Yabetoo-Webhook-Id: evt_3kQ9xV2mLp7RtY8sWb4nZc1d
 ```
 
+### Webhooks received by an App
+
+When the event is delivered to an App installed on an account, the request **also** carries three headers, signed with the secret of that installation:
+
+| Header | Value |
+|--------|-------|
+| `X-Yabetoo-Signature` | `t=<timestamp>,v1=<signature>`: the same HMAC-SHA256 over `{timestamp}.{raw_body}`, with the installation secret. |
+| `X-Yabetoo-Timestamp` | The same timestamp as `X-Yabetoo-Webhook-Timestamp`. |
+| `X-Yabetoo-Installation-Id` | The installation (`inst_…`): tells which account and which secret to use. |
+
+An App verifies `X-Yabetoo-Signature` with the secret of the installation named by `X-Yabetoo-Installation-Id`.
+
 ## Verifying Webhook Signatures
 
 To ensure that webhook requests are legitimately sent by Yabetoo and have not been tampered with, you must verify the signature included in the `X-Yabetoo-Webhook-Signature` header.
