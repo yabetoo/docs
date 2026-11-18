@@ -441,3 +441,37 @@ A partial payment emits `invoice.payment_received` with `fullySettled: false`; t
   "created_at": "2026-02-16T15:34:21.003+00:00"
 }
 ```
+
+## Subscriptions
+
+Every `subscription.*` event carries `data.subscriptionId` (`sub_…`), `data.customerId` and `data.status` (`trialing`, `active`, `past_due`, `paused`, `canceled`, `unpaid`). The other fields depend on the event:
+
+| Event | Additional `data` fields |
+|-------|--------------------------|
+| `subscription.created` | `merchantAccountId`, `customerEmail`, `currentPeriodStart`, `currentPeriodEnd`, `items` (`priceId`, `quantity`), `createdAt`; `trialStart`, `trialEnd`, `billingCycleAnchor`, `cycleLimit` when created by API; `checkoutSessionId` when created through a checkout session |
+| `subscription.activated` | `merchantAccountId`, `currentPeriodStart`, `currentPeriodEnd`, `activatedAt` |
+| `subscription.updated` | `merchantAccountId`, `currentPeriodStart`, `currentPeriodEnd`, `nextBillingDate`, `updatedAt` (renewal) |
+| `subscription.trial_ending` | `merchantAccountId`, `trialStart`, `trialEnd`, `trialEndDate` |
+| `subscription.paused` | `previousStatus`, `pausedAt` |
+| `subscription.resumed` | `previousStatus`, `resumedAt` |
+| `subscription.past_due` | `previousStatus`, `reason`, `updatedAt` |
+| `subscription.canceled` | `merchantAccountId`, `reason`, `canceledAt`; `effectiveDate` for a scheduled cancellation, `previousStatus` and `completedAt` when it takes effect |
+
+`merchantAccountId` is only set when the subscriber is itself a Yabetoo merchant; otherwise it is `null`.
+
+```json
+{
+  "id": "evt_6mQ1wR8tTz3pLn5xVb2cYd7k",
+  "type": "subscription.activated",
+  "data": {
+    "subscriptionId": "sub_2Hq7LmZx9RtYb4VnWs1KdP0eA3cF6gJ8kM5n",
+    "customerId": "cus_4kT9xQ2mLp7RtY8sWb1nZc5e",
+    "merchantAccountId": null,
+    "status": "active",
+    "currentPeriodStart": "2026-02-16T00:00:00.000+00:00",
+    "currentPeriodEnd": "2026-03-16T00:00:00.000+00:00",
+    "activatedAt": "2026-02-16T15:34:22.410+00:00"
+  },
+  "created_at": "2026-02-16T15:34:22.512+00:00"
+}
+```
