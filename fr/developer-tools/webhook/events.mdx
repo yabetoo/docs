@@ -18,6 +18,142 @@ Chaque webhook est une requête `POST` dont le corps JSON a toujours la même en
 | `data` | L'objet de l'événement. Son contenu dépend du `type` (voir chaque événement ci-dessous). |
 | `created_at` | Date de l'événement, au format ISO 8601. |
 
+## Liste des événements
+
+Voici les 57 événements que Yabetoo envoie aujourd'hui. Abonnez-vous à un événement précis, ou à toute une famille avec le joker (`intent.*`). Le détail et le corps des principaux événements suivent cette liste.
+
+### Paiements
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `intent.created` | une intention de paiement est créée |
+| `intent.succeeded` | le paiement est reçu sur votre compte |
+| `intent.failed` | le paiement est refusé |
+| `intent.expired` | l'opérateur n'a pas répondu à temps (pas forcément définitif) |
+| `intent.canceled` | l'intention est annulée |
+
+### Sessions de paiement
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `checkout.session.completed` | une session de paiement est payée |
+| `checkout.session.payment_failed` | une tentative de paiement d'une session échoue (la session reste ouverte) |
+
+### Liens de paiement
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `payment_link.created` | un lien de paiement est créé |
+| `payment_link.checkout.completed` | un client paie par un lien de paiement |
+| `payment_link.checkout.failed` | un paiement par lien échoue (le lien reste payable) |
+
+### Décaissements
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `disbursement.created` | un décaissement est créé |
+| `disbursement.review_opened` | un décaissement est retenu pour vérification (non terminal) |
+| `disbursement.succeeded` | le décaissement est arrivé au destinataire |
+| `disbursement.failed` | le décaissement échoue ; les fonds réservés sont libérés |
+
+### Décaissements depuis le dépôt
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `deposit_disbursement.created` | un décaissement financé par le portefeuille de dépôt est créé |
+| `deposit_disbursement.review_opened` | il est retenu pour vérification (non terminal) |
+| `deposit_disbursement.succeeded` | il est arrivé au destinataire |
+| `deposit_disbursement.failed` | il échoue |
+
+### Dépôts
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `deposit.created` | un dépôt est créé |
+| `deposit.succeeded` | le dépôt est crédité |
+| `deposit.failed` | le dépôt échoue |
+
+### Retraits
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `withdraw.created` | une demande de retrait est créée |
+| `withdraw.confirmed` | la demande de retrait est confirmée |
+| `withdraw.succeeded` | le retrait est versé |
+| `withdraw.failed` | le retrait échoue |
+| `withdraw.canceled` | le retrait est annulé |
+
+### Versements
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `payout.created` | un versement est créé |
+| `payout.succeeded` | le versement est effectué |
+| `payout.failed` | le versement échoue |
+
+### Transferts entre portefeuilles
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `wallet_transfer.created` | un transfert vers un autre compte Yabetoo est créé |
+| `wallet_transfer.succeeded` | le transfert est effectué |
+| `wallet_transfer.canceled` | le transfert est annulé |
+| `wallet_transfer.received` | envoyé au compte **destinataire** quand les fonds arrivent |
+
+### Yabetoo Connect
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `connect.transfer.created` | une plateforme affecte des fonds à un vendeur connecté |
+| `connect.transfer.reversed` | une affectation est reprise, en tout ou en partie |
+| `connect.application_fee.created` | la plateforme perçoit sa commission sur un paiement |
+| `connect.application_fee.refunded` | une partie de la commission est reprise par un remboursement |
+| `connect.funds.available` | le solde en attente d'un vendeur devient disponible |
+| `connect.refund.blocked_insufficient_funds` | un remboursement est refusé faute de fonds chez le vendeur |
+| `connect.reversal.blocked_insufficient_funds` | une reprise d'affectation est refusée pour la même raison |
+
+### Abonnements
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `subscription.created` | un abonnement est créé |
+| `subscription.activated` | l'abonnement devient actif |
+| `subscription.updated` | l'abonnement est modifié |
+| `subscription.paused` | l'abonnement est mis en pause |
+| `subscription.resumed` | l'abonnement reprend |
+| `subscription.trial_ending` | la période d'essai se termine bientôt |
+| `subscription.past_due` | un prélèvement de l'abonnement est en retard |
+| `subscription.canceled` | l'abonnement est annulé |
+
+### Factures
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `invoice.paid` | la facture est entièrement réglée |
+| `invoice.overdue` | la facture dépasse son échéance |
+| `invoice.voided` | la facture est annulée |
+
+### Clients
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `customer.created` | un client est créé |
+| `customer.updated` | un client est modifié |
+| `customer.deleted` | un client est supprimé |
+
+### Commandes
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `order.created` | une commande est créée |
+| `order.fulfilled` | une commande est livrée |
+
+### Produits numériques
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `digital_fulfillment.delivered` | un produit numérique est livré au client |
+
 ## Paiements (intentions de paiement)
 
 Une [intention de paiement](/fr/payments/api/create) confirmée produit un de ces trois événements. Pour les trois, `data` contient :

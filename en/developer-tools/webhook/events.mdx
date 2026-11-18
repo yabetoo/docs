@@ -18,6 +18,142 @@ Every webhook is a `POST` request whose JSON body always has the same envelope:
 | `data` | The event object. Its content depends on the `type` (see each event below). |
 | `created_at` | Event date, in ISO 8601 format. |
 
+## Event list
+
+These are the 57 events Yabetoo sends today. Subscribe to a specific event, or to a whole family with a wildcard (`intent.*`). Details and bodies of the main events follow this list.
+
+### Payments
+
+| Event | Sent when |
+|-----------|--------------|
+| `intent.created` | a payment intent is created |
+| `intent.succeeded` | the payment is received on your account |
+| `intent.failed` | the payment is declined |
+| `intent.expired` | the operator did not answer in time (not necessarily final) |
+| `intent.canceled` | the intent is canceled |
+
+### Checkout sessions
+
+| Event | Sent when |
+|-----------|--------------|
+| `checkout.session.completed` | a checkout session is paid |
+| `checkout.session.payment_failed` | a payment attempt on a session fails (the session stays open) |
+
+### Payment links
+
+| Event | Sent when |
+|-----------|--------------|
+| `payment_link.created` | a payment link is created |
+| `payment_link.checkout.completed` | a customer pays through a payment link |
+| `payment_link.checkout.failed` | a payment through a link fails (the link stays payable) |
+
+### Disbursements
+
+| Event | Sent when |
+|-----------|--------------|
+| `disbursement.created` | a disbursement is created |
+| `disbursement.review_opened` | a disbursement is held for review (not final) |
+| `disbursement.succeeded` | the disbursement reached the recipient |
+| `disbursement.failed` | the disbursement fails; held funds are released |
+
+### Deposit disbursements
+
+| Event | Sent when |
+|-----------|--------------|
+| `deposit_disbursement.created` | a disbursement funded by the deposit wallet is created |
+| `deposit_disbursement.review_opened` | it is held for review (not final) |
+| `deposit_disbursement.succeeded` | it reached the recipient |
+| `deposit_disbursement.failed` | it fails |
+
+### Deposits
+
+| Event | Sent when |
+|-----------|--------------|
+| `deposit.created` | a deposit is created |
+| `deposit.succeeded` | the deposit is credited |
+| `deposit.failed` | the deposit fails |
+
+### Withdrawals
+
+| Event | Sent when |
+|-----------|--------------|
+| `withdraw.created` | a withdrawal request is created |
+| `withdraw.confirmed` | the withdrawal request is confirmed |
+| `withdraw.succeeded` | the withdrawal is paid out |
+| `withdraw.failed` | the withdrawal fails |
+| `withdraw.canceled` | the withdrawal is canceled |
+
+### Payouts
+
+| Event | Sent when |
+|-----------|--------------|
+| `payout.created` | a payout is created |
+| `payout.succeeded` | the payout is completed |
+| `payout.failed` | the payout fails |
+
+### Wallet transfers
+
+| Event | Sent when |
+|-----------|--------------|
+| `wallet_transfer.created` | a transfer to another Yabetoo account is created |
+| `wallet_transfer.succeeded` | the transfer is completed |
+| `wallet_transfer.canceled` | the transfer is canceled |
+| `wallet_transfer.received` | sent to the **recipient** account when the funds arrive |
+
+### Yabetoo Connect
+
+| Event | Sent when |
+|-----------|--------------|
+| `connect.transfer.created` | a platform allocates funds to a connected vendor |
+| `connect.transfer.reversed` | an allocation is reversed, in full or in part |
+| `connect.application_fee.created` | the platform collects its fee on a payment |
+| `connect.application_fee.refunded` | part of the fee is reclaimed by a refund |
+| `connect.funds.available` | a vendor's pending balance becomes available |
+| `connect.refund.blocked_insufficient_funds` | a refund is refused because the vendor lacks funds |
+| `connect.reversal.blocked_insufficient_funds` | an allocation reversal is refused for the same reason |
+
+### Subscriptions
+
+| Event | Sent when |
+|-----------|--------------|
+| `subscription.created` | a subscription is created |
+| `subscription.activated` | the subscription becomes active |
+| `subscription.updated` | the subscription is updated |
+| `subscription.paused` | the subscription is paused |
+| `subscription.resumed` | the subscription resumes |
+| `subscription.trial_ending` | the trial period is ending soon |
+| `subscription.past_due` | a subscription payment is past due |
+| `subscription.canceled` | the subscription is canceled |
+
+### Invoices
+
+| Event | Sent when |
+|-----------|--------------|
+| `invoice.paid` | the invoice is fully paid |
+| `invoice.overdue` | the invoice is past its due date |
+| `invoice.voided` | the invoice is voided |
+
+### Customers
+
+| Event | Sent when |
+|-----------|--------------|
+| `customer.created` | a customer is created |
+| `customer.updated` | a customer is updated |
+| `customer.deleted` | a customer is deleted |
+
+### Orders
+
+| Event | Sent when |
+|-----------|--------------|
+| `order.created` | an order is created |
+| `order.fulfilled` | an order is fulfilled |
+
+### Digital fulfillment
+
+| Event | Sent when |
+|-----------|--------------|
+| `digital_fulfillment.delivered` | a digital product is delivered to the customer |
+
 ## Payments (payment intents)
 
 A confirmed [payment intent](/en/payments/api/create) produces one of these three events. For all three, `data` contains:
