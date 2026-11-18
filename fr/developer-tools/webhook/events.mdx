@@ -233,6 +233,49 @@ Déclenché lorsque l'opérateur n'a pas donné de réponse à temps, le plus so
 
 ## Décaissements
 
+Pour tous les événements `disbursement.*` et `deposit_disbursement.*`, `data` est l'objet décaissement, tel que le renvoie [`GET /v1/disbursement/{id}`](/fr/api-reference/disbursement/get) :
+
+| Champ | Description |
+|-------|-------------|
+| `data.id` | Identifiant du décaissement : `dis_…`, ou `ddb_…` pour un décaissement depuis le dépôt. |
+| `data.object` | `disbursement` ou `deposit_disbursement`. |
+| `data.amount`, `data.currency` | Montant envoyé au destinataire et devise. |
+| `data.status` | Statut du décaissement au moment de l'événement. |
+| `data.phone`, `data.operatorName`, `data.country` | Numéro du destinataire, opérateur (`mtn`, `airtel`) et pays. |
+| `data.firstName`, `data.lastName` | Nom du destinataire. |
+| `data.metadata` | Les métadonnées passées à la création. |
+| `data.financialTransactionId` | Référence de l'opérateur, une fois le décaissement exécuté. |
+| `data.failureCode`, `data.failureMessage` | Raison de l'échec (`disbursement.failed`). |
+| `data.review` | `null`, ou la vérification en cours : `status` (`open`, `approved`, `rejected`, `expired`), `opened_at`, `closed_at`. |
+| `data.createdAt`, `data.executedAt` | Date de création et date d'exécution chez l'opérateur. |
+| `data.account` | Identifiant de votre compte (`succeeded` et `failed` uniquement). |
+
+```json
+{
+  "id": "evt_8nR2kW5qTz1pLm4xVb7cYd0e",
+  "type": "disbursement.succeeded",
+  "data": {
+    "id": "dis_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+    "object": "disbursement",
+    "amount": 10000,
+    "currency": "xaf",
+    "status": "succeeded",
+    "phone": "242066594471",
+    "operatorName": "mtn",
+    "country": "cg",
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "metadata": { "payoutId": "8841" },
+    "financialTransactionId": "7331529412",
+    "review": null,
+    "createdAt": "2026-02-16T10:02:11.000+00:00",
+    "executedAt": "2026-02-16T10:02:14.000+00:00",
+    "account": "acct_7Hq2LmZx9RtYb4VnWs1KdP0e"
+  },
+  "created_at": "2026-02-16T10:02:15.208+00:00"
+}
+```
+
 ### `disbursement.succeeded`
 
 Déclenché lorsqu'un décaissement a été traité avec succès depuis votre compte vers un destinataire.

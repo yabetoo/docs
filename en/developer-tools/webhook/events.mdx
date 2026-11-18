@@ -233,6 +233,49 @@ Triggered when the operator did not answer in time, most often because the custo
 
 ## Disbursements
 
+For every `disbursement.*` and `deposit_disbursement.*` event, `data` is the disbursement object, as returned by [`GET /v1/disbursement/{id}`](/en/api-reference/disbursement/get):
+
+| Field | Description |
+|-------|-------------|
+| `data.id` | Disbursement ID: `dis_…`, or `ddb_…` for a deposit disbursement. |
+| `data.object` | `disbursement` or `deposit_disbursement`. |
+| `data.amount`, `data.currency` | Amount sent to the recipient and currency. |
+| `data.status` | Disbursement status when the event was sent. |
+| `data.phone`, `data.operatorName`, `data.country` | Recipient number, operator (`mtn`, `airtel`) and country. |
+| `data.firstName`, `data.lastName` | Recipient name. |
+| `data.metadata` | The metadata passed at creation. |
+| `data.financialTransactionId` | Operator reference, once the disbursement is executed. |
+| `data.failureCode`, `data.failureMessage` | Failure reason (`disbursement.failed`). |
+| `data.review` | `null`, or the ongoing review: `status` (`open`, `approved`, `rejected`, `expired`), `opened_at`, `closed_at`. |
+| `data.createdAt`, `data.executedAt` | Creation date and execution date at the operator. |
+| `data.account` | Your account ID (`succeeded` and `failed` only). |
+
+```json
+{
+  "id": "evt_8nR2kW5qTz1pLm4xVb7cYd0e",
+  "type": "disbursement.succeeded",
+  "data": {
+    "id": "dis_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+    "object": "disbursement",
+    "amount": 10000,
+    "currency": "xaf",
+    "status": "succeeded",
+    "phone": "242066594471",
+    "operatorName": "mtn",
+    "country": "cg",
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "metadata": { "payoutId": "8841" },
+    "financialTransactionId": "7331529412",
+    "review": null,
+    "createdAt": "2026-02-16T10:02:11.000+00:00",
+    "executedAt": "2026-02-16T10:02:14.000+00:00",
+    "account": "acct_7Hq2LmZx9RtYb4VnWs1KdP0e"
+  },
+  "created_at": "2026-02-16T10:02:15.208+00:00"
+}
+```
+
 ### `disbursement.succeeded`
 
 Triggered when a disbursement has been successfully processed from your account to a recipient.
