@@ -307,6 +307,34 @@ Le seul autre événement du cycle de vie d'un décaissement est `disbursement.c
 
 ## Sessions de paiement
 
+Les événements `checkout.session.*` et `payment_link.checkout.*` portent le même `data` :
+
+| Champ | Description |
+|-------|-------------|
+| `data.checkoutSessionId` | Identifiant de la session (`cs_…`). C'est lui qui retrouve votre commande. |
+| `data.amount`, `data.currency` | Montant total de la session et devise. |
+| `data.customerEmail` | E-mail du client, s'il a été saisi. |
+| `data.completedAt` | Date du paiement (`completed`). |
+| `data.failedAt`, `data.error`, `data.paymentIntentId`, `data.source` | Date de l'échec, raison opaque à journaliser, intention de paiement et origine de la session (`payment_failed` et `payment_link.checkout.failed`). |
+| `data.paymentLinkId` | Le lien de paiement (`plink_…`), pour `payment_link.checkout.*`. |
+| `data.invoiceId` | La facture, quand la session sert à régler une facture. |
+| `data.channel`, `data.terminalId`, `data.cashierId`, `data.discount` | Pour une vente faite sur un terminal Yabetoo POS : `channel` vaut `pos`. |
+
+```json
+{
+  "id": "evt_5tH8pQ2wXz6rNm1kVb3cYd9a",
+  "type": "checkout.session.completed",
+  "data": {
+    "checkoutSessionId": "cs_9fK2mQ7xLp4RtY8sWb1nZc3d",
+    "amount": 15000,
+    "currency": "xaf",
+    "customerEmail": "client@example.com",
+    "completedAt": "2026-02-16T15:34:19.874+00:00"
+  },
+  "created_at": "2026-02-16T15:34:20.112+00:00"
+}
+```
+
 ### `checkout.session.completed`
 
 Déclenché lorsqu'une [session de paiement](/fr/payments/checkout-page/create) est payée avec succès.

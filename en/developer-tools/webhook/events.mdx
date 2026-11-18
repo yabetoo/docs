@@ -307,6 +307,34 @@ The only other disbursement lifecycle event is `disbursement.created`.
 
 ## Checkout sessions
 
+`checkout.session.*` and `payment_link.checkout.*` events carry the same `data`:
+
+| Field | Description |
+|-------|-------------|
+| `data.checkoutSessionId` | Session ID (`cs_…`). Use it to find your order. |
+| `data.amount`, `data.currency` | Session total and currency. |
+| `data.customerEmail` | Customer email, if entered. |
+| `data.completedAt` | Payment date (`completed`). |
+| `data.failedAt`, `data.error`, `data.paymentIntentId`, `data.source` | Failure date, opaque reason to log, payment intent and session origin (`payment_failed` and `payment_link.checkout.failed`). |
+| `data.paymentLinkId` | The payment link (`plink_…`), for `payment_link.checkout.*`. |
+| `data.invoiceId` | The invoice, when the session pays an invoice. |
+| `data.channel`, `data.terminalId`, `data.cashierId`, `data.discount` | For a sale made on a Yabetoo POS terminal: `channel` is `pos`. |
+
+```json
+{
+  "id": "evt_5tH8pQ2wXz6rNm1kVb3cYd9a",
+  "type": "checkout.session.completed",
+  "data": {
+    "checkoutSessionId": "cs_9fK2mQ7xLp4RtY8sWb1nZc3d",
+    "amount": 15000,
+    "currency": "xaf",
+    "customerEmail": "client@example.com",
+    "completedAt": "2026-02-16T15:34:19.874+00:00"
+  },
+  "created_at": "2026-02-16T15:34:20.112+00:00"
+}
+```
+
 ### `checkout.session.completed`
 
 Triggered when a [checkout session](/en/payments/checkout-page/create) is paid successfully.
