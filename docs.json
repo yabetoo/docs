@@ -745,6 +745,9 @@
   "search": {
     "prompt": "Search documentation..."
   },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude", "perplexity", "mcp", "cursor", "vscode"]
+  },
   "modeToggle": {
     "default": "light",
     "isHidden": false
