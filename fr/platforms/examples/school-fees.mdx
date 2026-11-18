@@ -142,15 +142,15 @@ Traiter les confirmations de paiement :
 app.post('/webhooks/yabetoo', async (req, res) => {
   const event = req.body;
 
-  if (event.type === 'payment_intent.succeeded') {
-    const { metadata, amount } = event.data;
+  if (event.type === 'intent.succeeded') {
+    const { metadata, amount } = event.data.intent;
 
     if (metadata.type === 'school_fee') {
       // Enregistrer le paiement
       await db.payments.create({
         studentId: metadata.studentId,
         amount,
-        paymentIntentId: event.data.id,
+        paymentIntentId: event.data.intent.id,
         feeIds: metadata.feeIds.split(','),
         status: 'succeeded',
         paidAt: new Date()
@@ -160,7 +160,7 @@ app.post('/webhooks/yabetoo', async (req, res) => {
       await updateStudentBalance(metadata.studentId);
 
       // Générer et envoyer le reçu
-      const receipt = await generateReceipt(event.data);
+      const receipt = await generateReceipt(event.data.intent);
       await sendReceiptByEmail(metadata.parentEmail, receipt);
       await sendReceiptBySMS(metadata.parentPhone, receipt.summary);
     }

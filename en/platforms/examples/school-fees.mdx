@@ -250,15 +250,15 @@ Process payment confirmations:
 app.post('/webhooks/yabetoo', async (req, res) => {
   const event = req.body;
 
-  if (event.type === 'payment_intent.succeeded') {
-    const { metadata, amount } = event.data;
+  if (event.type === 'intent.succeeded') {
+    const { metadata, amount } = event.data.intent;
 
     if (metadata.type === 'school_fee') {
       // Record payment
       await db.payments.create({
         studentId: metadata.studentId,
         amount,
-        paymentIntentId: event.data.id,
+        paymentIntentId: event.data.intent.id,
         feeIds: metadata.feeIds.split(','),
         status: 'succeeded',
         paidAt: new Date()
@@ -268,7 +268,7 @@ app.post('/webhooks/yabetoo', async (req, res) => {
       await updateStudentBalance(metadata.studentId);
 
       // Generate and send receipt
-      const receipt = await generateReceipt(event.data);
+      const receipt = await generateReceipt(event.data.intent);
       await sendReceiptByEmail(metadata.parentEmail, receipt);
       await sendReceiptBySMS(metadata.parentPhone, receipt.summary);
 
@@ -280,7 +280,7 @@ app.post('/webhooks/yabetoo', async (req, res) => {
       await db.installments.update(metadata.installmentId, {
         status: 'paid',
         paidAt: new Date(),
-        paymentIntentId: event.data.id
+        paymentIntentId: event.data.intent.id
       });
 
       // Check if all installments are paid

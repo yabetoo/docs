@@ -152,7 +152,7 @@ try {
     Event event = Webhook.constructEvent(payload, signature, secret);
     // Gérer l'événement selon son type
     switch (event.getType()) {
-        case "payment_intent.succeeded":
+        case "intent.succeeded":
             PaymentIntent payment = (PaymentIntent) event.getData();
             handleSuccessfulPayment(payment);
             break;

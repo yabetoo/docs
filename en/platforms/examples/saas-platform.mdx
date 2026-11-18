@@ -143,11 +143,11 @@ app.post('/webhooks/yabetoo', async (req, res) => {
   const event = req.body;
 
   switch (event.type) {
-    case 'payment_intent.succeeded':
-      await handlePaymentSuccess(event.data);
+    case 'intent.succeeded':
+      await handlePaymentSuccess(event.data.intent);
       break;
-    case 'payment_intent.failed':
-      await handlePaymentFailure(event.data);
+    case 'intent.failed':
+      await handlePaymentFailure(event.data.intent);
       break;
   }
 

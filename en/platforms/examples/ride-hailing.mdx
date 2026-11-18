@@ -461,21 +461,21 @@ app.post('/webhooks/yabetoo', async (req, res) => {
   const event = req.body;
 
   switch (event.type) {
-    case 'payment_intent.succeeded':
-      const { type } = event.data.metadata;
+    case 'intent.succeeded':
+      const { type } = event.data.intent.metadata;
 
       if (type === 'wallet_topup') {
-        await handleWalletTopUp(event.data);
+        await handleWalletTopUp(event.data.intent);
       } else if (type === 'ride_payment') {
-        await handleRidePaymentSuccess(event.data);
+        await handleRidePaymentSuccess(event.data.intent);
       }
       break;
 
-    case 'payment_intent.failed':
-      await handlePaymentFailure(event.data);
+    case 'intent.failed':
+      await handlePaymentFailure(event.data.intent);
       break;
 
-    case 'disbursement.completed':
+    case 'disbursement.succeeded':
       await handlePayoutComplete(event.data);
       break;
 
