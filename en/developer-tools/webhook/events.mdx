@@ -475,3 +475,23 @@ Every `subscription.*` event carries `data.subscriptionId` (`sub_…`), `data.cu
   "created_at": "2026-02-16T15:34:22.512+00:00"
 }
 ```
+
+## Customers
+
+| Event | `data` fields |
+|-------|---------------|
+| `customer.created` | `customerId` (`cus_…`), `email`, `firstName`, `lastName`, `createdAt`; `phone` for a customer identified by phone number |
+| `customer.updated` | `customerId`, `email`, `firstName`, `lastName`, `updatedAt` |
+| `customer.deleted` | `customerId`, `email`, `deletedAt` |
+
+## Orders and digital products
+
+| Event | `data` fields |
+|-------|---------------|
+| `order.created` | `orderId`, `intentId`, `total`, `currency`, `itemsCount`, `items` (the lines sent at creation), `createdAt` |
+| `order.fulfilled` | `orderId`, `customerEmail`, `fulfillmentType` (`digital`), `fulfilledCount`, `failedCount`, `fulfillmentIds`, `fulfilledAt` |
+| `digital_fulfillment.delivered` | `orderId`, `customerEmail`, `downloads`: for each file, `productName`, `fileName`, `downloadUrl`, `expiresAt`, `downloadLimit` |
+
+<Warning>
+  `downloadUrl` grants access to the purchased file: do not log it and only show it to the customer.
+</Warning>

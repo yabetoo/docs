@@ -475,3 +475,23 @@ Tous les événements `subscription.*` portent `data.subscriptionId` (`sub_…`)
   "created_at": "2026-02-16T15:34:22.512+00:00"
 }
 ```
+
+## Clients
+
+| Événement | Champs de `data` |
+|-----------|------------------|
+| `customer.created` | `customerId` (`cus_…`), `email`, `firstName`, `lastName`, `createdAt` ; `phone` pour un client identifié par son téléphone |
+| `customer.updated` | `customerId`, `email`, `firstName`, `lastName`, `updatedAt` |
+| `customer.deleted` | `customerId`, `email`, `deletedAt` |
+
+## Commandes et produits numériques
+
+| Événement | Champs de `data` |
+|-----------|------------------|
+| `order.created` | `orderId`, `intentId`, `total`, `currency`, `itemsCount`, `items` (les lignes envoyées à la création), `createdAt` |
+| `order.fulfilled` | `orderId`, `customerEmail`, `fulfillmentType` (`digital`), `fulfilledCount`, `failedCount`, `fulfillmentIds`, `fulfilledAt` |
+| `digital_fulfillment.delivered` | `orderId`, `customerEmail`, `downloads` : pour chaque fichier, `productName`, `fileName`, `downloadUrl`, `expiresAt`, `downloadLimit` |
+
+<Warning>
+  `downloadUrl` donne accès au fichier acheté : ne le journalisez pas et ne l'exposez qu'au client.
+</Warning>
