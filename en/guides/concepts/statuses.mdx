@@ -139,7 +139,9 @@ When a payment fails, the `failure_message` field provides details:
 
 | Status | Webhook Event |
 |--------|---------------|
-| `succeeded` | `intent.completed` |
+| `succeeded` | `intent.succeeded` |
+| `failed` | `intent.failed` |
+| `expired` | `intent.expired` |
 | `succeeded` (disbursement) | `disbursement.succeeded` |
 
 ## Best Practices

@@ -300,8 +300,8 @@ Process ticket purchases:
 app.post('/webhooks/yabetoo', async (req, res) => {
   const event = req.body;
 
-  if (event.type === 'payment_intent.succeeded') {
-    const { metadata } = event.data;
+  if (event.type === 'intent.succeeded') {
+    const { metadata } = event.data.intent;
 
     if (metadata.type === 'event_ticket') {
       const order = await db.orders.findById(metadata.orderId);
@@ -330,8 +330,8 @@ app.post('/webhooks/yabetoo', async (req, res) => {
     }
   }
 
-  if (event.type === 'payment_intent.failed') {
-    const { metadata } = event.data;
+  if (event.type === 'intent.failed') {
+    const { metadata } = event.data.intent;
 
     if (metadata.type === 'event_ticket') {
       // Release reserved tickets

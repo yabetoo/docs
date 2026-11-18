@@ -7,15 +7,309 @@ description: "List of events that can be triggered by the API"
 
 Yabetoo currently supports the following webhook event types. Each event corresponds to a specific action that occurs on your account and can be used to trigger logic in your backend (e.g. updating order statuses, sending notifications, etc.).
 
-### `intent.completed`
+## Event body
+
+Every webhook is a `POST` request whose JSON body always has the same envelope:
+
+| Field | Description |
+|-------|-------------|
+| `id` | Event identifier (`evt_…`). The same across delivery attempts: use it to ignore a duplicate. Also sent in the `X-Yabetoo-Webhook-Id` header. |
+| `type` | The event type, for example `intent.succeeded`. Also sent in the `X-Yabetoo-Webhook-Event` header. |
+| `data` | The event object. Its content depends on the `type` (see each event below). |
+| `created_at` | Event date, in ISO 8601 format. |
+
+## Event list
+
+These are the 72 events Yabetoo sends today. Subscribe to a specific event, or to a whole family with a wildcard (`intent.*`). Details and bodies of the main events follow this list.
+
+### Payments
+
+| Event | Sent when |
+|-----------|--------------|
+| `intent.created` | a payment intent is created |
+| `intent.succeeded` | the payment is received on your account |
+| `intent.failed` | the payment is declined |
+| `intent.expired` | the operator did not answer in time (not necessarily final) |
+| `intent.canceled` | the intent is canceled |
+
+### Checkout sessions
+
+| Event | Sent when |
+|-----------|--------------|
+| `checkout.session.completed` | a checkout session is paid |
+| `checkout.session.payment_failed` | a payment attempt on a session fails (the session stays open) |
+
+### Payment links
+
+| Event | Sent when |
+|-----------|--------------|
+| `payment_link.created` | a payment link is created |
+| `payment_link.checkout.completed` | a customer pays through a payment link |
+| `payment_link.checkout.failed` | a payment through a link fails (the link stays payable) |
+
+### Disbursements
+
+| Event | Sent when |
+|-----------|--------------|
+| `disbursement.created` | a disbursement is created |
+| `disbursement.review_opened` | a disbursement is held for review (not final) |
+| `disbursement.succeeded` | the disbursement reached the recipient |
+| `disbursement.failed` | the disbursement fails; held funds are released |
+
+### Deposit disbursements
+
+| Event | Sent when |
+|-----------|--------------|
+| `deposit_disbursement.created` | a disbursement funded by the deposit wallet is created |
+| `deposit_disbursement.review_opened` | it is held for review (not final) |
+| `deposit_disbursement.succeeded` | it reached the recipient |
+| `deposit_disbursement.failed` | it fails |
+
+### Deposits
+
+| Event | Sent when |
+|-----------|--------------|
+| `deposit.created` | a deposit is created |
+| `deposit.succeeded` | the deposit is credited |
+| `deposit.failed` | the deposit fails |
+
+### Withdrawals
+
+| Event | Sent when |
+|-----------|--------------|
+| `withdraw.created` | a withdrawal request is created |
+| `withdraw.confirmed` | the withdrawal request is confirmed |
+| `withdraw.succeeded` | the withdrawal is paid out |
+| `withdraw.failed` | the withdrawal fails |
+| `withdraw.canceled` | the withdrawal is canceled |
+
+### Payouts
+
+| Event | Sent when |
+|-----------|--------------|
+| `payout.created` | a payout is created |
+| `payout.succeeded` | the payout is completed |
+| `payout.failed` | the payout fails |
+
+### Wallet transfers
+
+| Event | Sent when |
+|-----------|--------------|
+| `wallet_transfer.created` | a transfer to another Yabetoo account is created |
+| `wallet_transfer.succeeded` | the transfer is completed |
+| `wallet_transfer.canceled` | the transfer is canceled |
+| `wallet_transfer.received` | sent to the **recipient** account when the funds arrive |
+
+### Yabetoo Connect
+
+| Event | Sent when |
+|-----------|--------------|
+| `connect.transfer.created` | a platform allocates funds to a connected vendor |
+| `connect.transfer.reversed` | an allocation is reversed, in full or in part |
+| `connect.application_fee.created` | the platform collects its fee on a payment |
+| `connect.application_fee.refunded` | part of the fee is reclaimed by a refund |
+| `connect.funds.available` | a vendor's pending balance becomes available |
+| `connect.refund.blocked_insufficient_funds` | a refund is refused because the vendor lacks funds |
+| `connect.reversal.blocked_insufficient_funds` | an allocation reversal is refused for the same reason |
+
+### Subscriptions
+
+| Event | Sent when |
+|-----------|--------------|
+| `subscription.created` | a subscription is created |
+| `subscription.activated` | the subscription becomes active |
+| `subscription.updated` | the subscription is updated |
+| `subscription.paused` | the subscription is paused |
+| `subscription.resumed` | the subscription resumes |
+| `subscription.trial_ending` | the trial period is ending soon |
+| `subscription.past_due` | a subscription payment is past due |
+| `subscription.canceled` | the subscription is canceled |
+
+### Invoices
+
+| Event | Sent when |
+|-----------|--------------|
+| `invoice.paid` | the invoice is fully paid |
+| `invoice.overdue` | the invoice is past its due date |
+| `invoice.voided` | the invoice is voided |
+| `invoice.finalized` | the invoice is finalized and becomes payable |
+| `invoice.sent` | the invoice is sent to the customer |
+| `invoice.payment_received` | a payment, full or partial, is recorded on the invoice |
+| `invoice.marked_uncollectible` | the invoice is marked as uncollectible |
+
+### Credit notes
+
+| Event | Sent when |
+|-------|-----------|
+| `credit_note.created` | a credit note is issued on an invoice |
+| `credit_note.voided` | a credit note is voided |
+
+### Quotes
+
+| Event | Sent when |
+|-------|-----------|
+| `quote.sent` | the quote is sent to the customer |
+| `quote.accepted` | the customer accepts the quote |
+| `quote.declined` | the customer declines the quote |
+| `quote.expired` | the quote expires unanswered |
+| `quote.voided` | the quote is voided |
+
+### Order payments
+
+| Event | Sent when |
+|-------|-----------|
+| `payment.completed` | an order is paid (one-time purchase or subscription renewal) |
+| `payment.failed` | an order payment fails |
+
+### Payment method setup
+
+| Event | Sent when |
+|-------|-----------|
+| `setup.completed` | a payment method setup session succeeds |
+| `setup.failed` | it fails |
+
+### Customers
+
+| Event | Sent when |
+|-----------|--------------|
+| `customer.created` | a customer is created |
+| `customer.updated` | a customer is updated |
+| `customer.deleted` | a customer is deleted |
+
+### Orders
+
+| Event | Sent when |
+|-----------|--------------|
+| `order.created` | an order is created |
+| `order.fulfilled` | an order is fulfilled |
+
+### Digital fulfillment
+
+| Event | Sent when |
+|-----------|--------------|
+| `digital_fulfillment.delivered` | a digital product is delivered to the customer |
+
+## Payments (payment intents)
+
+A confirmed [payment intent](/en/payments/api/create) produces one of these three events. For all three, `data` contains:
+
+| Field | Description |
+|-------|-------------|
+| `data.intent` | The payment intent: `id`, `amount`, `currency`, `status`, `description`, `metadata`, `liveMode`, `createdAt`… |
+| `data.charge` | The payment attempt: `id`, `intentId`, `amount`, `currency`, `status`, `captured`, `failureCode`, `failureMessage`, `financialTransactionId`, `externalId`… |
+
+Find your order with `data.intent.id`, or with the `data.intent.metadata` you passed when creating the intent.
+
+### `intent.succeeded`
 
 Triggered when a payment has been successfully received on your account.
 
 - **Use Case:** Confirm that a customer has completed their payment.
+- **Extra fields:** `data.amountCaptured` (amount credited to your balance, fees deducted) and `data.operatorName` (`mtn` or `airtel`).
 - **Typical Actions:**
   - Mark an order as paid
   - Send a confirmation email or SMS
   - Update the payment status in your database
+
+```json
+{
+  "id": "evt_3kQ9xV2mLp7RtY8sWb4nZc1d",
+  "type": "intent.succeeded",
+  "data": {
+    "intent": {
+      "id": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+      "amount": 5000,
+      "currency": "xaf",
+      "status": "succeeded",
+      "description": "Order 1234",
+      "metadata": { "orderId": "1234" },
+      "liveMode": false,
+      "createdAt": "2026-02-16T15:33:55.048+00:00"
+    },
+    "charge": {
+      "id": "ch_ADdQhObdEDlz4L0kl7qNRniFjruNcrcY85xq",
+      "intentId": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+      "amount": 5000,
+      "currency": "xaf",
+      "status": "succeeded",
+      "captured": true,
+      "financialTransactionId": "7331529368",
+      "externalId": "ext_7hp8lsjCFwTemoeL"
+    },
+    "amountCaptured": 4825,
+    "operatorName": "mtn"
+  },
+  "created_at": "2026-02-16T15:34:20.112+00:00"
+}
+```
+
+<Note>
+  The body may contain fields other than the ones described here. Only rely on documented
+  fields: the others may change without notice.
+</Note>
+
+### `intent.failed`
+
+Triggered when the payment is refused: insufficient balance, customer rejection, unknown number…
+
+- **Where to read the reason:** `data.charge.failureCode` and `data.charge.failureMessage`.
+- **Typical Actions:**
+  - Offer the customer to retry, possibly with another number
+  - Release the reserved order or stock
+
+### `intent.expired`
+
+Triggered when the operator did not answer in time, most often because the customer did not approve on their phone.
+
+- **Not necessarily final:** Yabetoo keeps checking the transaction with the operator. If the money was eventually debited, you then receive `intent.succeeded` for the same intent.
+- **Typical Actions:**
+  - Show "payment not confirmed" rather than "payment refused"
+  - Do not immediately start a new payment for the same order
+
+## Disbursements
+
+For every `disbursement.*` and `deposit_disbursement.*` event, `data` is the disbursement object, as returned by [`GET /v1/disbursement/{id}`](/en/api-reference/disbursement/get):
+
+| Field | Description |
+|-------|-------------|
+| `data.id` | Disbursement ID: `dis_…`, or `ddb_…` for a deposit disbursement. |
+| `data.object` | `disbursement` or `deposit_disbursement`. |
+| `data.amount`, `data.currency` | Amount sent to the recipient and currency. |
+| `data.status` | Disbursement status when the event was sent. |
+| `data.phone`, `data.operatorName`, `data.country` | Recipient number, operator (`mtn`, `airtel`) and country. |
+| `data.firstName`, `data.lastName` | Recipient name. |
+| `data.metadata` | The metadata passed at creation. |
+| `data.financialTransactionId` | Operator reference, once the disbursement is executed. |
+| `data.failureCode`, `data.failureMessage` | Failure reason (`disbursement.failed`). |
+| `data.review` | `null`, or the ongoing review: `status` (`open`, `approved`, `rejected`, `expired`), `opened_at`, `closed_at`. |
+| `data.createdAt`, `data.executedAt` | Creation date and execution date at the operator. |
+| `data.account` | Your account ID (`succeeded` and `failed` only). |
+
+```json
+{
+  "id": "evt_8nR2kW5qTz1pLm4xVb7cYd0e",
+  "type": "disbursement.succeeded",
+  "data": {
+    "id": "dis_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+    "object": "disbursement",
+    "amount": 10000,
+    "currency": "xaf",
+    "status": "succeeded",
+    "phone": "242066594471",
+    "operatorName": "mtn",
+    "country": "cg",
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "metadata": { "payoutId": "8841" },
+    "financialTransactionId": "7331529412",
+    "review": null,
+    "createdAt": "2026-02-16T10:02:11.000+00:00",
+    "executedAt": "2026-02-16T10:02:14.000+00:00",
+    "account": "acct_7Hq2LmZx9RtYb4VnWs1KdP0e"
+  },
+  "created_at": "2026-02-16T10:02:15.208+00:00"
+}
+```
 
 ### `disbursement.succeeded`
 
@@ -46,6 +340,86 @@ The same event for a disbursement funded from the deposit wallet. Its outcomes a
 
 The only other disbursement lifecycle event is `disbursement.created`.
 
+## Withdrawals, payouts, deposits and transfers
+
+### Withdrawals (`withdraw.*`)
+
+For `withdraw.created`, `withdraw.confirmed`, `withdraw.succeeded` and `withdraw.failed`, `data` is the withdrawal object, with the same fields as a [disbursement](#disbursements) (`id`, `amount`, `currency`, `status`, `phone`, `operatorName`, `failureCode`…). `succeeded` and `failed` add `data.account`.
+
+`withdraw.canceled` only carries `data.amount`, `data.currency` and `data.walletId`.
+
+### Payouts (`payout.*`) and deposits (`deposit.*`)
+
+| Field | Description |
+|-------|-------------|
+| `data.amount`, `data.currency` | Amount and currency. |
+| `data.walletId` | The wallet concerned (`created` and `succeeded`). |
+| `data.payoutType` | Payout method: `bank_transfer`, `mobile_money`, `cash`, `check` (`payout.created`, `payout.succeeded`). |
+| `data.depositType` | Deposit method: `bank_transfer`, `cash`, `mobile_banking`, `check`… (`deposit.created`, `deposit.succeeded`). |
+| `data.status` | Status at creation (`created`). |
+| `data.rejectionReason` | Rejection reason (`failed`). |
+
+<Warning>
+  These events and `withdraw.canceled` do not carry the payout, deposit or withdrawal ID.
+  Match them by wallet, amount and date.
+</Warning>
+
+### Wallet transfers (`wallet_transfer.*`)
+
+| Field | Description |
+|-------|-------------|
+| `data.transferId` | Transfer ID (`wtr_…`). |
+| `data.status` | `requires_confirmation`, `succeeded`, `canceled`, or `wallet_transfer.received` on the recipient side. |
+| `data.amount`, `data.currency` | Amount sent; for `received`, the net amount received. |
+| `data.fee` | Transfer fee (`created`, `succeeded`). |
+| `data.recipientHandle` | The recipient (sender side). |
+| `data.senderHandle` | The sender (`received`, recipient side). |
+
+```json
+{
+  "id": "evt_2bN7qR4wTz9pLm1xVk5cYd8f",
+  "type": "wallet_transfer.received",
+  "data": {
+    "transferId": "wtr_9Hq2LmZx7RtYb4VnWs1KdP0eA3cF6gJ8kM5nQ",
+    "status": "wallet_transfer.received",
+    "amount": 9800,
+    "currency": "xaf",
+    "senderHandle": "boulangerie-dupont"
+  },
+  "created_at": "2026-02-16T11:20:05.411+00:00"
+}
+```
+
+## Checkout sessions
+
+`checkout.session.*` and `payment_link.checkout.*` events carry the same `data`:
+
+| Field | Description |
+|-------|-------------|
+| `data.checkoutSessionId` | Session ID (`cs_…`). Use it to find your order. |
+| `data.amount`, `data.currency` | Session total and currency. |
+| `data.customerEmail` | Customer email, if entered. |
+| `data.completedAt` | Payment date (`completed`). |
+| `data.failedAt`, `data.error`, `data.paymentIntentId`, `data.source` | Failure date, opaque reason to log, payment intent and session origin (`payment_failed` and `payment_link.checkout.failed`). |
+| `data.paymentLinkId` | The payment link (`plink_…`), for `payment_link.checkout.*`. |
+| `data.invoiceId` | The invoice, when the session pays an invoice. |
+| `data.channel`, `data.terminalId`, `data.cashierId`, `data.discount` | For a sale made on a Yabetoo POS terminal: `channel` is `pos`. |
+
+```json
+{
+  "id": "evt_5tH8pQ2wXz6rNm1kVb3cYd9a",
+  "type": "checkout.session.completed",
+  "data": {
+    "checkoutSessionId": "cs_9fK2mQ7xLp4RtY8sWb1nZc3d",
+    "amount": 15000,
+    "currency": "xaf",
+    "customerEmail": "client@example.com",
+    "completedAt": "2026-02-16T15:34:19.874+00:00"
+  },
+  "created_at": "2026-02-16T15:34:20.112+00:00"
+}
+```
+
 ### `checkout.session.completed`
 
 Triggered when a [checkout session](/en/payments/checkout-page/create) is paid successfully.
@@ -68,3 +442,154 @@ Triggered when a payment attempt on a session fails.
   `payment_link.checkout.completed` / `payment_link.checkout.failed` instead of
   `checkout.session.*`. `checkout.session.expired` is not emitted today.
 </Note>
+
+## Invoices
+
+Every `invoice.*` event carries `data.invoiceId` (`inv_…`) and `data.invoiceNumber`; the other fields depend on the event:
+
+| Event | Additional `data` fields |
+|-------|--------------------------|
+| `invoice.finalized` | `customerId`, `total`, `appliedBalance`, `amountDue`, `currency`, `finalizedAt` |
+| `invoice.sent` | `customerId`, `customerEmail`, `total`, `currency`, `hostedPaymentUrl`, `sentAt` |
+| `invoice.payment_received` | `customerId`, `amount` (this payment), `amountPaid`, `amountRemaining`, `currency`, `fullySettled` |
+| `invoice.paid` | `customerId`, `amount` (invoice total), `currency`, `paidAt`; `appliedBalance` when the customer credit balance covers the invoice; `subscriptionId`, `orderId` for a subscription invoice |
+| `invoice.overdue` | `customerId`, `total`, `amountDue`, `currency`, `dueDate`, `reminderNumber`, `daysOverdue` |
+| `invoice.voided` | `reason`, `voidedAt` |
+| `invoice.marked_uncollectible` | `markedUncollectibleAt` |
+
+A partial payment emits `invoice.payment_received` with `fullySettled: false`; the payment that settles the invoice also emits `invoice.paid`.
+
+```json
+{
+  "id": "evt_3kP9wQ5rTz2nLm7xVb4cYd1h",
+  "type": "invoice.payment_received",
+  "data": {
+    "invoiceId": "inv_7Hq2LmZx9RtYb4VnWs1KdP0eA3cF6gJ8kM5n",
+    "invoiceNumber": "F-2026-0042",
+    "customerId": "cus_4kT9xQ2mLp7RtY8sWb1nZc5e",
+    "amount": 25000,
+    "amountPaid": 25000,
+    "amountRemaining": 50000,
+    "currency": "xaf",
+    "fullySettled": false
+  },
+  "created_at": "2026-02-16T15:34:21.003+00:00"
+}
+```
+
+## Subscriptions
+
+Every `subscription.*` event carries `data.subscriptionId` (`sub_…`), `data.customerId` and `data.status` (`trialing`, `active`, `past_due`, `paused`, `canceled`, `unpaid`). The other fields depend on the event:
+
+| Event | Additional `data` fields |
+|-------|--------------------------|
+| `subscription.created` | `merchantAccountId`, `customerEmail`, `currentPeriodStart`, `currentPeriodEnd`, `items` (`priceId`, `quantity`), `createdAt`; `trialStart`, `trialEnd`, `billingCycleAnchor`, `cycleLimit` when created by API; `checkoutSessionId` when created through a checkout session |
+| `subscription.activated` | `merchantAccountId`, `currentPeriodStart`, `currentPeriodEnd`, `activatedAt` |
+| `subscription.updated` | `merchantAccountId`, `currentPeriodStart`, `currentPeriodEnd`, `nextBillingDate`, `updatedAt` (renewal) |
+| `subscription.trial_ending` | `merchantAccountId`, `trialStart`, `trialEnd`, `trialEndDate` |
+| `subscription.paused` | `previousStatus`, `pausedAt` |
+| `subscription.resumed` | `previousStatus`, `resumedAt` |
+| `subscription.past_due` | `previousStatus`, `reason`, `updatedAt` |
+| `subscription.canceled` | `merchantAccountId`, `reason`, `canceledAt`; `effectiveDate` for a scheduled cancellation, `previousStatus` and `completedAt` when it takes effect |
+
+`merchantAccountId` is only set when the subscriber is itself a Yabetoo merchant; otherwise it is `null`.
+
+```json
+{
+  "id": "evt_6mQ1wR8tTz3pLn5xVb2cYd7k",
+  "type": "subscription.activated",
+  "data": {
+    "subscriptionId": "sub_2Hq7LmZx9RtYb4VnWs1KdP0eA3cF6gJ8kM5n",
+    "customerId": "cus_4kT9xQ2mLp7RtY8sWb1nZc5e",
+    "merchantAccountId": null,
+    "status": "active",
+    "currentPeriodStart": "2026-02-16T00:00:00.000+00:00",
+    "currentPeriodEnd": "2026-03-16T00:00:00.000+00:00",
+    "activatedAt": "2026-02-16T15:34:22.410+00:00"
+  },
+  "created_at": "2026-02-16T15:34:22.512+00:00"
+}
+```
+
+## Customers
+
+| Event | `data` fields |
+|-------|---------------|
+| `customer.created` | `customerId` (`cus_…`), `email`, `firstName`, `lastName`, `createdAt`; `phone` for a customer identified by phone number |
+| `customer.updated` | `customerId`, `email`, `firstName`, `lastName`, `updatedAt` |
+| `customer.deleted` | `customerId`, `email`, `deletedAt` |
+
+## Orders and digital products
+
+| Event | `data` fields |
+|-------|---------------|
+| `order.created` | `orderId`, `intentId`, `total`, `currency`, `itemsCount`, `items` (the lines sent at creation), `createdAt` |
+| `order.fulfilled` | `orderId`, `customerEmail`, `fulfillmentType` (`digital`), `fulfilledCount`, `failedCount`, `fulfillmentIds`, `fulfilledAt` |
+| `digital_fulfillment.delivered` | `orderId`, `customerEmail`, `downloads`: for each file, `productName`, `fileName`, `downloadUrl`, `expiresAt`, `downloadLimit` |
+
+<Warning>
+  `downloadUrl` grants access to the purchased file: do not log it and only show it to the customer.
+</Warning>
+
+## Yabetoo Connect
+
+In every `connect.*` event, `data.account` is the connected account concerned.
+
+| Event | `data` |
+|-------|--------|
+| `connect.transfer.created` | The transfer object (`ctr_…`): `controllerAccountId`, `connectedAccountId`, `sourceWalletId`, `destinationWalletId`, `amount`, `fee`, `feePayer`, `reversedAmount`, `currency`, `availableAt`, `createdAt` |
+| `connect.transfer.reversed` | The reversal object (`ctrr_…`): `connectTransferId`, `controllerAccountId`, `amount`, `currency`, `createdAt` |
+| `connect.application_fee.created` | The application fee object (`afee_…`): `controllerAccountId`, `connectedAccountId`, `chargeId`, `intentId`, `transferId`, `amount`, `refundedAmount`, `currency`, `feePayer`, `createdAt` |
+| `connect.application_fee.refunded` | `application_fee`, `refund`, `amount` (amount reclaimed), `refunded_amount` (total), `currency` |
+| `connect.funds.available` | `wallet`, `amount`, `currency`, `source_transaction`: pending funds became available |
+| `connect.refund.blocked_insufficient_funds` | `charge`, `refund_amount`, `required`, `seller_available`, `marketplace_balance`, `shortfall`, `currency` |
+| `connect.reversal.blocked_insufficient_funds` | `allocation`, `required`, `seller_available`, `shortfall`, `currency` |
+
+For a payment split between several sellers, `transfer.created`, `application_fee.created` and `application_fee.refunded` add `payment_intent` and `split_reference` (the seller reference from your request).
+
+```json
+{
+  "id": "evt_1qW4rT7yUz0pLm3xVb6cYd9g",
+  "type": "connect.transfer.created",
+  "data": {
+    "id": "ctr_8Kq3LmZx9RtYb4VnWs1KdP0eA3cF6gJ8kM5n",
+    "controllerAccountId": "acct_7Hq2LmZx9RtYb4VnWs1KdP0e",
+    "connectedAccountId": "acct_3Pz8NqWx1RtYb4VnWs1KdQ2f",
+    "sourceWalletId": "wa_5Gh1KmZx9RtYb4VnWs1KdP0e",
+    "destinationWalletId": "wa_9Lp4QmZx9RtYb4VnWs1KdP0e",
+    "amount": 9000,
+    "fee": 0,
+    "feePayer": null,
+    "reversedAmount": 0,
+    "currency": "xaf",
+    "availableAt": "2026-02-18T15:34:20.000+00:00",
+    "createdAt": "2026-02-16T15:34:20.000+00:00",
+    "account": "acct_3Pz8NqWx1RtYb4VnWs1KdQ2f",
+    "payment_intent": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+    "split_reference": "vendeur-42"
+  },
+  "created_at": "2026-02-16T15:34:20.311+00:00"
+}
+```
+
+## Credit notes, quotes, order payments and setups
+
+| Event | `data` fields |
+|-------|---------------|
+| `credit_note.created` | `creditNoteId`, `creditNoteNumber`, `invoiceId`, `total`, `currency`, `reason` |
+| `credit_note.voided` | `creditNoteId`, `creditNoteNumber`, `invoiceId` |
+| `quote.sent` | `quoteId`, `quoteNumber`, `customerId`, `total`, `currency`, `sentAt` (see the warning) |
+| `quote.accepted` | `quoteId`, `quoteNumber`, `customerId`, `invoiceId` (the draft invoice created), `acceptedAt` |
+| `quote.declined` | `quoteId`, `quoteNumber`, `customerId`, `declinedAt` |
+| `quote.expired` | `quoteId`, `quoteNumber`, `customerId`, `total`, `currency`, `validUntil`, `expiredAt` |
+| `quote.voided` | `quoteId`, `quoteNumber`, `voidedAt` |
+| `payment.completed` | `orderId`, `paymentIntentId`, `amount`, `currency`, `completedAt`; `subscriptionId` and `customerId` for a subscription renewal |
+| `payment.failed` | `orderId`, `paymentIntentId`, `subscriptionId`, `error`, `attemptNumber`, `failedAt` |
+| `setup.completed` | `checkoutSessionId`, `customerId`, `customerEmail`, `completedAt` |
+| `setup.failed` | `checkoutSessionId`, `error`, `failedAt` |
+
+<Warning>
+  When the customer has an email address, `quote.sent` arrives **twice**: when sent (with
+  `customerId` and `sentAt`), then once the email is out (with `customerEmail` and `pdfUrl`).
+  They have different `id`s: handle `quote.sent` idempotently by `quoteId`.
+</Warning>
