@@ -20,7 +20,7 @@ Every webhook is a `POST` request whose JSON body always has the same envelope:
 
 ## Event list
 
-These are the 57 events Yabetoo sends today. Subscribe to a specific event, or to a whole family with a wildcard (`intent.*`). Details and bodies of the main events follow this list.
+These are the 72 events Yabetoo sends today. Subscribe to a specific event, or to a whole family with a wildcard (`intent.*`). Details and bodies of the main events follow this list.
 
 ### Payments
 
@@ -132,6 +132,41 @@ These are the 57 events Yabetoo sends today. Subscribe to a specific event, or t
 | `invoice.paid` | the invoice is fully paid |
 | `invoice.overdue` | the invoice is past its due date |
 | `invoice.voided` | the invoice is voided |
+| `invoice.finalized` | the invoice is finalized and becomes payable |
+| `invoice.sent` | the invoice is sent to the customer |
+| `invoice.payment_received` | a payment, full or partial, is recorded on the invoice |
+| `invoice.marked_uncollectible` | the invoice is marked as uncollectible |
+
+### Credit notes
+
+| Event | Sent when |
+|-------|-----------|
+| `credit_note.created` | a credit note is issued on an invoice |
+| `credit_note.voided` | a credit note is voided |
+
+### Quotes
+
+| Event | Sent when |
+|-------|-----------|
+| `quote.sent` | the quote is sent to the customer |
+| `quote.accepted` | the customer accepts the quote |
+| `quote.declined` | the customer declines the quote |
+| `quote.expired` | the quote expires unanswered |
+| `quote.voided` | the quote is voided |
+
+### Order payments
+
+| Event | Sent when |
+|-------|-----------|
+| `payment.completed` | an order is paid (one-time purchase or subscription renewal) |
+| `payment.failed` | an order payment fails |
+
+### Payment method setup
+
+| Event | Sent when |
+|-------|-----------|
+| `setup.completed` | a payment method setup session succeeds |
+| `setup.failed` | it fails |
 
 ### Customers
 
@@ -536,3 +571,25 @@ For a payment split between several sellers, `transfer.created`, `application_fe
   "created_at": "2026-02-16T15:34:20.311+00:00"
 }
 ```
+
+## Credit notes, quotes, order payments and setups
+
+| Event | `data` fields |
+|-------|---------------|
+| `credit_note.created` | `creditNoteId`, `creditNoteNumber`, `invoiceId`, `total`, `currency`, `reason` |
+| `credit_note.voided` | `creditNoteId`, `creditNoteNumber`, `invoiceId` |
+| `quote.sent` | `quoteId`, `quoteNumber`, `customerId`, `total`, `currency`, `sentAt` (see the warning) |
+| `quote.accepted` | `quoteId`, `quoteNumber`, `customerId`, `invoiceId` (the draft invoice created), `acceptedAt` |
+| `quote.declined` | `quoteId`, `quoteNumber`, `customerId`, `declinedAt` |
+| `quote.expired` | `quoteId`, `quoteNumber`, `customerId`, `total`, `currency`, `validUntil`, `expiredAt` |
+| `quote.voided` | `quoteId`, `quoteNumber`, `voidedAt` |
+| `payment.completed` | `orderId`, `paymentIntentId`, `amount`, `currency`, `completedAt`; `subscriptionId` and `customerId` for a subscription renewal |
+| `payment.failed` | `orderId`, `paymentIntentId`, `subscriptionId`, `error`, `attemptNumber`, `failedAt` |
+| `setup.completed` | `checkoutSessionId`, `customerId`, `customerEmail`, `completedAt` |
+| `setup.failed` | `checkoutSessionId`, `error`, `failedAt` |
+
+<Warning>
+  When the customer has an email address, `quote.sent` arrives **twice**: when sent (with
+  `customerId` and `sentAt`), then once the email is out (with `customerEmail` and `pdfUrl`).
+  They have different `id`s: handle `quote.sent` idempotently by `quoteId`.
+</Warning>

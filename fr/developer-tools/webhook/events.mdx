@@ -20,7 +20,7 @@ Chaque webhook est une requête `POST` dont le corps JSON a toujours la même en
 
 ## Liste des événements
 
-Voici les 57 événements que Yabetoo envoie aujourd'hui. Abonnez-vous à un événement précis, ou à toute une famille avec le joker (`intent.*`). Le détail et le corps des principaux événements suivent cette liste.
+Voici les 72 événements que Yabetoo envoie aujourd'hui. Abonnez-vous à un événement précis, ou à toute une famille avec le joker (`intent.*`). Le détail et le corps des principaux événements suivent cette liste.
 
 ### Paiements
 
@@ -132,6 +132,41 @@ Voici les 57 événements que Yabetoo envoie aujourd'hui. Abonnez-vous à un év
 | `invoice.paid` | la facture est entièrement réglée |
 | `invoice.overdue` | la facture dépasse son échéance |
 | `invoice.voided` | la facture est annulée |
+| `invoice.finalized` | la facture est finalisée et devient payable |
+| `invoice.sent` | la facture est envoyée au client |
+| `invoice.payment_received` | un paiement, total ou partiel, est enregistré sur la facture |
+| `invoice.marked_uncollectible` | la facture est déclarée irrécouvrable |
+
+### Avoirs
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `credit_note.created` | un avoir est émis sur une facture |
+| `credit_note.voided` | un avoir est annulé |
+
+### Devis
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `quote.sent` | le devis est envoyé au client |
+| `quote.accepted` | le client accepte le devis |
+| `quote.declined` | le client refuse le devis |
+| `quote.expired` | le devis expire sans réponse |
+| `quote.voided` | le devis est annulé |
+
+### Paiements de commande
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `payment.completed` | une commande est payée (achat ponctuel ou échéance d'abonnement) |
+| `payment.failed` | le paiement d'une commande échoue |
+
+### Enregistrement de moyen de paiement
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `setup.completed` | une session d'enregistrement de moyen de paiement aboutit |
+| `setup.failed` | elle échoue |
 
 ### Clients
 
@@ -536,3 +571,25 @@ Pour un paiement réparti entre plusieurs vendeurs, `transfer.created`, `applica
   "created_at": "2026-02-16T15:34:20.311+00:00"
 }
 ```
+
+## Avoirs, devis, paiements de commande et enregistrements
+
+| Événement | Champs de `data` |
+|-----------|------------------|
+| `credit_note.created` | `creditNoteId`, `creditNoteNumber`, `invoiceId`, `total`, `currency`, `reason` |
+| `credit_note.voided` | `creditNoteId`, `creditNoteNumber`, `invoiceId` |
+| `quote.sent` | `quoteId`, `quoteNumber`, `customerId`, `total`, `currency`, `sentAt` (voir l'avertissement) |
+| `quote.accepted` | `quoteId`, `quoteNumber`, `customerId`, `invoiceId` (la facture brouillon créée), `acceptedAt` |
+| `quote.declined` | `quoteId`, `quoteNumber`, `customerId`, `declinedAt` |
+| `quote.expired` | `quoteId`, `quoteNumber`, `customerId`, `total`, `currency`, `validUntil`, `expiredAt` |
+| `quote.voided` | `quoteId`, `quoteNumber`, `voidedAt` |
+| `payment.completed` | `orderId`, `paymentIntentId`, `amount`, `currency`, `completedAt` ; `subscriptionId` et `customerId` pour une échéance d'abonnement |
+| `payment.failed` | `orderId`, `paymentIntentId`, `subscriptionId`, `error`, `attemptNumber`, `failedAt` |
+| `setup.completed` | `checkoutSessionId`, `customerId`, `customerEmail`, `completedAt` |
+| `setup.failed` | `checkoutSessionId`, `error`, `failedAt` |
+
+<Warning>
+  Quand le client a une adresse e-mail, `quote.sent` arrive **deux fois** : à l'envoi (avec
+  `customerId` et `sentAt`), puis une fois l'e-mail parti (avec `customerEmail` et `pdfUrl`).
+  Les deux ont un `id` différent : traitez `quote.sent` de façon idempotente par `quoteId`.
+</Warning>
