@@ -305,6 +305,56 @@ Même événement pour un décaissement financé par le portefeuille de dépôt.
 
 Le seul autre événement du cycle de vie d'un décaissement est `disbursement.created`.
 
+## Retraits, versements, dépôts et transferts
+
+### Retraits (`withdraw.*`)
+
+Pour `withdraw.created`, `withdraw.confirmed`, `withdraw.succeeded` et `withdraw.failed`, `data` est l'objet retrait, avec les mêmes champs qu'un [décaissement](#décaissements) (`id`, `amount`, `currency`, `status`, `phone`, `operatorName`, `failureCode`…). `succeeded` et `failed` ajoutent `data.account`.
+
+`withdraw.canceled` porte seulement `data.amount`, `data.currency` et `data.walletId`.
+
+### Versements (`payout.*`) et dépôts (`deposit.*`)
+
+| Champ | Description |
+|-------|-------------|
+| `data.amount`, `data.currency` | Montant et devise. |
+| `data.walletId` | Le portefeuille concerné (`created` et `succeeded`). |
+| `data.payoutType` | Moyen du versement : `bank_transfer`, `mobile_money`, `cash`, `check` (`payout.created`, `payout.succeeded`). |
+| `data.depositType` | Moyen du dépôt : `bank_transfer`, `cash`, `mobile_banking`, `check`… (`deposit.created`, `deposit.succeeded`). |
+| `data.status` | Statut à la création (`created`). |
+| `data.rejectionReason` | Motif du refus (`failed`). |
+
+<Warning>
+  Ces événements et `withdraw.canceled` ne portent pas l'identifiant du versement, du dépôt ou du
+  retrait. Rapprochez-les par portefeuille, montant et date.
+</Warning>
+
+### Transferts entre portefeuilles (`wallet_transfer.*`)
+
+| Champ | Description |
+|-------|-------------|
+| `data.transferId` | Identifiant du transfert (`wtr_…`). |
+| `data.status` | `requires_confirmation`, `succeeded`, `canceled`, ou `wallet_transfer.received` côté destinataire. |
+| `data.amount`, `data.currency` | Montant envoyé ; pour `received`, le montant net reçu. |
+| `data.fee` | Frais du transfert (`created`, `succeeded`). |
+| `data.recipientHandle` | Le destinataire (côté émetteur). |
+| `data.senderHandle` | L'émetteur (`received`, côté destinataire). |
+
+```json
+{
+  "id": "evt_2bN7qR4wTz9pLm1xVk5cYd8f",
+  "type": "wallet_transfer.received",
+  "data": {
+    "transferId": "wtr_9Hq2LmZx7RtYb4VnWs1KdP0eA3cF6gJ8kM5nQ",
+    "status": "wallet_transfer.received",
+    "amount": 9800,
+    "currency": "xaf",
+    "senderHandle": "boulangerie-dupont"
+  },
+  "created_at": "2026-02-16T11:20:05.411+00:00"
+}
+```
+
 ## Sessions de paiement
 
 Les événements `checkout.session.*` et `payment_link.checkout.*` portent le même `data` :

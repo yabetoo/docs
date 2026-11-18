@@ -305,6 +305,56 @@ The same event for a disbursement funded from the deposit wallet. Its outcomes a
 
 The only other disbursement lifecycle event is `disbursement.created`.
 
+## Withdrawals, payouts, deposits and transfers
+
+### Withdrawals (`withdraw.*`)
+
+For `withdraw.created`, `withdraw.confirmed`, `withdraw.succeeded` and `withdraw.failed`, `data` is the withdrawal object, with the same fields as a [disbursement](#disbursements) (`id`, `amount`, `currency`, `status`, `phone`, `operatorName`, `failureCode`…). `succeeded` and `failed` add `data.account`.
+
+`withdraw.canceled` only carries `data.amount`, `data.currency` and `data.walletId`.
+
+### Payouts (`payout.*`) and deposits (`deposit.*`)
+
+| Field | Description |
+|-------|-------------|
+| `data.amount`, `data.currency` | Amount and currency. |
+| `data.walletId` | The wallet concerned (`created` and `succeeded`). |
+| `data.payoutType` | Payout method: `bank_transfer`, `mobile_money`, `cash`, `check` (`payout.created`, `payout.succeeded`). |
+| `data.depositType` | Deposit method: `bank_transfer`, `cash`, `mobile_banking`, `check`… (`deposit.created`, `deposit.succeeded`). |
+| `data.status` | Status at creation (`created`). |
+| `data.rejectionReason` | Rejection reason (`failed`). |
+
+<Warning>
+  These events and `withdraw.canceled` do not carry the payout, deposit or withdrawal ID.
+  Match them by wallet, amount and date.
+</Warning>
+
+### Wallet transfers (`wallet_transfer.*`)
+
+| Field | Description |
+|-------|-------------|
+| `data.transferId` | Transfer ID (`wtr_…`). |
+| `data.status` | `requires_confirmation`, `succeeded`, `canceled`, or `wallet_transfer.received` on the recipient side. |
+| `data.amount`, `data.currency` | Amount sent; for `received`, the net amount received. |
+| `data.fee` | Transfer fee (`created`, `succeeded`). |
+| `data.recipientHandle` | The recipient (sender side). |
+| `data.senderHandle` | The sender (`received`, recipient side). |
+
+```json
+{
+  "id": "evt_2bN7qR4wTz9pLm1xVk5cYd8f",
+  "type": "wallet_transfer.received",
+  "data": {
+    "transferId": "wtr_9Hq2LmZx7RtYb4VnWs1KdP0eA3cF6gJ8kM5nQ",
+    "status": "wallet_transfer.received",
+    "amount": 9800,
+    "currency": "xaf",
+    "senderHandle": "boulangerie-dupont"
+  },
+  "created_at": "2026-02-16T11:20:05.411+00:00"
+}
+```
+
 ## Checkout sessions
 
 `checkout.session.*` and `payment_link.checkout.*` events carry the same `data`:
