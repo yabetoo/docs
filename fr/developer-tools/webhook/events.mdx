@@ -7,15 +7,309 @@ description: "Liste des événements qui peuvent être déclenchés par l'API"
 
 Yabetoo prend actuellement en charge les types d'événements webhook suivants. Chaque événement correspond à une action spécifique qui se produit sur votre compte et peut être utilisé pour déclencher une logique dans votre backend (par exemple, mettre à jour les statuts des commandes, envoyer des notifications, etc.).
 
-### `intent.completed`
+## Corps d'un événement
+
+Chaque webhook est une requête `POST` dont le corps JSON a toujours la même enveloppe :
+
+| Champ | Description |
+|-------|-------------|
+| `id` | Identifiant de l'événement (`evt_…`). Identique d'une tentative de livraison à l'autre : servez-vous-en pour ignorer un doublon. Aussi envoyé dans l'en-tête `X-Yabetoo-Webhook-Id`. |
+| `type` | Le type d'événement, par exemple `intent.succeeded`. Aussi envoyé dans l'en-tête `X-Yabetoo-Webhook-Event`. |
+| `data` | L'objet de l'événement. Son contenu dépend du `type` (voir chaque événement ci-dessous). |
+| `created_at` | Date de l'événement, au format ISO 8601. |
+
+## Liste des événements
+
+Voici les 72 événements que Yabetoo envoie aujourd'hui. Abonnez-vous à un événement précis, ou à toute une famille avec le joker (`intent.*`). Le détail et le corps des principaux événements suivent cette liste.
+
+### Paiements
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `intent.created` | une intention de paiement est créée |
+| `intent.succeeded` | le paiement est reçu sur votre compte |
+| `intent.failed` | le paiement est refusé |
+| `intent.expired` | l'opérateur n'a pas répondu à temps (pas forcément définitif) |
+| `intent.canceled` | l'intention est annulée |
+
+### Sessions de paiement
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `checkout.session.completed` | une session de paiement est payée |
+| `checkout.session.payment_failed` | une tentative de paiement d'une session échoue (la session reste ouverte) |
+
+### Liens de paiement
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `payment_link.created` | un lien de paiement est créé |
+| `payment_link.checkout.completed` | un client paie par un lien de paiement |
+| `payment_link.checkout.failed` | un paiement par lien échoue (le lien reste payable) |
+
+### Décaissements
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `disbursement.created` | un décaissement est créé |
+| `disbursement.review_opened` | un décaissement est retenu pour vérification (non terminal) |
+| `disbursement.succeeded` | le décaissement est arrivé au destinataire |
+| `disbursement.failed` | le décaissement échoue ; les fonds réservés sont libérés |
+
+### Décaissements depuis le dépôt
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `deposit_disbursement.created` | un décaissement financé par le portefeuille de dépôt est créé |
+| `deposit_disbursement.review_opened` | il est retenu pour vérification (non terminal) |
+| `deposit_disbursement.succeeded` | il est arrivé au destinataire |
+| `deposit_disbursement.failed` | il échoue |
+
+### Dépôts
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `deposit.created` | un dépôt est créé |
+| `deposit.succeeded` | le dépôt est crédité |
+| `deposit.failed` | le dépôt échoue |
+
+### Retraits
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `withdraw.created` | une demande de retrait est créée |
+| `withdraw.confirmed` | la demande de retrait est confirmée |
+| `withdraw.succeeded` | le retrait est versé |
+| `withdraw.failed` | le retrait échoue |
+| `withdraw.canceled` | le retrait est annulé |
+
+### Versements
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `payout.created` | un versement est créé |
+| `payout.succeeded` | le versement est effectué |
+| `payout.failed` | le versement échoue |
+
+### Transferts entre portefeuilles
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `wallet_transfer.created` | un transfert vers un autre compte Yabetoo est créé |
+| `wallet_transfer.succeeded` | le transfert est effectué |
+| `wallet_transfer.canceled` | le transfert est annulé |
+| `wallet_transfer.received` | envoyé au compte **destinataire** quand les fonds arrivent |
+
+### Yabetoo Connect
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `connect.transfer.created` | une plateforme affecte des fonds à un vendeur connecté |
+| `connect.transfer.reversed` | une affectation est reprise, en tout ou en partie |
+| `connect.application_fee.created` | la plateforme perçoit sa commission sur un paiement |
+| `connect.application_fee.refunded` | une partie de la commission est reprise par un remboursement |
+| `connect.funds.available` | le solde en attente d'un vendeur devient disponible |
+| `connect.refund.blocked_insufficient_funds` | un remboursement est refusé faute de fonds chez le vendeur |
+| `connect.reversal.blocked_insufficient_funds` | une reprise d'affectation est refusée pour la même raison |
+
+### Abonnements
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `subscription.created` | un abonnement est créé |
+| `subscription.activated` | l'abonnement devient actif |
+| `subscription.updated` | l'abonnement est modifié |
+| `subscription.paused` | l'abonnement est mis en pause |
+| `subscription.resumed` | l'abonnement reprend |
+| `subscription.trial_ending` | la période d'essai se termine bientôt |
+| `subscription.past_due` | un prélèvement de l'abonnement est en retard |
+| `subscription.canceled` | l'abonnement est annulé |
+
+### Factures
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `invoice.paid` | la facture est entièrement réglée |
+| `invoice.overdue` | la facture dépasse son échéance |
+| `invoice.voided` | la facture est annulée |
+| `invoice.finalized` | la facture est finalisée et devient payable |
+| `invoice.sent` | la facture est envoyée au client |
+| `invoice.payment_received` | un paiement, total ou partiel, est enregistré sur la facture |
+| `invoice.marked_uncollectible` | la facture est déclarée irrécouvrable |
+
+### Avoirs
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `credit_note.created` | un avoir est émis sur une facture |
+| `credit_note.voided` | un avoir est annulé |
+
+### Devis
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `quote.sent` | le devis est envoyé au client |
+| `quote.accepted` | le client accepte le devis |
+| `quote.declined` | le client refuse le devis |
+| `quote.expired` | le devis expire sans réponse |
+| `quote.voided` | le devis est annulé |
+
+### Paiements de commande
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `payment.completed` | une commande est payée (achat ponctuel ou échéance d'abonnement) |
+| `payment.failed` | le paiement d'une commande échoue |
+
+### Enregistrement de moyen de paiement
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `setup.completed` | une session d'enregistrement de moyen de paiement aboutit |
+| `setup.failed` | elle échoue |
+
+### Clients
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `customer.created` | un client est créé |
+| `customer.updated` | un client est modifié |
+| `customer.deleted` | un client est supprimé |
+
+### Commandes
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `order.created` | une commande est créée |
+| `order.fulfilled` | une commande est livrée |
+
+### Produits numériques
+
+| Événement | Envoyé quand |
+|-----------|--------------|
+| `digital_fulfillment.delivered` | un produit numérique est livré au client |
+
+## Paiements (intentions de paiement)
+
+Une [intention de paiement](/fr/payments/api/create) confirmée produit un de ces trois événements. Pour les trois, `data` contient :
+
+| Champ | Description |
+|-------|-------------|
+| `data.intent` | L'intention de paiement : `id`, `amount`, `currency`, `status`, `description`, `metadata`, `liveMode`, `createdAt`… |
+| `data.charge` | La tentative de paiement : `id`, `intentId`, `amount`, `currency`, `status`, `captured`, `failureCode`, `failureMessage`, `financialTransactionId`, `externalId`… |
+
+Retrouvez votre commande avec `data.intent.id`, ou avec les `data.intent.metadata` passées à la création de l'intention.
+
+### `intent.succeeded`
 
 Déclenché lorsqu'un paiement a été reçu avec succès sur votre compte.
 
 - **Cas d'utilisation :** Confirmer qu'un client a effectué son paiement.
+- **Champs en plus :** `data.amountCaptured` (montant crédité sur votre solde, frais déduits) et `data.operatorName` (`mtn` ou `airtel`).
 - **Actions typiques :**
   - Marquer une commande comme payée
   - Envoyer un email ou SMS de confirmation
   - Mettre à jour le statut du paiement dans votre base de données
+
+```json
+{
+  "id": "evt_3kQ9xV2mLp7RtY8sWb4nZc1d",
+  "type": "intent.succeeded",
+  "data": {
+    "intent": {
+      "id": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+      "amount": 5000,
+      "currency": "xaf",
+      "status": "succeeded",
+      "description": "Commande 1234",
+      "metadata": { "orderId": "1234" },
+      "liveMode": false,
+      "createdAt": "2026-02-16T15:33:55.048+00:00"
+    },
+    "charge": {
+      "id": "ch_ADdQhObdEDlz4L0kl7qNRniFjruNcrcY85xq",
+      "intentId": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+      "amount": 5000,
+      "currency": "xaf",
+      "status": "succeeded",
+      "captured": true,
+      "financialTransactionId": "7331529368",
+      "externalId": "ext_7hp8lsjCFwTemoeL"
+    },
+    "amountCaptured": 4825,
+    "operatorName": "mtn"
+  },
+  "created_at": "2026-02-16T15:34:20.112+00:00"
+}
+```
+
+<Note>
+  Le corps peut contenir d'autres champs que ceux décrits ici. Ne vous appuyez que sur les
+  champs documentés : les autres peuvent changer sans préavis.
+</Note>
+
+### `intent.failed`
+
+Déclenché lorsque le paiement est refusé : solde insuffisant, refus du client, numéro inconnu…
+
+- **Où lire la raison :** `data.charge.failureCode` et `data.charge.failureMessage`.
+- **Actions typiques :**
+  - Proposer au client de réessayer, éventuellement avec un autre numéro
+  - Libérer la commande ou le stock réservé
+
+### `intent.expired`
+
+Déclenché lorsque l'opérateur n'a pas donné de réponse à temps, le plus souvent parce que le client n'a pas validé sur son téléphone.
+
+- **Pas forcément un échec définitif :** Yabetoo continue de vérifier la transaction auprès de l'opérateur. Si l'argent a finalement été débité, vous recevez ensuite `intent.succeeded` pour la même intention.
+- **Actions typiques :**
+  - Afficher « paiement non confirmé » plutôt que « paiement refusé »
+  - Ne pas relancer tout de suite un nouveau paiement pour la même commande
+
+## Décaissements
+
+Pour tous les événements `disbursement.*` et `deposit_disbursement.*`, `data` est l'objet décaissement, tel que le renvoie [`GET /v1/disbursement/{id}`](/fr/api-reference/disbursement/get) :
+
+| Champ | Description |
+|-------|-------------|
+| `data.id` | Identifiant du décaissement : `dis_…`, ou `ddb_…` pour un décaissement depuis le dépôt. |
+| `data.object` | `disbursement` ou `deposit_disbursement`. |
+| `data.amount`, `data.currency` | Montant envoyé au destinataire et devise. |
+| `data.status` | Statut du décaissement au moment de l'événement. |
+| `data.phone`, `data.operatorName`, `data.country` | Numéro du destinataire, opérateur (`mtn`, `airtel`) et pays. |
+| `data.firstName`, `data.lastName` | Nom du destinataire. |
+| `data.metadata` | Les métadonnées passées à la création. |
+| `data.financialTransactionId` | Référence de l'opérateur, une fois le décaissement exécuté. |
+| `data.failureCode`, `data.failureMessage` | Raison de l'échec (`disbursement.failed`). |
+| `data.review` | `null`, ou la vérification en cours : `status` (`open`, `approved`, `rejected`, `expired`), `opened_at`, `closed_at`. |
+| `data.createdAt`, `data.executedAt` | Date de création et date d'exécution chez l'opérateur. |
+| `data.account` | Identifiant de votre compte (`succeeded` et `failed` uniquement). |
+
+```json
+{
+  "id": "evt_8nR2kW5qTz1pLm4xVb7cYd0e",
+  "type": "disbursement.succeeded",
+  "data": {
+    "id": "dis_RMqehxy8NNi1ocJFG2SSAZMj81m6spo72vnZ",
+    "object": "disbursement",
+    "amount": 10000,
+    "currency": "xaf",
+    "status": "succeeded",
+    "phone": "242066594471",
+    "operatorName": "mtn",
+    "country": "cg",
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "metadata": { "payoutId": "8841" },
+    "financialTransactionId": "7331529412",
+    "review": null,
+    "createdAt": "2026-02-16T10:02:11.000+00:00",
+    "executedAt": "2026-02-16T10:02:14.000+00:00",
+    "account": "acct_7Hq2LmZx9RtYb4VnWs1KdP0e"
+  },
+  "created_at": "2026-02-16T10:02:15.208+00:00"
+}
+```
 
 ### `disbursement.succeeded`
 
@@ -46,6 +340,86 @@ Même événement pour un décaissement financé par le portefeuille de dépôt.
 
 Le seul autre événement du cycle de vie d'un décaissement est `disbursement.created`.
 
+## Retraits, versements, dépôts et transferts
+
+### Retraits (`withdraw.*`)
+
+Pour `withdraw.created`, `withdraw.confirmed`, `withdraw.succeeded` et `withdraw.failed`, `data` est l'objet retrait, avec les mêmes champs qu'un [décaissement](#décaissements) (`id`, `amount`, `currency`, `status`, `phone`, `operatorName`, `failureCode`…). `succeeded` et `failed` ajoutent `data.account`.
+
+`withdraw.canceled` porte seulement `data.amount`, `data.currency` et `data.walletId`.
+
+### Versements (`payout.*`) et dépôts (`deposit.*`)
+
+| Champ | Description |
+|-------|-------------|
+| `data.amount`, `data.currency` | Montant et devise. |
+| `data.walletId` | Le portefeuille concerné (`created` et `succeeded`). |
+| `data.payoutType` | Moyen du versement : `bank_transfer`, `mobile_money`, `cash`, `check` (`payout.created`, `payout.succeeded`). |
+| `data.depositType` | Moyen du dépôt : `bank_transfer`, `cash`, `mobile_banking`, `check`… (`deposit.created`, `deposit.succeeded`). |
+| `data.status` | Statut à la création (`created`). |
+| `data.rejectionReason` | Motif du refus (`failed`). |
+
+<Warning>
+  Ces événements et `withdraw.canceled` ne portent pas l'identifiant du versement, du dépôt ou du
+  retrait. Rapprochez-les par portefeuille, montant et date.
+</Warning>
+
+### Transferts entre portefeuilles (`wallet_transfer.*`)
+
+| Champ | Description |
+|-------|-------------|
+| `data.transferId` | Identifiant du transfert (`wtr_…`). |
+| `data.status` | `requires_confirmation`, `succeeded`, `canceled`, ou `wallet_transfer.received` côté destinataire. |
+| `data.amount`, `data.currency` | Montant envoyé ; pour `received`, le montant net reçu. |
+| `data.fee` | Frais du transfert (`created`, `succeeded`). |
+| `data.recipientHandle` | Le destinataire (côté émetteur). |
+| `data.senderHandle` | L'émetteur (`received`, côté destinataire). |
+
+```json
+{
+  "id": "evt_2bN7qR4wTz9pLm1xVk5cYd8f",
+  "type": "wallet_transfer.received",
+  "data": {
+    "transferId": "wtr_9Hq2LmZx7RtYb4VnWs1KdP0eA3cF6gJ8kM5nQ",
+    "status": "wallet_transfer.received",
+    "amount": 9800,
+    "currency": "xaf",
+    "senderHandle": "boulangerie-dupont"
+  },
+  "created_at": "2026-02-16T11:20:05.411+00:00"
+}
+```
+
+## Sessions de paiement
+
+Les événements `checkout.session.*` et `payment_link.checkout.*` portent le même `data` :
+
+| Champ | Description |
+|-------|-------------|
+| `data.checkoutSessionId` | Identifiant de la session (`cs_…`). C'est lui qui retrouve votre commande. |
+| `data.amount`, `data.currency` | Montant total de la session et devise. |
+| `data.customerEmail` | E-mail du client, s'il a été saisi. |
+| `data.completedAt` | Date du paiement (`completed`). |
+| `data.failedAt`, `data.error`, `data.paymentIntentId`, `data.source` | Date de l'échec, raison opaque à journaliser, intention de paiement et origine de la session (`payment_failed` et `payment_link.checkout.failed`). |
+| `data.paymentLinkId` | Le lien de paiement (`plink_…`), pour `payment_link.checkout.*`. |
+| `data.invoiceId` | La facture, quand la session sert à régler une facture. |
+| `data.channel`, `data.terminalId`, `data.cashierId`, `data.discount` | Pour une vente faite sur un terminal Yabetoo POS : `channel` vaut `pos`. |
+
+```json
+{
+  "id": "evt_5tH8pQ2wXz6rNm1kVb3cYd9a",
+  "type": "checkout.session.completed",
+  "data": {
+    "checkoutSessionId": "cs_9fK2mQ7xLp4RtY8sWb1nZc3d",
+    "amount": 15000,
+    "currency": "xaf",
+    "customerEmail": "client@example.com",
+    "completedAt": "2026-02-16T15:34:19.874+00:00"
+  },
+  "created_at": "2026-02-16T15:34:20.112+00:00"
+}
+```
+
 ### `checkout.session.completed`
 
 Déclenché lorsqu'une [session de paiement](/fr/payments/checkout-page/create) est payée avec succès.
@@ -68,3 +442,154 @@ Déclenché lorsqu'une tentative de paiement d'une session échoue.
   `payment_link.checkout.completed` / `payment_link.checkout.failed` à la place de
   `checkout.session.*`. `checkout.session.expired` n'est pas émis aujourd'hui.
 </Note>
+
+## Factures
+
+Tous les événements `invoice.*` portent `data.invoiceId` (`inv_…`) et `data.invoiceNumber` ; les autres champs dépendent de l'événement :
+
+| Événement | Champs de `data` en plus |
+|-----------|--------------------------|
+| `invoice.finalized` | `customerId`, `total`, `appliedBalance`, `amountDue`, `currency`, `finalizedAt` |
+| `invoice.sent` | `customerId`, `customerEmail`, `total`, `currency`, `hostedPaymentUrl`, `sentAt` |
+| `invoice.payment_received` | `customerId`, `amount` (ce paiement), `amountPaid`, `amountRemaining`, `currency`, `fullySettled` |
+| `invoice.paid` | `customerId`, `amount` (total de la facture), `currency`, `paidAt` ; `appliedBalance` quand l'avoir client couvre la facture ; `subscriptionId`, `orderId` pour une facture d'abonnement |
+| `invoice.overdue` | `customerId`, `total`, `amountDue`, `currency`, `dueDate`, `reminderNumber`, `daysOverdue` |
+| `invoice.voided` | `reason`, `voidedAt` |
+| `invoice.marked_uncollectible` | `markedUncollectibleAt` |
+
+Un paiement partiel émet `invoice.payment_received` avec `fullySettled: false` ; le paiement qui solde la facture émet en plus `invoice.paid`.
+
+```json
+{
+  "id": "evt_3kP9wQ5rTz2nLm7xVb4cYd1h",
+  "type": "invoice.payment_received",
+  "data": {
+    "invoiceId": "inv_7Hq2LmZx9RtYb4VnWs1KdP0eA3cF6gJ8kM5n",
+    "invoiceNumber": "F-2026-0042",
+    "customerId": "cus_4kT9xQ2mLp7RtY8sWb1nZc5e",
+    "amount": 25000,
+    "amountPaid": 25000,
+    "amountRemaining": 50000,
+    "currency": "xaf",
+    "fullySettled": false
+  },
+  "created_at": "2026-02-16T15:34:21.003+00:00"
+}
+```
+
+## Abonnements
+
+Tous les événements `subscription.*` portent `data.subscriptionId` (`sub_…`), `data.customerId` et `data.status` (`trialing`, `active`, `past_due`, `paused`, `canceled`, `unpaid`). Les autres champs dépendent de l'événement :
+
+| Événement | Champs de `data` en plus |
+|-----------|--------------------------|
+| `subscription.created` | `merchantAccountId`, `customerEmail`, `currentPeriodStart`, `currentPeriodEnd`, `items` (`priceId`, `quantity`), `createdAt` ; `trialStart`, `trialEnd`, `billingCycleAnchor`, `cycleLimit` à la création par API ; `checkoutSessionId` à la création par session de paiement |
+| `subscription.activated` | `merchantAccountId`, `currentPeriodStart`, `currentPeriodEnd`, `activatedAt` |
+| `subscription.updated` | `merchantAccountId`, `currentPeriodStart`, `currentPeriodEnd`, `nextBillingDate`, `updatedAt` (renouvellement) |
+| `subscription.trial_ending` | `merchantAccountId`, `trialStart`, `trialEnd`, `trialEndDate` |
+| `subscription.paused` | `previousStatus`, `pausedAt` |
+| `subscription.resumed` | `previousStatus`, `resumedAt` |
+| `subscription.past_due` | `previousStatus`, `reason`, `updatedAt` |
+| `subscription.canceled` | `merchantAccountId`, `reason`, `canceledAt` ; `effectiveDate` pour une résiliation programmée, `previousStatus` et `completedAt` quand elle prend effet |
+
+`merchantAccountId` n'est renseigné que lorsque l'abonné est lui-même un marchand Yabetoo ; sinon il vaut `null`.
+
+```json
+{
+  "id": "evt_6mQ1wR8tTz3pLn5xVb2cYd7k",
+  "type": "subscription.activated",
+  "data": {
+    "subscriptionId": "sub_2Hq7LmZx9RtYb4VnWs1KdP0eA3cF6gJ8kM5n",
+    "customerId": "cus_4kT9xQ2mLp7RtY8sWb1nZc5e",
+    "merchantAccountId": null,
+    "status": "active",
+    "currentPeriodStart": "2026-02-16T00:00:00.000+00:00",
+    "currentPeriodEnd": "2026-03-16T00:00:00.000+00:00",
+    "activatedAt": "2026-02-16T15:34:22.410+00:00"
+  },
+  "created_at": "2026-02-16T15:34:22.512+00:00"
+}
+```
+
+## Clients
+
+| Événement | Champs de `data` |
+|-----------|------------------|
+| `customer.created` | `customerId` (`cus_…`), `email`, `firstName`, `lastName`, `createdAt` ; `phone` pour un client identifié par son téléphone |
+| `customer.updated` | `customerId`, `email`, `firstName`, `lastName`, `updatedAt` |
+| `customer.deleted` | `customerId`, `email`, `deletedAt` |
+
+## Commandes et produits numériques
+
+| Événement | Champs de `data` |
+|-----------|------------------|
+| `order.created` | `orderId`, `intentId`, `total`, `currency`, `itemsCount`, `items` (les lignes envoyées à la création), `createdAt` |
+| `order.fulfilled` | `orderId`, `customerEmail`, `fulfillmentType` (`digital`), `fulfilledCount`, `failedCount`, `fulfillmentIds`, `fulfilledAt` |
+| `digital_fulfillment.delivered` | `orderId`, `customerEmail`, `downloads` : pour chaque fichier, `productName`, `fileName`, `downloadUrl`, `expiresAt`, `downloadLimit` |
+
+<Warning>
+  `downloadUrl` donne accès au fichier acheté : ne le journalisez pas et ne l'exposez qu'au client.
+</Warning>
+
+## Yabetoo Connect
+
+Dans tous les événements `connect.*`, `data.account` est le compte connecté concerné.
+
+| Événement | `data` |
+|-----------|--------|
+| `connect.transfer.created` | L'objet transfert (`ctr_…`) : `controllerAccountId`, `connectedAccountId`, `sourceWalletId`, `destinationWalletId`, `amount`, `fee`, `feePayer`, `reversedAmount`, `currency`, `availableAt`, `createdAt` |
+| `connect.transfer.reversed` | L'objet annulation (`ctrr_…`) : `connectTransferId`, `controllerAccountId`, `amount`, `currency`, `createdAt` |
+| `connect.application_fee.created` | L'objet commission (`afee_…`) : `controllerAccountId`, `connectedAccountId`, `chargeId`, `intentId`, `transferId`, `amount`, `refundedAmount`, `currency`, `feePayer`, `createdAt` |
+| `connect.application_fee.refunded` | `application_fee`, `refund`, `amount` (montant repris), `refunded_amount` (cumul), `currency` |
+| `connect.funds.available` | `wallet`, `amount`, `currency`, `source_transaction` : des fonds en attente deviennent disponibles |
+| `connect.refund.blocked_insufficient_funds` | `charge`, `refund_amount`, `required`, `seller_available`, `marketplace_balance`, `shortfall`, `currency` |
+| `connect.reversal.blocked_insufficient_funds` | `allocation`, `required`, `seller_available`, `shortfall`, `currency` |
+
+Pour un paiement réparti entre plusieurs vendeurs, `transfer.created`, `application_fee.created` et `application_fee.refunded` ajoutent `payment_intent` et `split_reference` (la référence du vendeur dans votre requête).
+
+```json
+{
+  "id": "evt_1qW4rT7yUz0pLm3xVb6cYd9g",
+  "type": "connect.transfer.created",
+  "data": {
+    "id": "ctr_8Kq3LmZx9RtYb4VnWs1KdP0eA3cF6gJ8kM5n",
+    "controllerAccountId": "acct_7Hq2LmZx9RtYb4VnWs1KdP0e",
+    "connectedAccountId": "acct_3Pz8NqWx1RtYb4VnWs1KdQ2f",
+    "sourceWalletId": "wa_5Gh1KmZx9RtYb4VnWs1KdP0e",
+    "destinationWalletId": "wa_9Lp4QmZx9RtYb4VnWs1KdP0e",
+    "amount": 9000,
+    "fee": 0,
+    "feePayer": null,
+    "reversedAmount": 0,
+    "currency": "xaf",
+    "availableAt": "2026-02-18T15:34:20.000+00:00",
+    "createdAt": "2026-02-16T15:34:20.000+00:00",
+    "account": "acct_3Pz8NqWx1RtYb4VnWs1KdQ2f",
+    "payment_intent": "pi_OYgGCdY1VaWvszwZcAY7VXvuXI70Ao9rsuMl",
+    "split_reference": "vendeur-42"
+  },
+  "created_at": "2026-02-16T15:34:20.311+00:00"
+}
+```
+
+## Avoirs, devis, paiements de commande et enregistrements
+
+| Événement | Champs de `data` |
+|-----------|------------------|
+| `credit_note.created` | `creditNoteId`, `creditNoteNumber`, `invoiceId`, `total`, `currency`, `reason` |
+| `credit_note.voided` | `creditNoteId`, `creditNoteNumber`, `invoiceId` |
+| `quote.sent` | `quoteId`, `quoteNumber`, `customerId`, `total`, `currency`, `sentAt` (voir l'avertissement) |
+| `quote.accepted` | `quoteId`, `quoteNumber`, `customerId`, `invoiceId` (la facture brouillon créée), `acceptedAt` |
+| `quote.declined` | `quoteId`, `quoteNumber`, `customerId`, `declinedAt` |
+| `quote.expired` | `quoteId`, `quoteNumber`, `customerId`, `total`, `currency`, `validUntil`, `expiredAt` |
+| `quote.voided` | `quoteId`, `quoteNumber`, `voidedAt` |
+| `payment.completed` | `orderId`, `paymentIntentId`, `amount`, `currency`, `completedAt` ; `subscriptionId` et `customerId` pour une échéance d'abonnement |
+| `payment.failed` | `orderId`, `paymentIntentId`, `subscriptionId`, `error`, `attemptNumber`, `failedAt` |
+| `setup.completed` | `checkoutSessionId`, `customerId`, `customerEmail`, `completedAt` |
+| `setup.failed` | `checkoutSessionId`, `error`, `failedAt` |
+
+<Warning>
+  Quand le client a une adresse e-mail, `quote.sent` arrive **deux fois** : à l'envoi (avec
+  `customerId` et `sentAt`), puis une fois l'e-mail parti (avec `customerEmail` et `pdfUrl`).
+  Les deux ont un `id` différent : traitez `quote.sent` de façon idempotente par `quoteId`.
+</Warning>

@@ -225,7 +225,8 @@
                 "group": "Webhook",
                 "pages": [
                   "fr/developer-tools/webhook/overview",
-                  "fr/developer-tools/webhook/events"
+                  "fr/developer-tools/webhook/events",
+                  "fr/developer-tools/webhook/ai-assistant"
                 ]
               },
               {
@@ -344,7 +345,10 @@
                 "pages": [
                   "fr/api-reference/webhook/create",
                   "fr/api-reference/webhook/get",
-                  "fr/api-reference/webhook/all"
+                  "fr/api-reference/webhook/all",
+                  "fr/api-reference/webhook/update",
+                  "fr/api-reference/webhook/delete",
+                  "fr/api-reference/webhook/secret"
                 ]
               }
             ]
@@ -567,7 +571,8 @@
                 "group": "Webhook",
                 "pages": [
                   "en/developer-tools/webhook/overview",
-                  "en/developer-tools/webhook/events"
+                  "en/developer-tools/webhook/events",
+                  "en/developer-tools/webhook/ai-assistant"
                 ]
               },
               {
@@ -686,7 +691,10 @@
                 "pages": [
                   "en/api-reference/webhook/create",
                   "en/api-reference/webhook/get",
-                  "en/api-reference/webhook/all"
+                  "en/api-reference/webhook/all",
+                  "en/api-reference/webhook/update",
+                  "en/api-reference/webhook/delete",
+                  "en/api-reference/webhook/secret"
                 ]
               }
             ]
@@ -738,6 +746,9 @@
   },
   "search": {
     "prompt": "Search documentation..."
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude", "perplexity", "mcp", "cursor", "vscode"]
   },
   "modeToggle": {
     "default": "light",

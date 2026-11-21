@@ -25,7 +25,7 @@ sequenceDiagram
     MobileMoney-->>Client: Notification push (entrer PIN)
     Client->>MobileMoney: Confirmer le paiement
     MobileMoney-->>Yabetoo: Paiement confirmé
-    Yabetoo-->>Serveur: Webhook: intent.completed
+    Yabetoo-->>Serveur: Webhook: intent.succeeded
     Serveur-->>Client: Paiement réussi
 ```
 
@@ -259,16 +259,16 @@ La requête de confirmation retourne immédiatement avec le statut du paiement :
 
 ### Notification Webhook
 
-Pour plus de fiabilité, écoutez toujours les webhooks. Yabetoo envoie un événement `intent.completed` lorsque le paiement réussit :
+Pour plus de fiabilité, écoutez toujours les webhooks. Yabetoo envoie `intent.succeeded` lorsque le paiement réussit, `intent.failed` lorsqu'il est refusé et `intent.expired` lorsque le client n'a pas validé à temps. L'intention se trouve dans `event.data.intent` (voir [le corps d'un événement](/fr/developer-tools/webhook/events)) :
 
 ```javascript
 // Votre endpoint webhook
 app.post("/webhook", (req, res) => {
   const event = req.body;
 
-  if (event.type === "intent.completed") {
-    const payment = event.data;
-    // Mettre à jour votre base de données
+  if (event.type === "intent.succeeded") {
+    const intent = event.data.intent;
+    // intent.metadata.orderId → marquer la commande comme payée
     // Envoyer une confirmation au client
   }
 

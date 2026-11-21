@@ -458,19 +458,19 @@ app.post('/webhooks/yabetoo', async (req, res) => {
   const event = req.body;
 
   switch (event.type) {
-    case 'payment_intent.succeeded':
-      if (event.data.metadata.type === 'delivery_order') {
-        await handleOrderPaymentSuccess(event.data);
+    case 'intent.succeeded':
+      if (event.data.intent.metadata.type === 'delivery_order') {
+        await handleOrderPaymentSuccess(event.data.intent);
       }
       break;
 
-    case 'payment_intent.failed':
-      if (event.data.metadata.type === 'delivery_order') {
-        await handleOrderPaymentFailure(event.data);
+    case 'intent.failed':
+      if (event.data.intent.metadata.type === 'delivery_order') {
+        await handleOrderPaymentFailure(event.data.intent);
       }
       break;
 
-    case 'disbursement.completed':
+    case 'disbursement.succeeded':
       await handleDisbursementComplete(event.data);
       break;
 

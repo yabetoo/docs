@@ -1,76 +1,43 @@
 ---
-title: "Get Webhook"
-description: "Retrieve details of an existing webhook."
+title: "Retrieve a webhook endpoint"
+description: "Retrieve an endpoint of your account."
 ---
 
 ## Endpoint
 
 ```bash
-GET https://pay.sandbox.yabetoopay.com/v1/account/{accountId}/webhooks/{id}   # Sandbox
-GET https://pay.api.yabetoopay.com/v1/account/{accountId}/webhooks/{id}       # Production
+GET https://webhook.yabetoopay.com/v1/webhooks/endpoints/{id}
 ```
 
 ## Authentication
 
-Use your secret key in the `Authorization` header:
+These are the routes your dashboard uses (**Developers > Webhooks**). They require:
 
-```bash
-Authorization: Bearer YOUR_SECRET_KEY
-```
+- the `Authorization: Bearer <token>` header, with your Yabetoo user's **session token**;
+- the `X-Account-Id` header, the identifier of the merchant account concerned.
 
-## Path Parameters
+<Warning>
+  Your secret key (`sk_test_…`, `sk_live_…`) is **not** accepted on these routes. For most integrations,
+  create and manage your endpoints from the dashboard.
+</Warning>
+
+| Environment | Base URL |
+|-------------|----------|
+| Production | `https://webhook.yabetoopay.com` |
+
+## Path parameters
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
-| `accountId` | `string` | Your account ID |
-| `id` | `string` | The webhook ID |
+|---|---|---|
+| `id` | `string` | The endpoint identifier (`we_…`) |
 
-## Example Request
+## Example request
 
 <CodeGroup>
 ```bash cURL
-curl https://pay.sandbox.yabetoopay.com/v1/account/YOUR_ACCOUNT_ID/webhooks/whk_123456789 \
-  -H "Authorization: Bearer YOUR_SECRET_KEY"
-```
-
-```javascript JavaScript
-import Yabetoo from "@yabetoo/sdk-js";
-
-const yabetoo = new Yabetoo("YOUR_SECRET_KEY");
-
-const webhook = await yabetoo.webhooks.retrieve("whk_123456789");
-```
-
-```python Python
-from yabetoo import Yabetoo
-
-yabetoo = Yabetoo("YOUR_SECRET_KEY")
-
-webhook = yabetoo.webhooks.retrieve("whk_123456789")
-```
-
-```php PHP
-<?php
-require 'vendor/autoload.php';
-
-use Yabetoo\Yabetoo;
-
-$yabetoo = new Yabetoo("YOUR_SECRET_KEY");
-
-$webhook = $yabetoo->webhooks->retrieve("whk_123456789");
-```
-
-```java Java
-import com.yabetoo.Yabetoo;
-import com.yabetoo.YabetooConfig;
-import com.yabetoo.model.Webhook;
-
-YabetooConfig config = new YabetooConfig()
-    .setApiKey("YOUR_SECRET_KEY");
-
-Yabetoo yabetoo = new Yabetoo(config);
-
-Webhook webhook = yabetoo.webhooks().retrieve("whk_123456789");
+curl -X GET https://webhook.yabetoopay.com/v1/webhooks/endpoints/we_mi3k8q2xa91f0c4d7e2b \
+  -H "Authorization: Bearer YOUR_SESSION_TOKEN" \
+  -H "X-Account-Id: YOUR_ACCOUNT_ID"
 ```
 </CodeGroup>
 
@@ -80,57 +47,26 @@ Webhook webhook = yabetoo.webhooks().retrieve("whk_123456789");
 
 ```json
 {
-  "id": "whk_123456789",
-  "object": "webhook",
-  "url": "https://example.com/webhooks",
-  "description": "Production webhook",
-  "status": "active",
-  "enabled_events": [
-    "intent.completed",
-    "disbursement.completed"
-  ],
-  "metadata": {
-    "environment": "production"
-  },
-  "created_at": "2023-05-12T10:12:32Z",
-  "last_error": null,
-  "stats": {
-    "successful_deliveries": 150,
-    "failed_deliveries": 2,
-    "average_response_time": 245
+  "data": {
+    "id": "we_mi3k8q2xa91f0c4d7e2b",
+    "accountId": "acct_xsd",
+    "sandboxId": null,
+    "url": "https://example.com/webhooks/yabetoo",
+    "events": ["intent.succeeded", "intent.failed", "intent.expired"],
+    "enabled": true,
+    "description": "Production webhook",
+    "metadata": { "environment": "production" },
+    "createdAt": "2026-11-18T10:12:32.000+00:00",
+    "updatedAt": "2026-11-18T10:12:32.000+00:00"
   }
 }
 ```
 
-### Webhook Status
+## Errors
 
-| Status | Description |
-|--------|-------------|
-| `active` | Webhook is active and functional |
-| `disabled` | Webhook manually disabled |
-| `failed` | Webhook disabled after too many failures |
-
-### Error Types
-
-| Type | Description |
-|------|-------------|
-| `connection_error` | Unable to connect to URL |
-| `timeout_error` | Response timeout exceeded |
-| `invalid_response` | Invalid response (code != 200) |
-| `ssl_error` | SSL certificate error |
-
-### 404 Not Found
-
-```json
-{
-  "message": "Webhook not found"
-}
-```
-
-### 401 Unauthorized
-
-```json
-{
-  "message": "Unauthorized"
-}
-```
+| Status | Body | Cause |
+|--------|------|-------|
+| `400` | `{ "error": "X-Account-Id header is required" }` | Missing `X-Account-Id` header |
+| `401` | `{ "error": "Missing bearer token" }` or `{ "error": "Invalid or expired token" }` | Missing, invalid or expired token |
+| `403` | `{ "error": "Account not accessible with this token" }` | The account does not belong to this user |
+| `404` | `{ "error": "Webhook endpoint not found" }` | No endpoint with this `id` on this account |

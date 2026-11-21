@@ -1,0 +1,54 @@
+---
+title: "With an AI assistant"
+description: "Have Claude, ChatGPT, Cursor or Copilot write your webhook receiver from the actual documentation"
+---
+
+This documentation is readable by AI assistants. Give them the right source and a precise brief, and they write a correct webhook receiver on the first try.
+
+## Give the documentation to the assistant
+
+| Source | Use |
+|--------|-----|
+| [`/llms.txt`](https://docs.yabetoopay.com/llms.txt) | Index of every page, to paste or link. |
+| [`/llms-full.txt`](https://docs.yabetoopay.com/llms-full.txt) | The whole documentation in one text file. |
+| A page + `.md` | The Markdown version of a page, for example [`/en/developer-tools/webhook/events.md`](https://docs.yabetoopay.com/en/developer-tools/webhook/events.md). |
+| [`/mcp`](https://docs.yabetoopay.com/mcp) | MCP server that searches the documentation, for Claude, Cursor or VS Code. |
+
+The menu at the top of each page copies the page, opens it in ChatGPT, Claude or Perplexity, or connects the MCP server to Cursor and VS Code.
+
+## Prompt to copy
+
+Replace what is in brackets, then paste the prompt into your assistant along with the [Event list](/en/developer-tools/webhook/events) page (as `.md`) or the MCP server.
+
+```text
+Write a Yabetoo Pay webhook endpoint in [Node.js / Express | PHP / Laravel | Python / FastAPI].
+
+Contract (docs.yabetoopay.com, "Webhooks" and "Event list" pages):
+- POST request, JSON body { id, type, data, created_at }.
+- Headers: X-Yabetoo-Webhook-Signature, X-Yabetoo-Webhook-Timestamp,
+  X-Yabetoo-Webhook-Event, X-Yabetoo-Webhook-Id.
+- Signature = hex HMAC-SHA256 of "{timestamp}.{raw body}",
+  key = the webhook secret (environment variable YABETOO_WEBHOOK_SECRET).
+
+Requirements:
+1. Read the RAW body before any JSON parsing; verify the signature with a
+   constant-time comparison; reject (400) if it is wrong.
+2. Reject a timestamp older than 5 minutes (replay).
+3. Skip an event already processed, based on X-Yabetoo-Webhook-Id (= body id):
+   retries resend the same event.
+4. Respond 2xx within 30 seconds: acknowledge first, process afterwards
+   (queue, job). A 408, 429 or 5xx triggers a retry.
+5. Only handle these events, with the documented `data` fields:
+   [intent.succeeded, intent.failed, checkout.session.completed, ...].
+   Ignore other types without error.
+6. Tests: valid signature, wrong signature, stale timestamp, duplicate.
+
+Do not invent any field: if a field is not in the documentation, ask me.
+```
+
+## Check what the assistant produced
+
+- The signature is computed over the **raw** body, not a re-serialized JSON.
+- The comparison is constant-time (`crypto.timingSafeEqual`, `hash_equals`, `hmac.compare_digest`).
+- The fields read from `data` are listed in the [event list](/en/developer-tools/webhook/events).
+- The same `id` received twice is processed only once.

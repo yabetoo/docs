@@ -192,9 +192,9 @@ Traiter les dépôts réussis :
 app.post('/webhooks/yabetoo', async (req, res) => {
   const event = req.body;
 
-  if (event.type === 'payment_intent.succeeded') {
-    if (event.data.metadata.type === 'vault_deposit') {
-      await handleDepositSuccess(event.data);
+  if (event.type === 'intent.succeeded') {
+    if (event.data.intent.metadata.type === 'vault_deposit') {
+      await handleDepositSuccess(event.data.intent);
     }
   }
 
