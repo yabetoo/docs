@@ -464,14 +464,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"url\": \"https://yoursite.com/webhooks/yabetoo\",\n  \"events\": [\n    \"payment_intent.succeeded\",\n    \"payment_intent.failed\",\n    \"disbursement.completed\",\n    \"disbursement.failed\"\n  ]\n}"
+              "raw": "{\n  \"url\": \"https://yoursite.com/webhooks/yabetoo\",\n  \"events\": [\n    \"intent.succeeded\",\n    \"intent.failed\",\n    \"disbursement.succeeded\",\n    \"disbursement.failed\"\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/v1/webhooks",
               "host": ["{{base_url}}"],
               "path": ["v1", "webhooks"]
             },
-            "description": "Register a new webhook endpoint.\n\n**Parameters:**\n- `url` (required): Your webhook endpoint URL (must be HTTPS)\n- `events` (required): Array of events to subscribe to\n\n**Available Events:**\n- `payment_intent.succeeded`\n- `payment_intent.failed`\n- `disbursement.completed`\n- `disbursement.failed`\n- `checkout.session.completed`"
+            "description": "Register a new webhook endpoint.\n\n**Parameters:**\n- `url` (required): Your webhook endpoint URL (must be HTTPS)\n- `events` (required): Array of events to subscribe to\n\n**Available Events:**\n- `intent.succeeded`\n- `intent.failed`\n- `disbursement.succeeded`\n- `disbursement.failed`\n- `checkout.session.completed`"
           },
           "response": [],
           "event": [
